@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Edit3, Settings, Users, LogOut, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft } from "lucide-react";
 import Cookies from "js-cookie";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -33,9 +33,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const menu = [
     { name: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/admin", show: true },
-    { name: "Tulis Konten", icon: <Edit3 size={20} />, href: "/admin/editor", show: true },
+    { name: "Tulis Konten", icon: <PenLine size={20} />, href: "/admin/editor", show: true },
     // Only Admin & SuperAdmin can review
-    { name: "Review Konten", icon: <Edit3 size={20} />, href: "/admin/review", show: isAdminOrSuper },
+    { name: "Review Konten", icon: <CheckCircle size={20} />, href: "/admin/review", show: isAdminOrSuper },
     // Only SuperAdmin
     { name: "Manajemen User", icon: <Users size={20} />, href: "/admin/users", show: isSuperAdmin },
     { name: "Pengaturan", icon: <Settings size={20} />, href: "/admin/settings", show: isSuperAdmin },

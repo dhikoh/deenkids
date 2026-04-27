@@ -57,7 +57,7 @@ export default function LoginPage() {
             Masuk ke DeenKids
           </h2>
           <p className="mt-2 text-center text-sm text-slate-600">
-            Platform edukasi Islami (Manhaj Salaf)
+            Platform edukasi Islami — Sesuai Alquran, Hadis dan Pemahaman para Sahabat
           </p>
         </div>
         

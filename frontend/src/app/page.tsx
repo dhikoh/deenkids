@@ -36,7 +36,7 @@ export default async function Home() {
         <div className="container relative mx-auto px-4 md:px-6 z-10 flex flex-col items-center text-center">
           <div className="animate-float inline-flex items-center rounded-full border border-emerald-200/50 bg-white/60 backdrop-blur-md px-4 py-1.5 text-sm font-semibold text-emerald-800 shadow-sm mb-8">
             <Sparkles className="h-4 w-4 text-amber-500 mr-2" />
-            Platform Parenting Islami #1 (Manhaj Salaf)
+            Platform Parenting Islami — Sesuai Alquran, Hadis dan Pemahaman para Sahabat
           </div>
           
           <h1 className="max-w-4xl text-5xl font-extrabold tracking-tight text-slate-800 sm:text-6xl md:text-7xl/tight mb-6">

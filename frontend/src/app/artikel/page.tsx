@@ -22,7 +22,7 @@ export default function ArtikelPage() {
         
         <div className="p-6 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800">
           <p className="font-medium">Nantikan update selanjutnya!</p>
-          <p className="text-sm mt-2 opacity-80">Kami berkomitmen menyajikan konten yang shahih sesuai pemahaman Salafus Shalih.</p>
+          <p className="text-sm mt-2 opacity-80">Kami berkomitmen menyajikan konten yang shahih — sesuai Alquran, Hadis dan Pemahaman para Sahabat.</p>
         </div>
       </div>
     </div>

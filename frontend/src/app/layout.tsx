@@ -8,7 +8,7 @@ const amiri = Amiri({ weight: ["400", "700"], subsets: ["arabic"], variable: "--
 
 export const metadata: Metadata = {
   title: "DeenKids - Platform Parenting Islami",
-  description: "Perpustakaan parenting Islam untuk orang tua berdasarkan Al-Qur'an, Hadits shahih & pemahaman Salaf.",
+  description: "Perpustakaan parenting Islam untuk orang tua — sesuai Alquran, Hadis dan pemahaman para Sahabat.",
 };
 
 export default function RootLayout({
