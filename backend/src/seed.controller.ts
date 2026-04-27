@@ -27,12 +27,10 @@ export class SeedController {
       const superadmin = await this.prisma.user.create({
         data: {
           id: uuidv4(),
-          username: 'superadmin',
+          name: 'DeenKids SuperAdmin',
           email: 'admin@deenkids.com',
-          password_hash: hashedPassword,
+          passwordHash: hashedPassword,
           role: 'SUPERADMIN',
-          full_name: 'DeenKids SuperAdmin',
-          is_active: true,
         },
       });
 
@@ -43,10 +41,10 @@ export class SeedController {
           title: 'Tauhid & Aqidah',
           slug: 'tauhid-aqidah',
           description: 'Mengenal Allah dan rukun iman',
-          node_type: 'CATEGORY',
-          age_group: 'SEMUA',
-          order_index: 1,
-          is_active: true,
+          type: 'CATEGORY',
+          ageGroups: ['SEMUA'],
+          order: 1,
+          isActive: true,
         }
       });
 
@@ -54,26 +52,20 @@ export class SeedController {
       await this.prisma.contentItem.create({
         data: {
           id: uuidv4(),
-          node_id: tauhidNode.id,
+          nodeId: tauhidNode.id,
           title: 'Apakah Allah melihat saat aku sembunyi?',
           slug: 'apakah-allah-melihat-saat-sembunyi',
           type: 'QNA',
           status: 'PUBLISHED',
-          author_id: superadmin.id,
-          content_blocks: JSON.stringify([
-            {
-              id: '1',
-              type: 'text',
-              content: 'Tentu saja nak, Allah melihat semua yang kita lakukan karena Allah adalah Al-Bashiir (Maha Melihat).'
-            }
-          ]),
-          meta_title: 'Apakah Allah melihat?',
-          meta_desc: 'Penjelasan tauhid untuk anak usia 5-7 tahun',
-          view_count: 150,
-          like_count: 45,
-          bookmark_count: 12,
-          avg_rating: 4.8,
-          rating_count: 5,
+          authorId: superadmin.id,
+          ageGroup: '5-7',
+          metaTitle: 'Apakah Allah melihat?',
+          metaDesc: 'Penjelasan tauhid untuk anak usia 5-7 tahun',
+          viewCount: 150,
+          likeCount: 45,
+          bookmarkCount: 12,
+          avgRating: 4.8,
+          ratingCount: 5,
         }
       });
 
