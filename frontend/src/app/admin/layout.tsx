@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   const handleLogout = () => {
-    Cookies.remove('token');
+    Cookies.remove('access_token');
     localStorage.removeItem('user');
     router.push('/login');
   };

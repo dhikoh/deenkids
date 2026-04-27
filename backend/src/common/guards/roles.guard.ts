@@ -1,9 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AuthGuard } from '@nestjs/passport';
 
-@Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {}
+// Re-export JwtAuthGuard from its canonical location for backward compatibility
+export { JwtAuthGuard } from './jwt-auth.guard';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -20,19 +19,20 @@ export class RolesGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    
+
     if (!user) return false;
 
     // Role Hierarchy: SUPERADMIN > ADMIN > EDITOR
-    const hierarchy = {
+    const hierarchy: Record<string, number> = {
       SUPERADMIN: 3,
       ADMIN: 2,
       EDITOR: 1,
     };
 
-    const userLevel = hierarchy[user.role as keyof typeof hierarchy] || 0;
-    
-    // Check if user's role level is at least the level of ANY of the required roles
-    return requiredRoles.some((role) => userLevel >= (hierarchy[role as keyof typeof hierarchy] || 99));
+    const userLevel = hierarchy[user.role] || 0;
+
+    return requiredRoles.some(
+      (role) => userLevel >= (hierarchy[role] || 99),
+    );
   }
 }

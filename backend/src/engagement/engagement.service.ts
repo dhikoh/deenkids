@@ -5,7 +5,13 @@ import { PrismaService } from '../prisma/prisma.service';
 export class EngagementService {
   constructor(private prisma: PrismaService) {}
 
+  private async validateContent(contentId: string) {
+    const exists = await this.prisma.contentItem.findUnique({ where: { id: contentId }, select: { id: true } });
+    if (!exists) throw new NotFoundException('Konten tidak ditemukan');
+  }
+
   async toggleLike(contentId: string, userHash: string) {
+    await this.validateContent(contentId);
     const existing = await this.prisma.contentLike.findUnique({
       where: { contentId_userHash: { contentId, userHash } },
     });

@@ -13,10 +13,13 @@ export class EditorService {
 
   async createContent(authorId: string, dto: CreateContentDto) {
     const slug = slugify(dto.title, { lower: true, strict: true });
-    
-    // Check if slug exists
+
     const existing = await this.prisma.contentItem.findUnique({ where: { slug } });
     if (existing) throw new BadRequestException('Judul sudah digunakan (slug duplicate)');
+
+    // Verify the author's role — only SUPERADMIN can directly publish
+    const author = await this.prisma.user.findUnique({ where: { id: authorId }, select: { role: true } });
+    const forcedStatus = author?.role === 'SUPERADMIN' ? (dto.status || 'REVIEW') : 'REVIEW';
 
     let aiResult = null;
 
@@ -34,7 +37,7 @@ export class EditorService {
         slug,
         description: dto.description,
         type: dto.type,
-        status: dto.status || 'DRAFT',
+        status: forcedStatus,
         ageGroup: dto.ageGroup,
         nodeId: dto.nodeId,
         authorId,

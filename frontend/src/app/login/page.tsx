@@ -21,8 +21,8 @@ export default function LoginPage() {
     try {
       const data = await login({ email, password });
       
-      // Store token securely in cookie (with 1 day expiry)
-      Cookies.set("token", data.accessToken, { expires: 1, path: "/" });
+      // Store token in cookie matching backend's cookie name
+      Cookies.set("access_token", data.accessToken, { expires: 1, path: "/" });
       
       // Store basic user info in localStorage for UI purposes
       if (typeof window !== 'undefined') {

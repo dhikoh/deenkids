@@ -11,12 +11,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private configService: ConfigService,
     private prisma: PrismaService,
   ) {
+    const jwtSecret = configService.get<string>('JWT_SECRET');
+    if (!jwtSecret) {
+      throw new Error('FATAL: JWT_SECRET environment variable is not set!');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => {
           let data = request?.cookies['access_token'];
           if (!data) {
-            // Fallback to Bearer token for testing/swagger
             const authHeader = request.headers.authorization;
             if (authHeader && authHeader.startsWith('Bearer ')) {
               data = authHeader.split(' ')[1];
@@ -26,7 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: configService.get('JWT_SECRET', 'deenkids-super-secret-key-2026'),
+      secretOrKey: jwtSecret,
     });
   }
 
