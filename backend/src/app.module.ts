@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ContentModule } from './content/content.module';
 import { EditorModule } from './editor/editor.module';
 import { EngagementModule } from './engagement/engagement.module';
+import { SeedController } from './seed.controller';
 
 @Module({
   imports: [
