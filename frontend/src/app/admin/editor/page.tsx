@@ -71,8 +71,8 @@ export default function EditorPage() {
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Kurikulum</label>
                   <select className="w-full border-slate-300 rounded-lg shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
-                    <option>Tauhid > Mengenal Allah</option>
-                    <option>Adab > Adab Tidur</option>
+                    <option>Tauhid &gt; Mengenal Allah</option>
+                    <option>Adab &gt; Adab Tidur</option>
                   </select>
                 </div>
                 <div>
