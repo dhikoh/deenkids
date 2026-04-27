@@ -6,7 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ContentModule } from './content/content.module';
 import { EditorModule } from './editor/editor.module';
-// import { EngagementModule } from './engagement/engagement.module';
+import { EngagementModule } from './engagement/engagement.module';
 
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { EditorModule } from './editor/editor.module';
     AuthModule,
     ContentModule,
     EditorModule,
-    // EngagementModule,
+    EngagementModule,
   ],
   controllers: [],
   providers: [],
