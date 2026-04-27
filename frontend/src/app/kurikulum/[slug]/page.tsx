@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
-export default async function KurikulumDetail({ params }: { params: { slug: string } }) {
-  const slug = params.slug;
+export default async function KurikulumDetail({ params }: { params: Promise<{ slug: string }> }) {
+  const slug = (await params).slug;
 
   return (
     <div className="container mx-auto px-4 py-8">
