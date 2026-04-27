@@ -14,6 +14,19 @@ export class ContentController {
     return this.contentService.getTree(age);
   }
 
+  @Get('list')
+  @ApiOperation({ summary: 'Get sorted and filtered list of contents' })
+  @ApiQuery({ name: 'age', required: false })
+  @ApiQuery({ name: 'sort', required: false, description: 'newest, most_read, most_liked, top_rated, popular' })
+  @ApiQuery({ name: 'page', required: false })
+  async getList(
+    @Query('age') age?: string,
+    @Query('sort') sort?: string,
+    @Query('page') page?: number,
+  ) {
+    return this.contentService.getList({ age, sort, page });
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Get specific content details by slug' })
   async getContentDetail(@Param('slug') slug: string) {

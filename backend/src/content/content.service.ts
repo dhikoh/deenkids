@@ -73,4 +73,70 @@ export class ContentService {
 
     return sameNode;
   }
+
+  async getList(query: { age?: string; sort?: string; page?: number; limit?: number }) {
+    const { age, sort = 'newest', page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+
+    let orderBy: any = { publishedAt: 'desc' };
+    
+    switch (sort) {
+      case 'most_read':
+        orderBy = { viewCount: 'desc' };
+        break;
+      case 'most_liked':
+        orderBy = { likeCount: 'desc' };
+        break;
+      case 'top_rated':
+        orderBy = { avgRating: 'desc' };
+        break;
+      case 'popular':
+        // For Prisma, we sort by multiple fields to simulate popular
+        orderBy = [
+          { likeCount: 'desc' },
+          { avgRating: 'desc' },
+          { viewCount: 'desc' }
+        ];
+        break;
+      default:
+        orderBy = { publishedAt: 'desc' };
+    }
+
+    const where: any = { status: 'PUBLISHED' };
+    if (age && age !== 'Semua') {
+      where.ageGroup = age;
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.contentItem.findMany({
+        where,
+        orderBy,
+        skip,
+        take: Number(limit),
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          type: true,
+          ageGroup: true,
+          viewCount: true,
+          likeCount: true,
+          avgRating: true,
+          publishedAt: true,
+          author: { select: { name: true } }
+        }
+      }),
+      this.prisma.contentItem.count({ where })
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
 }
