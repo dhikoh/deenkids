@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  EDITOR
+}
+
+model User {
+  id               String                 @id @default(uuid())
+  email            String                 @unique
+  passwordHash     String
+  name             String
+  role             Role                   @default(EDITOR)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  refreshTokens    RefreshToken[]
+  contentItems     ContentItem[]
+  reviewHistory    ReviewHistory[]
+  authorStats      AuthorStat?
+  notifications    InternalNotification[] @relation("NotifiedUser")
+  sentNotification InternalNotification[] @relation("NotifierUser")
+  rewards          Reward[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+enum NodeType {
+  CATEGORY
+  MODULE
+  TOPIC
+}
+
+model ContentNode {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  title       String
+  description String?
+  type        NodeType
+  parentId    String?
+  parent      ContentNode?  @relation("NodeHierarchy", fields: [parentId], references: [id])
+  children    ContentNode[] @relation("NodeHierarchy")
+  ageGroups   String[] // e.g., ["3-5", "5-7", "7-10"]
+  order       Int           @default(0)
+  icon        String?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  contents    ContentItem[]
+}
+
+enum ContentStatus {
+  DRAFT
+  REVIEW
+  REVISION
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ContentType {
+  QNA
+  ARTICLE
+  MEDIA
+}
+
+model ContentItem {
+  id              String            @id @default(uuid())
+  slug            String            @unique
+  title           String
+  description     String?
+  type            ContentType
+  status          ContentStatus     @default(DRAFT)
+  nodeId          String
+  node            ContentNode       @relation(fields: [nodeId], references: [id])
+  authorId        String
+  author          User              @relation(fields: [authorId], references: [id])
+  ageGroup        String // e.g., "3-5"
+  metaTitle       String?
+  metaDesc        String?
+  viewCount       Int               @default(0)
+  likeCount       Int               @default(0)
+  bookmarkCount   Int               @default(0)
+  avgRating       Float             @default(0.0)
+  ratingCount     Int               @default(0)
+  publishedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  qnaDetail       QnaDetail?
+  articleDetail   ArticleDetail?
+  mediaDetail     MediaDetail?
+  tags            ContentItemTag[]
+  likes           ContentLike[]
+  bookmarks       ContentBookmark[]
+  ratings         ContentRating[]
+  views           ContentView[]
+  versions        ContentVersion[]
+  reviewHistory   ReviewHistory[]
+  aiCheckResults  AiCheckResult[]
+  relatedFrom     RelatedContent[]  @relation("SourceContent")
+  relatedTo       RelatedContent[]  @relation("TargetContent")
+}
+
+model QnaDetail {
+  id            String      @id @default(uuid())
+  contentId     String      @unique
+  content       ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  question      String
+  answerQuick   String
+  dialogBlocks  Json // array of dialog objects
+  dalilBlocks   Json // array of dalil objects
+  analogyBlocks Json // array of analogy objects
+  tipsBlocks    Json // array of tips objects
+}
+
+model ArticleDetail {
+  id        String      @id @default(uuid())
+  contentId String      @unique
+  content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  coverUrl  String?
+  blocks    Json // article content blocks
+}
+
+model MediaDetail {
+  id        String      @id @default(uuid())
+  contentId String      @unique
+  content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  mediaUrl  String
+  duration  Int?
+  mediaType String // e.g., "video", "audio"
+}
+
+model ContentTag {
+  id         String           @id @default(uuid())
+  name       String           @unique
+  slug       String           @unique
+  usageCount Int              @default(0)
+  createdAt  DateTime         @default(now())
+  items      ContentItemTag[]
+}
+
+model ContentItemTag {
+  id        String      @id @default(uuid())
+  contentId String
+  tagId     String
+  content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  tag       ContentTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, tagId])
+}
+
+model RelatedContent {
+  id        String      @id @default(uuid())
+  sourceId  String
+  targetId  String
+  source    ContentItem @relation("SourceContent", fields: [sourceId], references: [id], onDelete: Cascade)
+  target    ContentItem @relation("TargetContent", fields: [targetId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([sourceId, targetId])
+}
+
+model ContentLike {
+  id        String      @id @default(uuid())
+  contentId String
+  content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  userHash  String
+  createdAt DateTime    @default(now())
+
+  @@unique([contentId, userHash])
+}
+
+model ContentBookmark {
+  id        String      @id @default(uuid())
+  contentId String
+  content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  userHash  String
+  createdAt DateTime    @default(now())
+
+  @@unique([contentId, userHash])
+}
+
+model ContentRating {
+  id        String      @id @default(uuid())
+  contentId String
+  content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  userHash  String
+  rating    Int // 1-5
+  createdAt DateTime    @default(now())
+
+  @@unique([contentId, userHash])
+}
+
+model ContentView {
+  id        String      @id @default(uuid())
+  contentId String
+  content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  userHash  String
+  duration  Int         @default(0)
+  createdAt DateTime    @default(now())
+}
+
+model VideoView {
+  id         String   @id @default(uuid())
+  mediaUrl   String
+  userHash   String
+  watchTime  Int      @default(0)
+  isFinished Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model ContentVersion {
+  id        String      @id @default(uuid())
+  contentId String
+  content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  snapshot  Json
+  createdAt DateTime    @default(now())
+}
+
+enum ReviewAction {
+  APPROVED
+  REJECTED
+  REVISION_REQUESTED
+}
+
+model ReviewHistory {
+  id          String       @id @default(uuid())
+  contentId   String
+  content     ContentItem  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  reviewerId  String
+  reviewer    User         @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  action      ReviewAction
+  aiAssisted  Boolean      @default(false)
+  aiScore     Int?
+  manualScore Int?
+  notes       String?
+  createdAt   DateTime     @default(now())
+}
+
+model AiCheckResult {
+  id          String      @id @default(uuid())
+  contentId   String
+  content     ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  score       Int
+  breakdown   Json
+  issues      Json
+  suggestions Json
+  provider    String      @default("openai")
+  checkedAt   DateTime    @default(now())
+}
+
+enum NotificationType {
+  REVIEW_REQUEST
+  CONTENT_APPROVED
+  CONTENT_REJECTED
+  REVISION_NEEDED
+  SYSTEM_ALERT
+}
+
+model InternalNotification {
+  id         String           @id @default(uuid())
+  userId     String
+  user       User             @relation("NotifiedUser", fields: [userId], references: [id], onDelete: Cascade)
+  actorId    String?
+  actor      User?            @relation("NotifierUser", fields: [actorId], references: [id], onDelete: SetNull)
+  type       NotificationType
+  title      String
+  message    String
+  linkUrl    String?
+  isRead     Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  group     String   @default("general")
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AuthorStat {
+  id               String   @id @default(uuid())
+  authorId         String   @unique
+  author           User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  totalPublished   Int      @default(0)
+  totalViews       Int      @default(0)
+  totalLikes       Int      @default(0)
+  avgContentRating Float    @default(0.0)
+  updatedAt        DateTime @updatedAt
+}
+
+model Reward {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeName   String
+  description String?
+  issuedAt    DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+}

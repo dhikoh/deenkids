@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeenKids - Design System & Asset Library</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind Config for Premium Kids & Syar'i Palette -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: { 50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' },
+                        amber: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309' },
+                        teal: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e' },
+                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 800: '#1e293b', 900: '#0f172a' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        arabic: ['Amiri', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #10b981; }
+        
+        .toast {
+            position: fixed; bottom: 20px; right: 20px; background: #10b981; color: white; 
+            padding: 12px 24px; border-radius: 8px; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            transform: translateY(100px); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen pb-20">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast flex items-center space-x-2">
+        <i data-lucide="check-circle" class="h-5 w-5"></i>
+        <span>Kode HTML/SVG berhasil disalin!</span>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 py-8 px-6 mb-10 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-gradient-to-br from-emerald-400 to-emerald-600 p-2.5 rounded-xl text-white shadow-md">
+                        <i data-lucide="palette" class="h-6 w-6"></i>
+                    </div>
+                    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">DeenKids <span class="text-emerald-500">Assets</span></h1>
+                </div>
+                <p class="text-slate-500 font-medium">Koleksi ikon, ilustrasi alam, dan panduan aset visual premium (Syar'i Safe & Realistis).</p>
+            </div>
+            <div class="flex space-x-3 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto hide-scrollbar">
+                <a href="#brand" class="whitespace-nowrap text-sm font-semibold text-slate-600 hover:text-emerald-600 bg-slate-100 hover:bg-emerald-50 px-4 py-2 rounded-lg transition-colors">1. Brand</a>
+                <a href="#system" class="whitespace-nowrap text-sm font-semibold text-slate-600 hover:text-emerald-600 bg-slate-100 hover:bg-emerald-50 px-4 py-2 rounded-lg transition-colors">2. System</a>
+                <a href="#custom" class="whitespace-nowrap text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg transition-colors shadow-sm">3. SVG Premium</a>
+                <a href="#composite" class="whitespace-nowrap text-sm font-semibold text-white bg-teal-500 hover:bg-teal-600 px-4 py-2 rounded-lg transition-colors shadow-sm">4. Ilustrasi Besar</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 space-y-16">
+
+        <!-- 1. Brand Icons Requirements -->
+        <section id="brand" class="scroll-mt-32">
+            <div class="mb-6 border-b border-slate-200 pb-4">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="award" class="h-6 w-6 text-amber-500"></i> 1. Brand Icons (Kebutuhan Desain)
+                </h2>
+                <p class="text-slate-500 mt-1">Daftar ukuran logo dan aset branding yang perlu disiapkan secara eksternal.</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-sm font-semibold text-slate-600">
+                            <th class="p-4">Icon Name</th>
+                            <th class="p-4">Ukuran</th>
+                            <th class="p-4">Fungsi / Penempatan</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        <tr class="border-b border-slate-100">
+                            <td class="p-4 font-bold text-slate-800">Logo Utama</td>
+                            <td class="p-4 font-mono text-emerald-600">SVG (Vector)</td>
+                            <td class="p-4 text-slate-600">Navbar, footer, halaman login. Desain Syar'i safe (kaligrafi/geometris/daun).</td>
+                        </tr>
+                        <tr class="border-b border-slate-100">
+                            <td class="p-4 font-bold text-slate-800">Logo Small</td>
+                            <td class="p-4 font-mono text-emerald-600">32 x 32 px</td>
+                            <td class="p-4 text-slate-600">Favicon di browser tab.</td>
+                        </tr>
+                        <tr class="border-b border-slate-100">
+                            <td class="p-4 font-bold text-slate-800">Logo Medium</td>
+                            <td class="p-4 font-mono text-emerald-600">192 x 192 px</td>
+                            <td class="p-4 text-slate-600">PWA icon (Homescreen icon untuk Android/iOS).</td>
+                        </tr>
+                        <tr class="border-b border-slate-100">
+                            <td class="p-4 font-bold text-slate-800">Logo Large</td>
+                            <td class="p-4 font-mono text-emerald-600">512 x 512 px</td>
+                            <td class="p-4 text-slate-600">PWA splash screen saat aplikasi loading.</td>
+                        </tr>
+                        <tr>
+                            <td class="p-4 font-bold text-slate-800">OG Image</td>
+                            <td class="p-4 font-mono text-emerald-600">1200 x 630 px</td>
+                            <td class="p-4 text-slate-600">Gambar yang muncul saat link website dibagikan ke WhatsApp / Media Sosial.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 2. System Icons (Lucide) -->
+        <section id="system" class="scroll-mt-32">
+            <div class="mb-6 border-b border-slate-200 pb-4">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="layout-grid" class="h-6 w-6 text-teal-500"></i> 2. System Icons (Lucide Library)
+                </h2>
+                <p class="text-slate-500 mt-1">Gunakan tag <code>&lt;i data-lucide="..."&gt;&lt;/i&gt;</code> atau import dari <code>lucide-react</code>. Klik card untuk menyalin kode HTML.</p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="system-icons-container">
+                <script>
+                    const systemIcons = [
+                        { name: "Search", code: "search" },
+                        { name: "Like", code: "thumbs-up" },
+                        { name: "Bookmark", code: "bookmark" },
+                        { name: "Heart", code: "heart" },
+                        { name: "Rating Star", code: "star" },
+                        { name: "Share", code: "share-2" },
+                        { name: "Play", code: "play" },
+                        { name: "Pause", code: "pause" },
+                        { name: "Volume", code: "volume-2" },
+                        { name: "Dark Mode", code: "moon" },
+                        { name: "Light Mode", code: "sun" },
+                        { name: "Menu", code: "menu" },
+                        { name: "Close / X", code: "x" },
+                        { name: "User", code: "user" },
+                        { name: "Log In", code: "log-in" },
+                        { name: "Settings", code: "settings" },
+                        { name: "Dashboard", code: "layout-dashboard" },
+                        { name: "Edit", code: "pencil" },
+                        { name: "Delete", code: "trash-2" },
+                        { name: "Upload", code: "upload" },
+                        { name: "Download", code: "download" },
+                        { name: "Notification", code: "bell" },
+                        { name: "Check", code: "check" },
+                        { name: "Approve", code: "check-circle" },
+                        { name: "Reject", code: "x-circle" },
+                        { name: "Filter", code: "filter" },
+                        { name: "Sliders", code: "sliders-horizontal" },
+                        { name: "Tree Node", code: "folder-tree" },
+                        { name: "Chevron", code: "chevron-right" }
+                    ];
+
+                    let htmlContent = '';
+                    systemIcons.forEach(icon => {
+                        const snippet = `<i data-lucide="${icon.code}" class="h-5 w-5"></i>`;
+                        htmlContent += `
+                            <div onclick='copyText(\`${snippet}\`)' class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all group">
+                                <div class="text-slate-600 group-hover:text-emerald-500 transition-colors">
+                                    <i data-lucide="${icon.code}" class="h-8 w-8"></i>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-xs font-bold text-slate-800 line-clamp-1">${icon.name}</p>
+                                    <p class="text-[10px] font-mono text-slate-400 mt-1 bg-slate-100 px-1.5 py-0.5 rounded break-all">${icon.code}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    document.getElementById('system-icons-container').innerHTML = htmlContent;
+                </script>
+            </div>
+        </section>
+
+        <!-- 3. Custom SVG Illustrations (Syar'i Safe) -->
+        <section id="custom" class="scroll-mt-32">
+            <div class="mb-6 border-b border-slate-200 pb-4">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="sparkles" class="h-6 w-6 text-amber-500"></i> 3. Ilustrasi Kustom, Alam & Karakter Realistis
+                </h2>
+                <p class="text-slate-500 mt-1">Siluet manusia digambar dengan proporsi realistis (Peci, Jenggot, Khimar) namun <b>tetap Syar'i tanpa wajah (Faceless)</b>. Klik <b>icon copy</b> untuk menyalin tag <code>&lt;svg&gt;</code>.</p>
+            </div>
+
+            <!-- Group A: Karakter & Manusia (Realistis & Faceless) -->
+            <h3 class="text-lg font-bold text-slate-700 mb-4 mt-8">Siluet Keluarga Islami (Syar'i Compliant)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
+
+                <!-- Siluet Anak (Realistis: Anak laki berpeci & anak perempuan berhijab) -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-teal-50 h-48 flex items-center justify-center p-4 relative" id="svg-anak">
+                        <svg viewBox="0 0 100 100" class="h-32 w-32" fill="none">
+                            <!-- Anak Perempuan (Hijab) -->
+                            <path d="M 65 30 C 58 30 55 40 55 50 C 55 65 52 70 52 80 L 80 80 C 80 70 77 65 77 50 C 77 40 72 30 65 30 Z" fill="#0d9488"/>
+                            <path d="M 52 80 L 80 80 L 80 95 L 52 95 Z" fill="#14b8a6"/>
+                            <!-- Anak Laki (Peci) -->
+                            <path d="M 35 28 L 43 28 C 45 28 47 30 47 35 C 47 42 43 48 39 48 C 35 48 31 42 31 35 C 31 30 33 28 35 28 Z" fill="#0f766e"/>
+                            <!-- Badan Anak Laki -->
+                            <path d="M 39 50 C 30 50 25 60 25 75 L 25 95 L 53 95 L 53 75 C 53 60 48 50 39 50 Z" fill="#0f766e" opacity="0.9"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Siluet Anak-anak</h3>
+                            <p class="text-[10px] text-slate-500">Realistis, Peci & Hijab</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-anak')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- Siluet Orang Tua (Realistis: Ayah Peci/Jenggot & Ibu Khimar) -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-emerald-50 h-48 flex items-center justify-center p-4 relative" id="svg-ortu">
+                        <svg viewBox="0 0 100 100" class="h-32 w-32" fill="none">
+                            <!-- Ayah (Kiri) Profile -->
+                            <!-- Peci & Kepala -->
+                            <path d="M 35 15 L 45 15 C 48 15 50 18 50 24 C 50 32 45 38 40 38 C 36 38 32 32 32 24 C 32 18 33 15 35 15 Z" fill="#065f46"/>
+                            <path d="M 40 38 L 42 42 L 38 44 Z" fill="#065f46"/> <!-- Hint of beard -->
+                            <!-- Badan Ayah -->
+                            <path d="M 40 43 C 25 43 15 55 15 80 L 15 95 L 55 95 L 55 80 C 55 60 48 45 40 43 Z" fill="#059669"/>
+                            
+                            <!-- Ibu (Kanan) Khimar Drape -->
+                            <path d="M 65 20 C 52 20 48 35 48 55 C 48 70 42 80 42 95 L 90 95 C 90 80 82 70 82 55 C 82 35 78 20 65 20 Z" fill="#10b981"/>
+                            <!-- Inner shadow/fold for realism -->
+                            <path d="M 65 20 C 58 35 55 55 55 95 L 48 95 C 48 65 52 35 65 20 Z" fill="#047857" opacity="0.3"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Siluet Orang Tua</h3>
+                            <p class="text-[10px] text-slate-500">Realistis, Ayah & Ibu</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-ortu')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- Siluet Keluarga (Realistis Bersama) -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-teal-100 h-48 flex items-center justify-center p-4 relative" id="svg-keluarga">
+                        <svg viewBox="0 0 100 100" class="h-32 w-32" fill="none">
+                            <!-- Ayah (Kiri Tepi) -->
+                            <path d="M 28 15 L 35 15 C 38 15 40 18 40 24 C 40 32 36 36 32 36 C 28 36 25 32 25 24 C 25 18 26 15 28 15 Z" fill="#0f766e"/>
+                            <path d="M 32 40 C 20 40 10 50 10 75 L 10 95 L 45 95 L 45 75 C 45 58 38 43 32 40 Z" fill="#0d9488"/>
+                            
+                            <!-- Ibu (Kanan Tepi) -->
+                            <path d="M 72 20 C 62 20 58 30 58 45 C 58 60 54 70 54 95 L 90 95 C 90 70 85 60 85 45 C 85 30 82 20 72 20 Z" fill="#14b8a6"/>
+                            
+                            <!-- Anak di Tengah -->
+                            <path d="M 50 48 L 56 48 C 58 48 59 50 59 54 C 59 58 56 62 53 62 C 50 62 47 58 47 54 C 47 50 48 48 50 48 Z" fill="#0f766e"/>
+                            <path d="M 53 65 C 45 65 40 72 40 85 L 40 95 L 66 95 L 66 85 C 66 72 61 65 53 65 Z" fill="#0f766e"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Keluarga Utuh</h3>
+                            <p class="text-[10px] text-slate-500">Ayah, Ibu, Anak (Realistis)</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-keluarga')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- Tangan Berjabat (Realistis & Halus) -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-slate-100 h-48 flex items-center justify-center p-4 relative" id="svg-adab">
+                        <svg viewBox="0 0 100 100" class="h-32 w-32" fill="none">
+                            <!-- Background Highlight -->
+                            <circle cx="50" cy="50" r="40" fill="#e2e8f0" opacity="0.6"/>
+                            
+                            <!-- Lengan Kiri (Baju) -->
+                            <path d="M 0 85 Q 25 70 45 62 L 50 72 Q 25 85 0 95 Z" fill="#64748b"/>
+                            <!-- Tangan Kiri (Grip) -->
+                            <path d="M 43 63 Q 55 55 65 60 Q 72 65 65 72 Q 55 78 48 72 Z" fill="#94a3b8"/>
+                            
+                            <!-- Lengan Kanan (Baju) -->
+                            <path d="M 100 85 Q 75 70 55 62 L 50 72 Q 75 85 100 95 Z" fill="#475569"/>
+                            <!-- Tangan Kanan (Overlapping Hand) -->
+                            <path d="M 57 63 Q 45 55 35 60 Q 28 65 35 72 Q 45 78 52 72 Z" fill="#cbd5e1"/>
+                            
+                            <!-- Detail Jempol (Realism) -->
+                            <path d="M 45 60 Q 50 50 55 53 Q 50 60 48 64 Z" fill="#e2e8f0"/>
+                            
+                            <!-- Sparkles (Adab/Berkah) -->
+                            <path d="M 50 15 L 52 25 L 62 27 L 52 29 L 50 39 L 48 29 L 38 27 L 48 25 Z" fill="#10b981"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Jabat Tangan Realistis</h3>
+                            <p class="text-[10px] text-slate-500">Adab, Silaturahmi, Sepakat</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-adab')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Group B: Landmark & Benda Islami -->
+            <h3 class="text-lg font-bold text-slate-700 mb-4">Landmark & Objek Islami</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
+                
+                <!-- Ka'bah (NEW) -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-indigo-50 h-40 flex items-center justify-center p-4 relative" id="svg-kabah">
+                        <svg viewBox="0 0 100 100" class="h-28 w-28 text-slate-800" fill="none">
+                            <ellipse cx="50" cy="85" rx="35" ry="8" fill="#cbd5e1" opacity="0.5"/>
+                            <path d="M25 30 L75 30 L75 80 L25 80 Z" fill="#1e293b"/>
+                            <path d="M25 45 L75 45 L75 52 L25 52 Z" fill="#fbbf24"/>
+                            <path d="M25 47 L75 47 M25 50 L75 50" stroke="#f59e0b" stroke-width="0.5"/>
+                            <path d="M42 52 L58 52 L58 80 L42 80 Z" fill="#f59e0b"/>
+                            <path d="M44 54 L56 54 L56 80 L44 80 Z" fill="#fbbf24"/>
+                            <path d="M15 25 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z" fill="#fcd34d" opacity="0.8"/>
+                            <path d="M85 35 l1 3 3 1 -3 1 -1 3 -1 -3 -3 -1 3 -1 z" fill="#fcd34d" opacity="0.6"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Ka'bah Premium</h3>
+                            <p class="text-[10px] text-slate-500">Ibadah Haji, Tauhid</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-kabah')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- Masjid Geometris Premium -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-emerald-50 h-40 flex items-center justify-center p-4 relative" id="svg-masjid">
+                        <svg viewBox="0 0 100 100" class="h-28 w-28 text-emerald-600" fill="none">
+                            <ellipse cx="50" cy="85" rx="40" ry="10" fill="#a7f3d0" opacity="0.5"/>
+                            <path d="M20 30 L28 30 L28 80 L20 80 Z" fill="#34d399"/>
+                            <path d="M72 30 L80 30 L80 80 L72 80 Z" fill="#34d399"/>
+                            <polygon points="24,15 18,30 30,30" fill="#059669"/>
+                            <polygon points="76,15 70,30 82,30" fill="#059669"/>
+                            <path d="M30 50 C 30 25, 70 25, 70 50 Z" fill="#10b981"/>
+                            <path d="M30 50 L70 50 L70 80 L30 80 Z" fill="#10b981"/>
+                            <path d="M42 60 C 42 55, 58 55, 58 60 L58 80 L42 80 Z" fill="#ffffff"/>
+                            <path d="M45 62 C 45 58, 55 58, 55 62 L55 80 L45 80 Z" fill="#fcd34d"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Masjid Geometris</h3>
+                            <p class="text-[10px] text-slate-500">Ibadah, Shalat</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-masjid')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- Al-Qur'an Berkilau -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-amber-50 h-40 flex items-center justify-center p-4 relative" id="svg-quran">
+                        <svg viewBox="0 0 100 100" class="h-28 w-28 text-amber-600" fill="none">
+                            <ellipse cx="50" cy="85" rx="35" ry="8" fill="#fde68a" opacity="0.6"/>
+                            <path d="M50 80 C 30 75, 15 75, 15 75 L 15 35 C 15 35, 30 35, 50 40 C 70 35, 85 35, 85 35 L 85 75 C 85 75, 70 75, 50 80 Z" fill="#ffffff" stroke="#d97706" stroke-width="3" stroke-linejoin="round"/>
+                            <path d="M50 85 C 30 80, 10 80, 10 80 L 10 40 C 10 40, 30 40, 50 45 C 70 40, 90 40, 90 40 L 90 80 C 90 80, 70 80, 50 85 Z" fill="#f59e0b" opacity="0.3"/>
+                            <path d="M50 40 L 50 85" stroke="#d97706" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M25 45 L40 48 M25 55 L40 58 M25 65 L40 68" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M75 45 L60 48 M75 55 L60 58 M75 65 L60 68" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Al-Qur'an Terbuka</h3>
+                            <p class="text-[10px] text-slate-500">Kisah Nabi, Dalil</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-quran')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- Lentera / Ramadhan -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-teal-50 h-40 flex items-center justify-center p-4 relative" id="svg-lentera">
+                        <svg viewBox="0 0 100 100" class="h-28 w-28" fill="none">
+                            <path d="M50 5 L50 20" stroke="#fcd34d" stroke-width="2"/>
+                            <path d="M40 35 C 40 25, 60 25, 60 35 Z" fill="#14b8a6"/>
+                            <path d="M35 35 L65 35 L60 40 L40 40 Z" fill="#0d9488"/>
+                            <path d="M40 40 L60 40 L65 70 L35 70 Z" fill="#ccfbf1" opacity="0.8"/>
+                            <path d="M40 40 L60 40 L65 70 L35 70 Z" stroke="#14b8a6" stroke-width="2"/>
+                            <path d="M50 40 L50 70" stroke="#14b8a6" stroke-width="2"/>
+                            <path d="M35 70 L65 70 L60 80 L40 80 Z" fill="#0d9488"/>
+                            <circle cx="50" cy="55" r="8" fill="#fcd34d" opacity="0.9">
+                                <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite" />
+                            </circle>
+                            <circle cx="50" cy="55" r="15" fill="#fef3c7" opacity="0.4"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Lentera Cahaya</h3>
+                            <p class="text-[10px] text-slate-500">Ramadhan, Ilmu</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-lentera')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group C: Alam (Nature & Scenery) -->
+            <h3 class="text-lg font-bold text-slate-700 mb-4">Elemen Alam & Pemandangan</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
+
+                <!-- Pegunungan & Matahari -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-sky-50 h-40 flex items-center justify-center p-4 relative" id="svg-gunung">
+                        <svg viewBox="0 0 100 100" class="h-28 w-28" fill="none">
+                            <circle cx="50" cy="50" r="45" fill="#e0f2fe"/>
+                            <circle cx="65" cy="40" r="12" fill="#fbbf24"/>
+                            <path d="M10 75 L40 35 L65 65 L95 45 L100 55 L100 85 L10 85 Z" fill="#94a3b8"/>
+                            <path d="M40 35 L50 50 L35 60 Z" fill="#e2e8f0" opacity="0.7"/> 
+                            <path d="M-5 95 L25 55 L50 75 L75 45 L105 85 L105 95 Z" fill="#10b981"/>
+                            <path d="M20 30 Q 25 25 30 30 Q 25 25 20 30 M28 22 Q 31 18 34 22 Q 31 18 28 22" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Pegunungan</h3>
+                            <p class="text-[10px] text-slate-500">Ciptaan Allah, Kebesaran</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-gunung')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- Gurun & Kurma -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-orange-50 h-40 flex items-center justify-center p-4 relative" id="svg-gurun">
+                        <svg viewBox="0 0 100 100" class="h-28 w-28" fill="none">
+                            <circle cx="50" cy="50" r="45" fill="#ffedd5"/>
+                            <circle cx="35" cy="45" r="10" fill="#f97316" opacity="0.6"/> 
+                            <path d="M0 70 Q 25 50 55 75 T 100 65 L 100 95 L 0 95 Z" fill="#fcd34d"/>
+                            <path d="M0 85 Q 35 65 70 85 T 100 75 L 100 95 L 0 95 Z" fill="#f59e0b"/>
+                            <path d="M75 85 Q 80 65 75 45" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M75 45 Q 60 35 65 55 M75 45 Q 65 25 80 35 M75 45 Q 85 25 95 40 M75 45 Q 95 45 90 60 M75 45 Q 85 55 80 65" stroke="#10b981" stroke-width="2" stroke-linecap="round" fill="none"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Gurun & Kurma</h3>
+                            <p class="text-[10px] text-slate-500">Sejarah Islam, Nabi</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-gurun')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- Sungai Mengalir -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-cyan-50 h-40 flex items-center justify-center p-4 relative" id="svg-sungai">
+                        <svg viewBox="0 0 100 100" class="h-28 w-28" fill="none">
+                            <circle cx="50" cy="50" r="45" fill="#ccfbf1"/>
+                            <path d="M0 60 Q 20 50 40 60 T 100 50 L 100 95 L 0 95 Z" fill="#a7f3d0"/>
+                            <path d="M40 50 Q 50 70 30 95 L 70 95 Q 70 70 60 50 Z" fill="#0ea5e9" opacity="0.8"/>
+                            <path d="M48 60 Q 52 70 42 85" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="20" cy="55" r="10" fill="#10b981"/>
+                            <circle cx="25" cy="50" r="8" fill="#34d399"/>
+                            <circle cx="85" cy="55" r="12" fill="#059669"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Sungai Mengalir</h3>
+                            <p class="text-[10px] text-slate-500">Surga, Penciptaan, Suci</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-sungai')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+                <!-- Taman & Awan (Surga) Premium -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-all group flex flex-col">
+                    <div class="bg-emerald-50 h-40 flex items-center justify-center p-4 relative" id="svg-surga">
+                        <svg viewBox="0 0 100 100" class="h-28 w-28 text-emerald-500" fill="none">
+                            <circle cx="65" cy="35" r="20" fill="#fcd34d" opacity="0.9"/>
+                            <path d="M25 65 C 10 65, 10 45, 25 45 C 30 30, 60 30, 60 50 C 75 50, 75 70, 60 70 L 25 70 Z" fill="#ffffff" opacity="0.9"/>
+                            <path d="M25 65 C 10 65, 10 45, 25 45 C 30 30, 60 30, 60 50 C 75 50, 75 70, 60 70 L 25 70 Z" fill="#10b981" transform="translate(0, 15)"/>
+                            <path d="M15 30 l1 3 3 1 -3 1 -1 3 -1 -3 -3 -1 3 -1 z" fill="#f59e0b"/>
+                            <path d="M85 60 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z" fill="#f59e0b"/>
+                        </svg>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 flex justify-between items-center bg-white flex-grow">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800">Taman & Awan</h3>
+                            <p class="text-[10px] text-slate-500">Kategori Surga & Neraka</p>
+                        </div>
+                        <button onclick="copyElementHtml('svg-surga')" class="bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 p-2 rounded-lg transition-colors"><i data-lucide="copy" class="h-4 w-4"></i></button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 4. Empty States & Composites (Ilustrasi Lebar) -->
+        <section id="composite" class="scroll-mt-32 pb-10">
+            <div class="mb-6 border-b border-slate-200 pb-4">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="images" class="h-6 w-6 text-teal-500"></i> 4. Ilustrasi Lebar & Background
+                </h2>
+                <p class="text-slate-500 mt-1">Gabungan SVG untuk halaman kosong, error 404, dan Hero Background. Bebas wajah, komposisi premium.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- Empty State: Belum ada konten -->
+                <div class="bg-white border border-slate-200 rounded-[2rem] p-8 text-center shadow-sm relative group flex flex-col">
+                    <div class="bg-slate-50 w-full h-56 rounded-2xl flex items-center justify-center mb-6 overflow-hidden relative" id="svg-empty">
+                        <svg viewBox="0 0 200 100" class="h-full w-full max-w-[250px]" fill="none">
+                            <rect x="70" y="30" width="60" height="50" rx="8" fill="#e2e8f0" />
+                            <path d="M80 40h40M80 50h20" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round"/>
+                            <!-- Abstract Leaves falling -->
+                            <path d="M60 20 C65 10 75 10 75 20 C75 30 65 30 60 20Z" fill="#34d399" opacity="0.8" />
+                            <path d="M130 70 C135 60 145 60 145 70 C145 80 135 80 130 70Z" fill="#fbbf24" opacity="0.6" />
+                            <!-- Search Glass overlay -->
+                            <circle cx="100" cy="60" r="15" stroke="#f8fafc" stroke-width="4" fill="#0ea5e9" opacity="0.5"/>
+                            <line x1="110" y1="70" x2="120" y2="80" stroke="#f8fafc" stroke-width="4" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-lg">Empty State: Belum Ada Konten</h3>
+                    <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">Gunakan di halaman list QnA atau Artikel yang masih kosong.</p>
+                    <button onclick="copyElementHtml('svg-empty')" class="w-full bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 font-bold py-3 rounded-xl transition-colors border border-slate-200 flex justify-center items-center gap-2">
+                        <i data-lucide="copy" class="h-4 w-4"></i> Salin Ilustrasi SVG
+                    </button>
+                </div>
+
+                <!-- Empty State: 404 Tidak Ditemukan -->
+                <div class="bg-white border border-slate-200 rounded-[2rem] p-8 text-center shadow-sm relative group flex flex-col">
+                    <div class="bg-amber-50 w-full h-56 rounded-2xl flex items-center justify-center mb-6 overflow-hidden relative" id="svg-404">
+                        <svg viewBox="0 0 200 100" class="h-full w-full max-w-[250px]" fill="none">
+                            <text x="100" y="55" font-family="Inter, sans-serif" font-weight="900" font-size="55" fill="#fcd34d" text-anchor="middle">404</text>
+                            <path d="M30 80 Q100 95 170 80" stroke="#fbbf24" stroke-width="8" stroke-linecap="round" fill="none"/>
+                            <!-- Trees/Desert -->
+                            <circle cx="60" cy="80" r="10" fill="#f59e0b" />
+                            <circle cx="140" cy="80" r="15" fill="#d97706" />
+                            <circle cx="155" cy="85" r="10" fill="#f59e0b" />
+                            <!-- Star -->
+                            <path d="M100 10 L102 18 L110 20 L102 22 L100 30 L98 22 L90 20 L98 18 Z" fill="#34d399"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-lg">Empty State: Tidak Ditemukan (404)</h3>
+                    <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">Gunakan di halaman error Not Found atau hasil Search yang nihil.</p>
+                    <button onclick="copyElementHtml('svg-404')" class="w-full bg-slate-100 hover:bg-amber-50 text-slate-600 hover:text-amber-600 font-bold py-3 rounded-xl transition-colors border border-slate-200 flex justify-center items-center gap-2">
+                        <i data-lucide="copy" class="h-4 w-4"></i> Salin Ilustrasi SVG
+                    </button>
+                </div>
+
+                <!-- Hero Background Pattern -->
+                <div class="bg-white border border-slate-200 rounded-[2rem] p-8 text-center shadow-sm relative group flex flex-col md:col-span-2">
+                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 w-full h-64 rounded-2xl flex items-center justify-center mb-6 overflow-hidden relative" id="svg-hero">
+                        <svg viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice" class="w-full h-full" fill="none" opacity="0.15">
+                            <!-- Large Abstract Islamic Pattern & Waves Background -->
+                            <path d="M0 200 Q 200 300 400 200 T 800 200 V 400 H 0 Z" fill="#ffffff" />
+                            <circle cx="100" cy="100" r="150" stroke="#ffffff" stroke-width="2" />
+                            <circle cx="700" cy="300" r="200" stroke="#ffffff" stroke-width="2" />
+                            <path d="M400 50l20 40 40 20-40 20-20 40-20-40-40-20 40-20z" fill="#ffffff" />
+                            <path d="M700 80l10 20 20 10-20 10-10 20-10-20-20-10 20-10z" fill="#ffffff" />
+                            <path d="M100 300l15 30 30 15-30 15-15 30-15-30-30-15 30-15z" fill="#ffffff" />
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span class="text-white font-bold text-xl opacity-80 mix-blend-overlay">Preview Latar Belakang (Warna + Pattern)</span>
+                        </div>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-lg">Hero Background Pattern</h3>
+                    <p class="text-slate-500 text-sm mt-2 mb-6 w-full max-w-2xl mx-auto">SVG berukuran besar dengan pattern gelombang dan ornamen bintang Islami. Sangat cocok diletakkan di dalam kontainer dengan position <code>absolute</code> pada bagian Hero di Landing Page.</p>
+                    <button onclick="copyElementHtml('svg-hero')" class="w-full md:w-auto md:px-10 bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-teal-600 font-bold py-3 rounded-xl transition-colors border border-slate-200 flex justify-center items-center gap-2 mx-auto">
+                        <i data-lucide="copy" class="h-4 w-4"></i> Salin Ilustrasi Lebar
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Helper to copy text to clipboard with fallback for iFrame compatibility
+        function copyText(text) {
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.position = "fixed";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
+                    showToast();
+                } else {
+                    console.error('Gagal menyalin text (execCommand failed)');
+                }
+            } catch (err) {
+                console.error('Gagal menyalin text: ', err);
+            }
+        }
+
+        // Helper to get element HTML specifically for SVGs
+        function copyElementHtml(elementId) {
+            const el = document.getElementById(elementId);
+            if(el) {
+                // Get the SVG element inside the container
+                const svgEl = el.querySelector('svg');
+                if(svgEl) {
+                    let htmlToCopy = svgEl.outerHTML.trim();
+                    copyText(htmlToCopy);
+                } else {
+                    console.error('SVG not found inside element', elementId);
+                }
+            }
+        }
+
+        // Toast animation logic
+        let toastTimeout;
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

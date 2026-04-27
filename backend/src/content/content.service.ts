@@ -1,0 +1,76 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Injectable()
+export class ContentService {
+  constructor(private prisma: PrismaService) {}
+
+  async getTree(age?: string) {
+    // 1. Get all active nodes
+    const nodes = await this.prisma.contentNode.findMany({
+      where: { isActive: true },
+      orderBy: { order: 'asc' },
+    });
+
+    // 2. Filter by age if provided
+    let filteredNodes = nodes;
+    if (age && age !== 'Semua') {
+      filteredNodes = nodes.filter(node => node.ageGroups.includes(age));
+    }
+
+    // 3. Build tree
+    const buildTree = (parentId: string | null = null) => {
+      return filteredNodes
+        .filter(node => node.parentId === parentId)
+        .map(node => ({
+          ...node,
+          children: buildTree(node.id),
+        }));
+    };
+
+    return buildTree();
+  }
+
+  async getContentDetail(slug: string) {
+    const content = await this.prisma.contentItem.findUnique({
+      where: { slug, status: 'PUBLISHED' },
+      include: {
+        node: true,
+        qnaDetail: true,
+        articleDetail: true,
+        mediaDetail: true,
+        tags: { include: { tag: true } },
+      },
+    });
+
+    if (!content) {
+      throw new NotFoundException('Konten tidak ditemukan');
+    }
+
+    // Process related content (placeholder logic for now)
+    const related = await this.getRelatedContent(content.id, content.nodeId);
+
+    return { ...content, related };
+  }
+
+  private async getRelatedContent(contentId: string, nodeId: string) {
+    // Strategy 1: Same Node (excluding self), max 5
+    const sameNode = await this.prisma.contentItem.findMany({
+      where: {
+        nodeId,
+        id: { not: contentId },
+        status: 'PUBLISHED',
+      },
+      take: 5,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        type: true,
+        viewCount: true,
+      },
+    });
+
+    return sameNode;
+  }
+}
