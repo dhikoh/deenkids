@@ -30,7 +30,7 @@ import { EngagementModule } from './engagement/engagement.module';
     EditorModule,
     EngagementModule,
   ],
-  controllers: [],
+  controllers: [SeedController],
   providers: [],
 })
 export class AppModule {}

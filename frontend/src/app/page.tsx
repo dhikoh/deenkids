@@ -1,7 +1,21 @@
 import Link from "next/link";
 import { Search, ChevronRight, BookOpen, Star, ArrowRight } from "lucide-react";
+import { fetchContentTree } from "@/lib/api";
 
-export default function Home() {
+export default async function Home() {
+  let curriculumNodes = [];
+  try {
+    const response = await fetchContentTree();
+    curriculumNodes = response.data || [];
+  } catch (error) {
+    console.error("Failed to fetch curriculum tree:", error);
+    // Fallback data if backend is not reachable yet
+    curriculumNodes = [
+      { id: '1', title: 'Tauhid & Aqidah', description: 'Mengenal Allah dan rukun iman', slug: 'tauhid-aqidah' },
+      { id: '2', title: 'Ibadah Harian', description: 'Shalat, puasa, dan doa sehari-hari', slug: 'ibadah-harian' }
+    ];
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
@@ -78,24 +92,23 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {/* Category Cards */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
-              <div className="h-12 w-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Star className="h-6 w-6" />
-              </div>
-              <h3 className="font-bold text-slate-800 mb-1">Tauhid & Aqidah</h3>
-              <p className="text-xs text-slate-500">Mengenal Allah dan rukun iman</p>
-            </div>
+            {curriculumNodes.map((node: any, index: number) => (
+              <Link href={`/kurikulum/${node.slug}`} key={node.id}>
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group h-full">
+                  <div className={`h-12 w-12 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${index % 2 === 0 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                    {index % 2 === 0 ? <Star className="h-6 w-6" /> : <BookOpen className="h-6 w-6" />}
+                  </div>
+                  <h3 className="font-bold text-slate-800 mb-1">{node.title}</h3>
+                  <p className="text-xs text-slate-500">{node.description || 'Kumpulan materi edukasi anak'}</p>
+                </div>
+              </Link>
+            ))}
             
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
-              <div className="h-12 w-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <BookOpen className="h-6 w-6" />
+            {curriculumNodes.length === 0 && (
+              <div className="col-span-4 py-10 text-center text-slate-500">
+                Belum ada kurikulum yang ditambahkan. Silakan jalankan Seed.
               </div>
-              <h3 className="font-bold text-slate-800 mb-1">Ibadah Harian</h3>
-              <p className="text-xs text-slate-500">Shalat, puasa, dan doa sehari-hari</p>
-            </div>
-            
-            {/* Add more categories later */}
+            )}
           </div>
         </div>
       </section>
