@@ -56,3 +56,55 @@ export async function createContent(data: any, token: string) {
   }
   return res.json();
 }
+
+// Admin Endpoints
+export async function fetchReviewQueue(token: string, page = 1) {
+  const res = await fetch(`${API_BASE_URL}/admin/review?page=${page}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to fetch review queue');
+  return res.json();
+}
+
+export async function processReview(id: string, action: 'approve' | 'reject' | 'revision', notes: string, token: string) {
+  const res = await fetch(`${API_BASE_URL}/admin/review/${id}/${action}`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ notes }),
+  });
+  if (!res.ok) throw new Error(`Failed to ${action} content`);
+  return res.json();
+}
+
+// SuperAdmin Endpoints
+export async function fetchAiToggle(token: string) {
+  const res = await fetch(`${API_BASE_URL}/superadmin/settings/ai-toggle`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to fetch setting');
+  return res.json();
+}
+
+export async function updateAiToggle(enabled: boolean, token: string) {
+  const res = await fetch(`${API_BASE_URL}/superadmin/settings/ai-toggle`, {
+    method: 'PUT',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ enabled }),
+  });
+  if (!res.ok) throw new Error('Failed to update setting');
+  return res.json();
+}
+
+export async function fetchUsersList(token: string) {
+  const res = await fetch(`${API_BASE_URL}/superadmin/users`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to fetch users');
+  return res.json();
+}

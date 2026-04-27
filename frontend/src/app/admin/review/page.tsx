@@ -1,92 +1,146 @@
 "use client";
 
-import { useState } from "react";
-import { Check, X, AlertCircle, Edit, ExternalLink, Filter } from "lucide-react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { fetchReviewQueue, processReview } from "@/lib/api";
+import Cookies from "js-cookie";
+import toast from "react-hot-toast";
+import { ClipboardCheck, Check, X, Edit2, AlertCircle } from "lucide-react";
 
-export default function AdminReviewPage() {
-  const [activeTab, setActiveTab] = useState<"pending" | "history">("pending");
+export default function ReviewPage() {
+  const [queue, setQueue] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [activeNotes, setActiveNotes] = useState("");
+  const [showNotesFor, setShowNotesFor] = useState<string | null>(null);
+  const [actionType, setActionType] = useState<'approve' | 'reject' | 'revision' | null>(null);
 
-  const pendingReviews = [
-    { id: 1, title: "Kisah Sahabat Nabi: Umar bin Khattab", author: "Ahmad", date: "2 jam yang lalu", aiScore: 92, aiNotes: "Sangat baik. Dalil akurat.", status: "PENDING" },
-    { id: 2, title: "Adab Makan Menurut Sunnah", author: "Fatimah", date: "5 jam yang lalu", aiScore: 88, aiNotes: "Gunakan bahasa yang lebih sederhana untuk usia 3-5.", status: "PENDING" },
-    { id: 3, title: "Kenapa Kita Harus Shalat?", author: "Budi", date: "1 hari yang lalu", aiScore: 65, aiNotes: "Terlalu banyak kiasan filosofis, tidak cocok untuk anak kecil.", status: "PENDING" },
-  ];
+  useEffect(() => {
+    loadQueue();
+  }, []);
+
+  const loadQueue = async () => {
+    try {
+      const token = Cookies.get("token");
+      if (!token) return;
+      const response = await fetchReviewQueue(token);
+      setQueue(response.data || []);
+    } catch (error) {
+      toast.error("Gagal memuat antrean review");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleActionClick = (id: string, action: 'approve' | 'reject' | 'revision') => {
+    setShowNotesFor(id);
+    setActionType(action);
+    setActiveNotes("");
+  };
+
+  const submitAction = async (id: string) => {
+    if (!actionType) return;
+    setProcessingId(id);
+    try {
+      const token = Cookies.get("token");
+      if (!token) return;
+      await processReview(id, actionType, activeNotes, token);
+      toast.success(`Konten berhasil di-${actionType}`);
+      setShowNotesFor(null);
+      loadQueue(); // Reload queue
+    } catch (error: any) {
+      toast.error(error.message || "Gagal memproses review");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  if (isLoading) return <div className="p-8">Memuat antrean...</div>;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Antrean Review Konten</h1>
-          <p className="text-slate-500">Periksa dan setujui draf konten dari Editor sebelum dipublikasi.</p>
-        </div>
-        
-        <div className="flex bg-slate-100 p-1 rounded-lg">
-          <button 
-            onClick={() => setActiveTab("pending")}
-            className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'pending' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Menunggu (3)
-          </button>
-          <button 
-            onClick={() => setActiveTab("history")}
-            className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Riwayat
-          </button>
-        </div>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Review Konten</h1>
+        <p className="text-slate-500">Periksa konten dari Editor sebelum dipublikasikan.</p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-          <div className="flex items-center gap-2 text-slate-600 text-sm font-medium">
-            <Filter size={16} /> Filter: Semua Kategori
-          </div>
-        </div>
-
-        <div className="divide-y divide-slate-100">
-          {pendingReviews.map((item) => (
-            <div key={item.id} className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6 hover:bg-slate-50/50 transition-colors">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="px-2.5 py-1 bg-amber-100 text-amber-800 text-[10px] font-bold uppercase rounded">QnA</span>
-                  <h3 className="text-lg font-bold text-slate-800">{item.title}</h3>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-slate-500">
-                  <span>👤 {item.author}</span>
-                  <span>🕒 {item.date}</span>
-                </div>
-                
-                {/* AI Review Snippet */}
-                <div className="mt-4 bg-slate-100 p-3 rounded-xl border border-slate-200 flex gap-4 items-start">
-                  <div className={`flex flex-col items-center justify-center p-2 rounded-lg min-w-[60px] ${
-                    item.aiScore >= 90 ? 'bg-emerald-100 text-emerald-700' : 
-                    item.aiScore >= 75 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
-                  }`}>
-                    <span className="text-xs font-bold uppercase">AI Score</span>
-                    <span className="text-lg font-black">{item.aiScore}</span>
-                  </div>
-                  <div className="pt-1">
-                    <p className="text-sm font-bold text-slate-700 mb-1">Catatan AI Validator:</p>
-                    <p className="text-sm text-slate-600">{item.aiNotes}</p>
-                  </div>
-                </div>
+      <div className="space-y-4">
+        {queue.map((item) => (
+          <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="font-bold text-lg text-slate-800">{item.title}</h3>
+                <p className="text-sm text-slate-500">Oleh: <span className="font-medium text-slate-700">{item.author?.name || 'Unknown'}</span> • Tipe: {item.type} • Usia: {item.ageGroup}</p>
               </div>
-
-              <div className="flex lg:flex-col gap-2 shrink-0">
-                <Link href={`/admin/editor?id=${item.id}`} className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-colors w-full">
-                  <ExternalLink size={16} /> Pratinjau
-                </Link>
-                <button className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-sm transition-colors w-full">
-                  <Check size={16} /> Setujui
-                </button>
-                <button className="flex items-center justify-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl font-bold text-sm transition-colors w-full">
-                  <Edit size={16} /> Revisi
-                </button>
-              </div>
+              <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                <AlertCircle size={14} /> Menunggu Review
+              </span>
             </div>
-          ))}
-        </div>
+
+            {showNotesFor === item.id ? (
+              <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Catatan untuk Editor ({actionType === 'approve' ? 'Opsional' : 'Wajib'})
+                </label>
+                <textarea 
+                  value={activeNotes}
+                  onChange={(e) => setActiveNotes(e.target.value)}
+                  placeholder="Tambahkan alasan atau saran perbaikan..."
+                  className="w-full border-slate-300 rounded-lg p-3 text-sm focus:ring-emerald-500 focus:border-emerald-500 min-h-[100px] mb-3"
+                />
+                <div className="flex justify-end gap-2">
+                  <button 
+                    onClick={() => setShowNotesFor(null)}
+                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    onClick={() => submitAction(item.id)}
+                    disabled={processingId === item.id || (actionType !== 'approve' && !activeNotes.trim())}
+                    className={`px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors disabled:opacity-50 ${
+                      actionType === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' :
+                      actionType === 'reject' ? 'bg-rose-600 hover:bg-rose-700' :
+                      'bg-amber-500 hover:bg-amber-600'
+                    }`}
+                  >
+                    {processingId === item.id ? "Memproses..." : "Konfirmasi"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
+                <button 
+                  onClick={() => handleActionClick(item.id, 'approve')}
+                  className="flex items-center gap-1 px-4 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-sm font-bold transition-colors"
+                >
+                  <Check size={16} /> Setujui (Publish)
+                </button>
+                <button 
+                  onClick={() => handleActionClick(item.id, 'revision')}
+                  className="flex items-center gap-1 px-4 py-2 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg text-sm font-bold transition-colors"
+                >
+                  <Edit2 size={16} /> Minta Revisi
+                </button>
+                <button 
+                  onClick={() => handleActionClick(item.id, 'reject')}
+                  className="flex items-center gap-1 px-4 py-2 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-lg text-sm font-bold transition-colors"
+                >
+                  <X size={16} /> Tolak
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {queue.length === 0 && (
+          <div className="text-center p-12 bg-white rounded-2xl border border-slate-200 border-dashed">
+            <div className="inline-flex h-16 w-16 bg-emerald-50 rounded-full items-center justify-center text-emerald-500 mb-4">
+              <ClipboardCheck size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-800">Hore! Antrean Kosong</h3>
+            <p className="text-slate-500 mt-1">Tidak ada konten yang menunggu untuk direview saat ini.</p>
+          </div>
+        )}
       </div>
     </div>
   );
