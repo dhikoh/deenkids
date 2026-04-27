@@ -1,18 +1,45 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Edit3, Settings, Users, LogOut, ChevronLeft } from "lucide-react";
+import Cookies from "js-cookie";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<{name: string, role: string, email: string} | null>(null);
+
+  useEffect(() => {
+    // Read user from local storage
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    Cookies.remove('token');
+    localStorage.removeItem('user');
+    router.push('/login');
+  };
+
+  // Dynamic menu based on role
+  const isSuperAdmin = user?.role === 'SUPERADMIN';
+  const isAdminOrSuper = isSuperAdmin || user?.role === 'ADMIN';
 
   const menu = [
-    { name: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/admin" },
-    { name: "Tulis Konten", icon: <Edit3 size={20} />, href: "/admin/editor" },
-    { name: "Manajemen User", icon: <Users size={20} />, href: "/admin/users" },
-    { name: "Pengaturan", icon: <Settings size={20} />, href: "/admin/settings" },
-  ];
+    { name: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/admin", show: true },
+    { name: "Tulis Konten", icon: <Edit3 size={20} />, href: "/admin/editor", show: true },
+    // Only Admin & SuperAdmin can review
+    { name: "Review Konten", icon: <Edit3 size={20} />, href: "/admin/review", show: isAdminOrSuper },
+    // Only SuperAdmin
+    { name: "Manajemen User", icon: <Users size={20} />, href: "/admin/users", show: isSuperAdmin },
+    { name: "Pengaturan", icon: <Settings size={20} />, href: "/admin/settings", show: isSuperAdmin },
+  ].filter(m => m.show);
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans">
@@ -44,7 +71,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <ChevronLeft size={20} />
             Ke Halaman Utama
           </Link>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
+          >
             <LogOut size={20} />
             Keluar
           </button>
@@ -57,11 +87,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-end px-8 shadow-sm z-10">
           <div className="flex items-center gap-3">
             <div className="text-right hidden md:block">
-              <p className="text-sm font-bold text-slate-800">Admin Utama</p>
-              <p className="text-xs text-emerald-600 font-medium">SuperAdmin</p>
+              <p className="text-sm font-bold text-slate-800">{user?.name || 'Loading...'}</p>
+              <p className="text-xs text-emerald-600 font-medium">{user?.role || 'User'}</p>
             </div>
-            <div className="h-10 w-10 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center text-emerald-700 font-bold">
-              AU
+            <div className="h-10 w-10 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center text-emerald-700 font-bold uppercase">
+              {user?.name?.substring(0, 2) || 'DK'}
             </div>
           </div>
         </header>

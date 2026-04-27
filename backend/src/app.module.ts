@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { ContentModule } from './content/content.module';
 import { EditorModule } from './editor/editor.module';
 import { EngagementModule } from './engagement/engagement.module';
+import { AdminModule } from './admin/admin.module';
+import { SuperadminModule } from './superadmin/superadmin.module';
 import { SeedController } from './seed.controller';
 
 @Module({
@@ -30,6 +32,8 @@ import { SeedController } from './seed.controller';
     ContentModule,
     EditorModule,
     EngagementModule,
+    AdminModule,
+    SuperadminModule,
   ],
   controllers: [SeedController],
   providers: [],

@@ -2,11 +2,17 @@
 
 import { useState } from "react";
 import { CheckCircle, Save, Sparkles, AlertCircle, Plus, Trash2, ArrowRight } from "lucide-react";
+import toast from "react-hot-toast";
+import Cookies from "js-cookie";
+import { createContent } from "@/lib/api";
 
 export default function EditorPage() {
   const [title, setTitle] = useState("");
   const [useAi, setUseAi] = useState(true);
   const [dialogBlocks, setDialogBlocks] = useState([{ role: "anak", text: "" }]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [aiScore, setAiScore] = useState<number | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
   
   const addDialog = (role: "anak" | "ortu") => {
     setDialogBlocks([...dialogBlocks, { role, text: "" }]);
@@ -20,6 +26,46 @@ export default function EditorPage() {
 
   const removeDialog = (index: number) => {
     setDialogBlocks(dialogBlocks.filter((_, i) => i !== index));
+  };
+
+  const handleSave = async () => {
+    if (!title) {
+      return toast.error("Judul wajib diisi");
+    }
+
+    setIsSaving(true);
+    const token = Cookies.get("token");
+
+    try {
+      const payload = {
+        title,
+        type: "QNA",
+        nodeId: "tauhid-mengenal-allah", // Hardcoded for now until dynamic node fetch is implemented
+        ageGroup: "5-7",
+        useAi,
+        qnaDetail: {
+          question: title,
+          answerQuick: dialogBlocks[1]?.text || "",
+          dialogBlocks,
+          dalilBlocks: [],
+          analogyBlocks: [],
+          tipsBlocks: []
+        }
+      };
+
+      const result = await createContent(payload, token || "");
+      toast.success("Draft berhasil disimpan!");
+      
+      if (useAi && result.aiCheck) {
+        setAiScore(result.aiCheck.score);
+        setAiSuggestions(result.aiCheck.suggestions || []);
+      }
+
+    } catch (error: any) {
+      toast.error(error.message || "Gagal menyimpan konten");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -43,8 +89,12 @@ export default function EditorPage() {
               AI Checker (Manhaj)
             </span>
           </label>
-          <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2">
-            <Save size={18} /> Simpan Draft
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            <Save size={18} /> {isSaving ? "Menyimpan..." : "Simpan Draft"}
           </button>
         </div>
       </div>

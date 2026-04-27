@@ -1,7 +1,45 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Lock, Mail, ChevronLeft } from "lucide-react";
+import Cookies from "js-cookie";
+import toast from "react-hot-toast";
+import { login } from "@/lib/api";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      const data = await login({ email, password });
+      
+      // Store token securely in cookie (with 1 day expiry)
+      Cookies.set("token", data.accessToken, { expires: 1, path: "/" });
+      
+      // Store basic user info in localStorage for UI purposes
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+      
+      toast.success("Berhasil masuk!");
+      
+      // Redirect to admin dashboard
+      router.push("/admin");
+    } catch (error: any) {
+      toast.error(error.message || "Gagal masuk. Periksa email dan kata sandi Anda.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden">
@@ -23,8 +61,7 @@ export default function LoginPage() {
           </p>
         </div>
         
-        <form className="mt-8 space-y-6" action="#" method="POST">
-          <input type="hidden" name="remember" value="true" />
+        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           <div className="space-y-4">
             <div>
               <label htmlFor="email-address" className="sr-only">Alamat Email</label>
@@ -38,6 +75,8 @@ export default function LoginPage() {
                   type="email"
                   autoComplete="email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="appearance-none rounded-xl relative block w-full px-3 py-3 pl-10 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
                   placeholder="Alamat Email"
                 />
@@ -55,6 +94,8 @@ export default function LoginPage() {
                   type="password"
                   autoComplete="current-password"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none rounded-xl relative block w-full px-3 py-3 pl-10 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
                   placeholder="Kata Sandi"
                 />
@@ -62,32 +103,13 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900">
-                Ingat saya
-              </label>
-            </div>
-
-            <div className="text-sm">
-              <a href="#" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
-                Lupa kata sandi?
-              </a>
-            </div>
-          </div>
-
           <div>
             <button
-              type="button"
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all shadow-md hover:shadow-lg"
+              type="submit"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Masuk
+              {isLoading ? "Memproses..." : "Masuk"}
             </button>
           </div>
         </form>

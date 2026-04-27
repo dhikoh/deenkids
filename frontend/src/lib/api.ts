@@ -27,3 +27,32 @@ export async function triggerSeed() {
   const res = await fetch(`${API_BASE_URL}/seed`, { method: 'GET' });
   return res.json();
 }
+
+export async function login(data: any) {
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Login failed');
+  }
+  return res.json();
+}
+
+export async function createContent(data: any, token: string) {
+  const res = await fetch(`${API_BASE_URL}/editor/content`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to save draft');
+  }
+  return res.json();
+}
