@@ -5,6 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ContentModule } from './content/content.module';
+import { EditorModule } from './editor/editor.module';
 // import { EngagementModule } from './engagement/engagement.module';
 
 @Module({
@@ -26,6 +27,7 @@ import { ContentModule } from './content/content.module';
     // Feature Modules
     AuthModule,
     ContentModule,
+    EditorModule,
     // EngagementModule,
   ],
   controllers: [],
