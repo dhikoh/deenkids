@@ -9,17 +9,23 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // Security
-  app.use(helmet());
-
-  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
-    .split(',')
-    .map((url: string) => url.trim());
+  // CORS — must be configured BEFORE helmet
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  logger.log(`CORS allowed origins: ${frontendUrl}`);
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: frontendUrl.split(',').map((u: string) => u.trim()),
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   });
+
+  // Security — after CORS so helmet doesn't strip CORS headers
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   // Middleware
   app.use(cookieParser());
