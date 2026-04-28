@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { CheckCircle, Save, Sparkles, AlertCircle, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
-import { createContent, fetchAUTHORNodes, fetchAUTHORTags } from "@/lib/api";
+import { createContent, fetchEditorNodes, fetchEditorTags } from "@/lib/api";
 
 interface DialogBlock { role: "anak" | "ortu"; text: string }
 interface DalilBlock { arabic: string; translation: string; source: string }
@@ -39,8 +39,8 @@ export default function AUTHORPage() {
   useEffect(() => {
     const token = Cookies.get("access_token");
     if (token) {
-      fetchAUTHORNodes(token).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
-      fetchAUTHORTags(token).then(r => setAvailableTags(r.data || [])).catch(() => {});
+      fetchEditorNodes(token).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
+      fetchEditorTags(token).then(r => setAvailableTags(r.data || [])).catch(() => {});
     }
   }, []);
 

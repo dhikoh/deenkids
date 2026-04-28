@@ -57,7 +57,7 @@ export class ExportImportController {
   @Post('import')
   @ApiOperation({ summary: 'Import data from JSON' })
   @UseInterceptors(FileInterceptor('file'))
-  async importData(@UploadedFile() file: Express.Multer.File, @Body() body: { mode?: string }) {
+  async importData(@UploadedFile() file: any, @Body() body: { mode?: string }) {
     if (!file) throw new Error('File wajib diupload');
     const data = JSON.parse(file.buffer.toString());
     const mode = body.mode || 'skip'; // 'overwrite' | 'skip'

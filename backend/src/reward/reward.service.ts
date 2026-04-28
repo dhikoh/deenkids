@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class RewardService {
@@ -72,7 +73,8 @@ export class RewardService {
 
     // Notify superadmins
     await this.notificationService.notifySuperAdmins(
-      'WITHDRAWAL_REQUESTED',
+      userId,
+      NotificationType.WITHDRAWAL_REQUESTED,
       'Permintaan Withdrawal Baru',
       `${user.name} meminta withdrawal ${pointsAmount} poin (Rp ${rupiahAmount.toLocaleString('id-ID')})`,
       '/admin/withdrawal-inbox',
@@ -114,9 +116,10 @@ export class RewardService {
       REJECTED: 'ditolak',
       DISBURSED: 'telah ditransfer',
     };
-    await this.notificationService.create({
+    await this.notificationService.createNotification({
       userId: request.userId,
-      type: 'WITHDRAWAL_PROCESSED',
+      actorId: adminId,
+      type: NotificationType.WITHDRAWAL_PROCESSED,
       title: `Withdrawal ${statusMap[action]}`,
       message: `Withdrawal Rp ${request.rupiahAmount.toLocaleString('id-ID')} ${statusMap[action]}.${notes ? ` Catatan: ${notes}` : ''}`,
       linkUrl: '/admin/rewards',

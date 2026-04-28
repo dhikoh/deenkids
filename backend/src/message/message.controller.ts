@@ -39,7 +39,7 @@ export class MessageController {
   @ApiOperation({ summary: 'Send a message (text or image)' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('attachment'))
-  async sendMessage(@Req() req: any, @Body() body: { receiverId: string; text?: string }, @UploadedFile() file?: Express.Multer.File) {
+  async sendMessage(@Req() req: any, @Body() body: { receiverId: string; text?: string }, @UploadedFile() file?: any) {
     const attachmentUrl = file ? `/uploads/messages/${file.filename}` : undefined;
     const attachmentType = file ? file.mimetype : undefined;
     return this.messageService.sendMessage(req.user.id, body.receiverId, body.text, attachmentUrl, attachmentType);

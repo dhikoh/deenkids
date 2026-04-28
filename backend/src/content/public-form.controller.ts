@@ -39,7 +39,7 @@ export class PublicFormController {
   }))
   async submitDonation(
     @Body() body: { name: string; amount: string; method: string; message?: string },
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() file?: any,
   ) {
     const donation = await this.prisma.donationSubmission.create({
       data: {
