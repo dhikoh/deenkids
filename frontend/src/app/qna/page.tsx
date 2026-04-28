@@ -27,7 +27,7 @@ export default function QnaPage() {
         </div>
         <h1 className="text-3xl font-extrabold text-slate-800 mb-2">Bank Pertanyaan Anak</h1>
         <p className="text-slate-500 max-w-xl font-medium">
-          Temukan jawaban cerdas, ringkas, dan syar'i — sesuai Alquran, Hadis dan Pemahaman para Sahabat.
+          Temukan jawaban cerdas, ringkas, dan syar'i — sesuai Alquran dan Hadist.
         </p>
       </div>
 

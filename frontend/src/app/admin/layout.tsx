@@ -33,7 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const menu = [
     { name: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/admin", show: true },
-    { name: "Tulis Konten", icon: <PenLine size={20} />, href: "/admin/editor", show: true },
+    { name: "Tulis Konten", icon: <PenLine size={20} />, href: "/admin/AUTHOR", show: true },
     { name: "Konten Saya", icon: <FileText size={20} />, href: "/admin/my-contents", show: true },
     { name: "Review Konten", icon: <CheckCircle size={20} />, href: "/admin/review", show: isAdminOrSuper },
     { name: "Kelola Struktur", icon: <FolderTree size={20} />, href: "/admin/structure", show: isAdminOrSuper },

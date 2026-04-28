@@ -12,7 +12,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get('JWT_SECRET', 'deenkids-super-secret-key-2026'),
+        secret: config.get('JWT_SECRET', 'adably-super-secret-key-2026'),
         signOptions: { expiresIn: '15m' },
       }),
     }),

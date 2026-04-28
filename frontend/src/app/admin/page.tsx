@@ -24,17 +24,17 @@ export default function AdminDashboardPage() {
 
   if (isLoading) return <div className="p-8 text-center text-slate-500">Memuat dashboard...</div>;
 
-  const isEditor = stats?.role === "EDITOR";
-  const roleLabel = stats?.role === "SUPERADMIN" ? "SuperAdmin" : stats?.role === "ADMIN" ? "Admin" : "Editor";
+  const isAUTHOR = stats?.role === "AUTHOR";
+  const roleLabel = stats?.role === "SUPERADMIN" ? "SuperAdmin" : stats?.role === "ADMIN" ? "Admin" : "AUTHOR";
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Dashboard {roleLabel}</h1>
-          <p className="text-slate-500">{isEditor ? "Pantau statistik konten Anda." : "Ringkasan performa dan metrik DeenKids Platform."}</p>
+          <p className="text-slate-500">{isAUTHOR ? "Pantau statistik konten Anda." : "Ringkasan performa dan metrik Adably Platform."}</p>
         </div>
-        <Link href="/admin/editor" className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm transition-colors flex items-center gap-2">
+        <Link href="/admin/AUTHOR" className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm transition-colors flex items-center gap-2">
           <PenLine size={18} /> Tulis Konten Baru
         </Link>
       </div>
@@ -65,25 +65,25 @@ export default function AdminDashboardPage() {
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600"><FileText size={24} /></div>
             <div>
-              <p className="text-sm font-medium text-slate-500">{isEditor ? "Total Konten Saya" : "Konten Aktif"}</p>
-              <h3 className="text-2xl font-bold text-slate-800">{isEditor ? (stats?.totalContents || 0) : (stats?.publishedContent || 0)}</h3>
+              <p className="text-sm font-medium text-slate-500">{isAUTHOR ? "Total Konten Saya" : "Konten Aktif"}</p>
+              <h3 className="text-2xl font-bold text-slate-800">{isAUTHOR ? (stats?.totalContents || 0) : (stats?.publishedContent || 0)}</h3>
             </div>
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-sky-100 flex items-center justify-center text-sky-600">{isEditor ? <AlertCircle size={24} /> : <Users size={24} />}</div>
+            <div className="w-12 h-12 rounded-full bg-sky-100 flex items-center justify-center text-sky-600">{isAUTHOR ? <AlertCircle size={24} /> : <Users size={24} />}</div>
             <div>
-              <p className="text-sm font-medium text-slate-500">{isEditor ? "Menunggu Review" : "Editor Aktif"}</p>
-              <h3 className="text-2xl font-bold text-slate-800">{isEditor ? (stats?.inReview || 0) : (stats?.totalEditors || 0)}</h3>
+              <p className="text-sm font-medium text-slate-500">{isAUTHOR ? "Menunggu Review" : "AUTHOR Aktif"}</p>
+              <h3 className="text-2xl font-bold text-slate-800">{isAUTHOR ? (stats?.inReview || 0) : (stats?.totalAUTHORs || 0)}</h3>
             </div>
           </div>
         </div>
       </div>
 
       {/* Review Queue (Admin/SuperAdmin) */}
-      {!isEditor && stats?.recentReviewQueue?.length > 0 && (
+      {!isAUTHOR && stats?.recentReviewQueue?.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center">
             <h3 className="font-bold text-slate-800 flex items-center gap-2"><AlertCircle className="text-amber-500" /> Menunggu Persetujuan</h3>

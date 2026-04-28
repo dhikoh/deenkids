@@ -25,7 +25,7 @@ export class SuperadminService {
   }
 
   async updateUserRole(userId: string, role: string) {
-    const validRoles = ['EDITOR', 'ADMIN', 'SUPERADMIN'];
+    const validRoles = ['AUTHOR', 'ADMIN', 'SUPERADMIN'];
     if (!validRoles.includes(role)) {
       throw new BadRequestException('Role tidak valid');
     }
@@ -70,7 +70,7 @@ export class SuperadminService {
 
     return {
       enabled: enabled?.value === 'true',
-      title: title?.value || 'Dukung DeenKids 🌱',
+      title: title?.value || 'Dukung Adably 🌱',
       message: message?.value || 'Dukung kami terus menyajikan konten parenting islami secara gratis.',
       methods: methods?.value ? JSON.parse(methods.value) : [],
     };

@@ -54,10 +54,10 @@ export default function LoginPage() {
             </div>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-            Masuk ke DeenKids
+            Masuk ke Adably
           </h2>
           <p className="mt-2 text-center text-sm text-slate-600">
-            Platform edukasi Islami — Sesuai Alquran, Hadis dan Pemahaman para Sahabat
+            Platform edukasi Islami — sesuai Alquran dan Hadist
           </p>
         </div>
         

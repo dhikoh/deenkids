@@ -54,7 +54,7 @@ export class ContentController {
     ]);
     return {
       enabled: enabled?.value === 'true',
-      title: title?.value || 'Dukung DeenKids 🌱',
+      title: title?.value || 'Dukung Adably 🌱',
       message: message?.value || '',
       methods: methods?.value ? JSON.parse(methods.value) : [],
     };

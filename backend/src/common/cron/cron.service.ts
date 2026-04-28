@@ -19,7 +19,7 @@ export class CronService {
   @Cron(CronExpression.EVERY_HOUR)
   async recalcAuthorStats() {
     const authors = await this.prisma.user.findMany({
-      where: { role: { in: ['EDITOR', 'ADMIN', 'SUPERADMIN'] } },
+      where: { role: { in: ['AUTHOR', 'ADMIN', 'SUPERADMIN'] } },
       select: { id: true },
     });
 

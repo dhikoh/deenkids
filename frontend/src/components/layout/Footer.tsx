@@ -14,7 +14,7 @@ export function Footer() {
               <span className="font-bold text-xl text-white">Deen<span className="text-emerald-400">Kids</span></span>
             </Link>
             <p className="text-sm leading-relaxed">
-              Platform parenting Islami untuk orang tua. Sesuai dengan Alquran, Hadis dan Pemahaman para Sahabat.
+              Platform parenting Islami untuk orang tua. Sesuai Alquran dan Hadist.
             </p>
           </div>
 
@@ -40,7 +40,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-slate-800 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
-          <p>&copy; {new Date().getFullYear()} DeenKids. Hak cipta dilindungi.</p>
+          <p>&copy; {new Date().getFullYear()} Adably. Hak cipta dilindungi.</p>
           <p className="flex items-center gap-1">Dibuat dengan <Heart className="h-3 w-3 text-rose-400 fill-rose-400" /> untuk generasi Muslim.</p>
         </div>
       </div>

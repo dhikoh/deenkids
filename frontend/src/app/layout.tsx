@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const amiri = Amiri({ weight: ["400", "700"], subsets: ["arabic"], variable: "--font-amiri" });
 
 export const metadata: Metadata = {
-  title: "DeenKids - Platform Parenting Islami",
-  description: "Perpustakaan parenting Islam untuk orang tua — sesuai Alquran, Hadis dan pemahaman para Sahabat.",
+  title: "Adably - Belajar Islam Anak",
+  description: "Perpustakaan parenting Islam untuk orang tua — sesuai Alquran dan Hadist.",
 };
 
 export default function RootLayout({

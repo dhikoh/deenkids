@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
 import { CheckCircle, Save, Sparkles, AlertCircle, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
-import { createContent, fetchEditorNodes, fetchEditorTags } from "@/lib/api";
+import { createContent, fetchAUTHORNodes, fetchAUTHORTags } from "@/lib/api";
 
 interface DialogBlock { role: "anak" | "ortu"; text: string }
 interface DalilBlock { arabic: string; translation: string; source: string }
 interface AnalogyBlock { title: string; text: string }
 interface TipBlock { text: string }
 
-export default function EditorPage() {
+export default function AUTHORPage() {
   const [contentType, setContentType] = useState<"QNA" | "ARTICLE">("QNA");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -39,8 +39,8 @@ export default function EditorPage() {
   useEffect(() => {
     const token = Cookies.get("access_token");
     if (token) {
-      fetchEditorNodes(token).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
-      fetchEditorTags(token).then(r => setAvailableTags(r.data || [])).catch(() => {});
+      fetchAUTHORNodes(token).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
+      fetchAUTHORTags(token).then(r => setAvailableTags(r.data || [])).catch(() => {});
     }
   }, []);
 
@@ -86,7 +86,7 @@ export default function EditorPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Block Editor CMS</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Block AUTHOR CMS</h1>
           <p className="text-slate-500">Buat konten interaktif — Tanya Jawab atau Artikel.</p>
         </div>
         <div className="flex items-center gap-3">

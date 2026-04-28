@@ -8,7 +8,7 @@ import { Gift, Plus, Trash2, Save } from "lucide-react";
 
 export default function DonationPage() {
   const [enabled, setEnabled] = useState(false);
-  const [title, setTitle] = useState("Dukung DeenKids 🌱");
+  const [title, setTitle] = useState("Dukung Adably 🌱");
   const [message, setMessage] = useState("");
   const [methods, setMethods] = useState<{ type: string; label: string; value: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -234,7 +234,7 @@ export class EditorService {
       throw new ForbiddenException('Anda tidak memiliki akses');
     }
     // Only allow delete if not published (safety)
-    if (existing.status === 'PUBLISHED' && userRole === 'EDITOR') {
+    if (existing.status === 'PUBLISHED' && userRole === 'AUTHOR') {
       throw new ForbiddenException('Editor tidak bisa menghapus konten yang sudah dipublikasikan');
     }
 

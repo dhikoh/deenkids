@@ -28,7 +28,7 @@ export default function ArtikelPage() {
         </div>
         <h1 className="text-3xl font-extrabold text-slate-800 mb-2">Artikel & Panduan</h1>
         <p className="text-slate-500 max-w-xl font-medium">
-          Kumpulan artikel parenting Islami — sesuai Alquran, Hadis dan Pemahaman para Sahabat.
+          Kumpulan artikel parenting Islami — sesuai Alquran dan Hadist.
         </p>
       </div>
 

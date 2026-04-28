@@ -60,7 +60,7 @@ export default function ReviewPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Review Konten</h1>
-        <p className="text-slate-500">Periksa konten dari Editor sebelum dipublikasikan.</p>
+        <p className="text-slate-500">Periksa konten dari AUTHOR sebelum dipublikasikan.</p>
       </div>
 
       <div className="space-y-4">
@@ -79,7 +79,7 @@ export default function ReviewPage() {
             {showNotesFor === item.id ? (
               <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Catatan untuk Editor ({actionType === 'approve' ? 'Opsional' : 'Wajib'})
+                  Catatan untuk AUTHOR ({actionType === 'approve' ? 'Opsional' : 'Wajib'})
                 </label>
                 <textarea 
                   value={activeNotes}

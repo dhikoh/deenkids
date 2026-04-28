@@ -49,7 +49,7 @@ export class SeedController {
     await this.prisma.user.create({
       data: {
         name: 'Super Admin',
-        email: process.env.INIT_ADMIN_EMAIL || 'admin@deenkids.com',
+        email: process.env.INIT_ADMIN_EMAIL || 'admin@adably.id',
         passwordHash: hashedPassword,
         role: 'SUPERADMIN',
       },

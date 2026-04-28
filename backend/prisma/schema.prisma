@@ -10,7 +10,7 @@ datasource db {
 enum Role {
   SUPERADMIN
   ADMIN
-  EDITOR
+  AUTHOR
 }
 
 model User {
@@ -18,7 +18,7 @@ model User {
   email            String                 @unique
   passwordHash     String
   name             String
-  role             Role                   @default(EDITOR)
+  role             Role                   @default(AUTHOR)
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
   refreshTokens    RefreshToken[]
@@ -267,6 +267,8 @@ enum NotificationType {
   CONTENT_APPROVED
   CONTENT_REJECTED
   REVISION_NEEDED
+  DONATION_RECEIVED
+  FEEDBACK_RECEIVED
   SYSTEM_ALERT
 }
 
@@ -321,4 +323,27 @@ model AuditLog {
   details    Json?
   ipAddress  String?
   createdAt  DateTime @default(now())
+}
+
+model DonationSubmission {
+  id          String    @id @default(uuid())
+  name        String
+  amount      Int       // Rupiah
+  method      String    // "bank" | "qris" | "saweria"
+  message     String?
+  proofUrl    String?   // file path to proof image
+  isVerified  Boolean   @default(false)
+  verifiedAt  DateTime?
+  verifiedBy  String?
+  createdAt   DateTime  @default(now())
+}
+
+model FeedbackSubmission {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?
+  type      String   // "kritik" | "saran" | "pertanyaan"
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

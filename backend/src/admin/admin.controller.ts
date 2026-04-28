@@ -14,7 +14,7 @@ export class AdminController {
 
   // ── Dashboard Stats ──
   @Get('dashboard/stats')
-  @Roles('EDITOR', 'ADMIN', 'SUPERADMIN')
+  @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
   @ApiOperation({ summary: 'Get dashboard statistics based on user role' })
   async getDashboardStats(@Req() req: any) {
     return this.adminService.getDashboardStats(req.user.id, req.user.role);

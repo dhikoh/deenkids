@@ -91,11 +91,11 @@ export async function recordView(contentId: string, userHash: string) {
 }
 
 // ═══════════════════════════════════════
-// EDITOR (Authenticated) ENDPOINTS
+// AUTHOR (Authenticated) ENDPOINTS
 // ═══════════════════════════════════════
 
 export async function createContent(data: any, token: string) {
-  return apiFetch(`${API_BASE_URL}/editor/content`, {
+  return apiFetch(`${API_BASE_URL}/AUTHOR/content`, {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(data),
@@ -106,19 +106,19 @@ export async function fetchMyContents(token: string, status?: string, page?: num
   const params = new URLSearchParams();
   if (status) params.append('status', status);
   if (page) params.append('page', page.toString());
-  return apiFetch(`${API_BASE_URL}/editor/my-contents?${params.toString()}`, {
+  return apiFetch(`${API_BASE_URL}/AUTHOR/my-contents?${params.toString()}`, {
     headers: authHeaders(token),
   });
 }
 
 export async function fetchContentForEdit(token: string, id: string) {
-  return apiFetch(`${API_BASE_URL}/editor/content/${id}`, {
+  return apiFetch(`${API_BASE_URL}/AUTHOR/content/${id}`, {
     headers: authHeaders(token),
   });
 }
 
 export async function updateContent(id: string, data: any, token: string) {
-  return apiFetch(`${API_BASE_URL}/editor/content/${id}`, {
+  return apiFetch(`${API_BASE_URL}/AUTHOR/content/${id}`, {
     method: 'PUT',
     headers: authHeaders(token),
     body: JSON.stringify(data),
@@ -126,27 +126,27 @@ export async function updateContent(id: string, data: any, token: string) {
 }
 
 export async function deleteContent(id: string, token: string) {
-  return apiFetch(`${API_BASE_URL}/editor/content/${id}`, {
+  return apiFetch(`${API_BASE_URL}/AUTHOR/content/${id}`, {
     method: 'DELETE',
     headers: authHeaders(token),
   });
 }
 
 export async function submitContentForReview(id: string, token: string) {
-  return apiFetch(`${API_BASE_URL}/editor/content/${id}/submit`, {
+  return apiFetch(`${API_BASE_URL}/AUTHOR/content/${id}/submit`, {
     method: 'POST',
     headers: authHeaders(token),
   });
 }
 
-export async function fetchEditorNodes(token: string) {
-  return apiFetch(`${API_BASE_URL}/editor/nodes`, {
+export async function fetchAUTHORNodes(token: string) {
+  return apiFetch(`${API_BASE_URL}/AUTHOR/nodes`, {
     headers: authHeaders(token),
   });
 }
 
-export async function fetchEditorTags(token: string) {
-  return apiFetch(`${API_BASE_URL}/editor/tags`, {
+export async function fetchAUTHORTags(token: string) {
+  return apiFetch(`${API_BASE_URL}/AUTHOR/tags`, {
     headers: authHeaders(token),
   });
 }

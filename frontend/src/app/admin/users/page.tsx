@@ -9,7 +9,7 @@ import { Users, Shield, Edit2, X } from "lucide-react";
 const roleColors: Record<string, string> = {
   SUPERADMIN: "bg-purple-100 text-purple-700 border-purple-200",
   ADMIN: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  EDITOR: "bg-sky-100 text-sky-700 border-sky-200",
+  AUTHOR: "bg-sky-100 text-sky-700 border-sky-200",
 };
 
 export default function UsersPage() {
@@ -57,10 +57,10 @@ export default function UsersPage() {
             </div>
             <p className="text-sm text-slate-500 mb-4">Mengubah role untuk <span className="font-bold text-slate-800">{editUser.name}</span></p>
             <div className="space-y-2 mb-6">
-              {["EDITOR", "ADMIN", "SUPERADMIN"].map(role => (
+              {["AUTHOR", "ADMIN", "SUPERADMIN"].map(role => (
                 <button key={role} onClick={() => setSelectedRole(role)} className={`w-full p-3 rounded-xl border text-left font-bold text-sm transition-all ${selectedRole === role ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-200" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
                   <Shield size={16} className="inline mr-2" />{role}
-                  {role === "EDITOR" && <span className="text-xs font-normal text-slate-400 ml-2">— Hanya menulis konten</span>}
+                  {role === "AUTHOR" && <span className="text-xs font-normal text-slate-400 ml-2">— Hanya menulis konten</span>}
                   {role === "ADMIN" && <span className="text-xs font-normal text-slate-400 ml-2">— Review + struktur</span>}
                   {role === "SUPERADMIN" && <span className="text-xs font-normal text-slate-400 ml-2">— Akses penuh</span>}
                 </button>

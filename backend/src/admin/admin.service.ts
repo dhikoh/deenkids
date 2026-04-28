@@ -9,7 +9,7 @@ export class AdminService {
 
   // ── Dashboard Stats ──
   async getDashboardStats(userId: string, userRole: string) {
-    if (userRole === 'EDITOR') {
+    if (userRole === 'AUTHOR') {
       // Editor sees their own stats only
       const [totalContents, published, inReview, totalViews, totalLikes] = await Promise.all([
         this.prisma.contentItem.count({ where: { authorId: userId } }),
@@ -19,7 +19,7 @@ export class AdminService {
         this.prisma.contentItem.aggregate({ where: { authorId: userId }, _sum: { likeCount: true } }),
       ]);
       return {
-        role: 'EDITOR',
+        role: 'AUTHOR',
         totalContents,
         published,
         inReview,
@@ -35,7 +35,7 @@ export class AdminService {
       this.prisma.contentItem.count(),
       this.prisma.contentItem.count({ where: { status: 'PUBLISHED' } }),
       this.prisma.contentItem.count({ where: { status: 'REVIEW' } }),
-      this.prisma.user.count({ where: { role: 'EDITOR' } }),
+      this.prisma.user.count({ where: { role: 'AUTHOR' } }),
       this.prisma.contentItem.findMany({
         where: { status: 'REVIEW' },
         include: { author: { select: { name: true } }, aiCheckResults: { orderBy: { checkedAt: 'desc' }, take: 1 } },

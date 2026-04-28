@@ -11,10 +11,10 @@ async function main() {
 
   // ===================== USERS =====================
   const superadmin = await prisma.user.upsert({
-    where: { email: 'superadmin@deenkids.com' },
+    where: { email: 'superadmin@adably.id' },
     update: {},
     create: {
-      email: 'superadmin@deenkids.com',
+      email: 'superadmin@adably.id',
       passwordHash: await bcrypt.hash('superadmin123', salt),
       name: 'Abu Ahmad (SuperAdmin)',
       role: Role.SUPERADMIN,
@@ -22,10 +22,10 @@ async function main() {
   });
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@deenkids.com' },
+    where: { email: 'admin@adably.id' },
     update: {},
     create: {
-      email: 'admin@deenkids.com',
+      email: 'admin@adably.id',
       passwordHash: await bcrypt.hash('admin123', salt),
       name: 'Ummu Salma (Admin)',
       role: Role.ADMIN,
@@ -33,13 +33,13 @@ async function main() {
   });
 
   const editor = await prisma.user.upsert({
-    where: { email: 'editor@deenkids.com' },
+    where: { email: 'editor@adably.id' },
     update: {},
     create: {
-      email: 'editor@deenkids.com',
+      email: 'editor@adably.id',
       passwordHash: await bcrypt.hash('editor123', salt),
       name: 'Ustadz Farid (Editor)',
-      role: Role.EDITOR,
+      role: Role.AUTHOR,
     },
   });
   console.log('✅ Users created (SuperAdmin, Admin, Editor)');
@@ -58,7 +58,7 @@ async function main() {
   await prisma.setting.upsert({
     where: { key: 'donation_title' },
     update: {},
-    create: { group: 'donation', key: 'donation_title', value: 'Dukung DeenKids 🌱' },
+    create: { group: 'donation', key: 'donation_title', value: 'Dukung Adably 🌱' },
   });
   await prisma.setting.upsert({
     where: { key: 'donation_message' },
@@ -70,8 +70,8 @@ async function main() {
     update: {},
     create: { group: 'donation', key: 'donation_methods', value: JSON.stringify([
       { type: 'bank', label: 'BSI (Bank Syariah Indonesia)', value: '7171234567' },
-      { type: 'qris', label: 'QRIS', value: 'https://example.com/qris-deenkids' },
-      { type: 'saweria', label: 'Saweria', value: 'https://saweria.co/deenkids' },
+      { type: 'qris', label: 'QRIS', value: 'https://example.com/qris-Adably' },
+      { type: 'saweria', label: 'Saweria', value: 'https://saweria.co/Adably' },
     ]) },
   });
   console.log('✅ Settings initialized (AI + Donation)');
@@ -362,9 +362,9 @@ async function main() {
 
   console.log('\n🎉 Seeding Complete!');
   console.log('📋 Login Credentials:');
-  console.log('   SuperAdmin: superadmin@deenkids.com / superadmin123');
-  console.log('   Admin:      admin@deenkids.com / admin123');
-  console.log('   Editor:     editor@deenkids.com / editor123');
+  console.log('   SuperAdmin: superadmin@adably.id / superadmin123');
+  console.log('   Admin:      admin@adably.id / admin123');
+  console.log('   Editor:     editor@adably.id / editor123');
 }
 
 main()

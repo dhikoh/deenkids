@@ -36,7 +36,7 @@ export function Navbar() {
               <BookOpen className="h-5 w-5" />
             </div>
             <span className={`font-bold text-2xl tracking-tight transition-colors ${scrolled ? 'text-slate-800' : 'text-slate-800 lg:text-white'}`}>
-              Deen<span className="text-emerald-500">Kids</span>
+              Adab<span className="text-emerald-500">ly</span>
             </span>
           </Link>
         </div>

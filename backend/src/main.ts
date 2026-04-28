@@ -47,8 +47,8 @@ async function bootstrap() {
   // Swagger Documentation (only in development)
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('DeenKids API')
-      .setDescription('Platform Parenting Islami — Sesuai Alquran, Hadis dan Pemahaman para Sahabat')
+      .setTitle('Adably API')
+      .setDescription('Platform Parenting Islami — sesuai Alquran dan Hadist')
       .setVersion('1.0')
       .addBearerAuth()
       .build();
@@ -62,6 +62,6 @@ async function bootstrap() {
   const port = process.env.PORT || 4000;
   await app.listen(port);
 
-  logger.log(`🚀 DeenKids Backend running on port ${port}`);
+  logger.log(`🚀 Adably Backend running on port ${port}`);
 }
 bootstrap();
