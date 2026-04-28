@@ -53,9 +53,28 @@ async function main() {
   await prisma.setting.upsert({
     where: { key: 'donation_enabled' },
     update: {},
-    create: { group: 'general', key: 'donation_enabled', value: 'true' },
+    create: { group: 'donation', key: 'donation_enabled', value: 'true' },
   });
-  console.log('✅ Settings initialized');
+  await prisma.setting.upsert({
+    where: { key: 'donation_title' },
+    update: {},
+    create: { group: 'donation', key: 'donation_title', value: 'Dukung DeenKids 🌱' },
+  });
+  await prisma.setting.upsert({
+    where: { key: 'donation_message' },
+    update: {},
+    create: { group: 'donation', key: 'donation_message', value: 'Bantu kami terus menyajikan konten parenting islami secara gratis untuk keluarga Muslim.' },
+  });
+  await prisma.setting.upsert({
+    where: { key: 'donation_methods' },
+    update: {},
+    create: { group: 'donation', key: 'donation_methods', value: JSON.stringify([
+      { type: 'bank', label: 'BSI (Bank Syariah Indonesia)', value: '7171234567' },
+      { type: 'qris', label: 'QRIS', value: 'https://example.com/qris-deenkids' },
+      { type: 'saweria', label: 'Saweria', value: 'https://saweria.co/deenkids' },
+    ]) },
+  });
+  console.log('✅ Settings initialized (AI + Donation)');
 
   // ===================== TAGS =====================
   const tagNames = ['Tauhid', 'Aqidah', 'Ibadah', 'Shalat', 'Adab', 'Akhlak', 'Kisah Nabi', 'Doa', 'Puasa', 'Quran'];
