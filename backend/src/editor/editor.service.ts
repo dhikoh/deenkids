@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiCheckerService } from './ai-checker.service';
 import { CreateContentDto, UpdateContentDto } from './dto/editor.dto';
@@ -12,23 +12,14 @@ export class EditorService {
   ) {}
 
   async createContent(authorId: string, dto: CreateContentDto) {
-    const slug = slugify(dto.title, { lower: true, strict: true });
+    const slug = slugify(dto.title, { lower: true, strict: true }) + '-' + Date.now().toString(36);
 
-    const existing = await this.prisma.contentItem.findUnique({ where: { slug } });
-    if (existing) throw new BadRequestException('Judul sudah digunakan (slug duplicate)');
-
-    // Verify the author's role — only SUPERADMIN can directly publish
     const author = await this.prisma.user.findUnique({ where: { id: authorId }, select: { role: true } });
-    const forcedStatus = author?.role === 'SUPERADMIN' ? (dto.status || 'REVIEW') : 'REVIEW';
+    const forcedStatus = author?.role === 'SUPERADMIN' ? (dto.status || 'DRAFT') : 'DRAFT';
 
     let aiResult = null;
-
-    // Optional AI Validation
     if (dto.useAiChecker) {
       aiResult = await this.aiChecker.validateContent(dto);
-      if (aiResult.score < 70) {
-        // We can either block it or save as draft with issues
-      }
     }
 
     const content = await this.prisma.contentItem.create({
@@ -51,8 +42,8 @@ export class EditorService {
       await this.prisma.qnaDetail.create({
         data: {
           contentId: content.id,
-          question: dto.qnaDetail.question,
-          answerQuick: dto.qnaDetail.answerQuick,
+          question: dto.qnaDetail.question || dto.title,
+          answerQuick: dto.qnaDetail.answerQuick || '',
           dialogBlocks: dto.qnaDetail.dialogBlocks || [],
           dalilBlocks: dto.qnaDetail.dalilBlocks || [],
           analogyBlocks: dto.qnaDetail.analogyBlocks || [],
@@ -69,7 +60,25 @@ export class EditorService {
       });
     }
 
-    // Save AI Result History
+    // Handle tags
+    if (dto.tags && dto.tags.length > 0) {
+      for (const tagName of dto.tags) {
+        const tag = await this.prisma.contentTag.upsert({
+          where: { slug: slugify(tagName, { lower: true, strict: true }) },
+          update: { usageCount: { increment: 1 } },
+          create: {
+            name: tagName,
+            slug: slugify(tagName, { lower: true, strict: true }),
+            usageCount: 1,
+          },
+        });
+        await this.prisma.contentItemTag.create({
+          data: { contentId: content.id, tagId: tag.id },
+        });
+      }
+    }
+
+    // Save AI Result
     if (aiResult) {
       await this.prisma.aiCheckResult.create({
         data: {
@@ -82,6 +91,195 @@ export class EditorService {
       });
     }
 
-    return content;
+    return { data: content, aiCheck: aiResult };
+  }
+
+  async getMyContents(authorId: string, status?: string, page: number = 1) {
+    const limit = 20;
+    const skip = (page - 1) * limit;
+    const where: any = { authorId };
+    if (status) where.status = status;
+
+    const [data, total] = await Promise.all([
+      this.prisma.contentItem.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          node: { select: { title: true, slug: true } },
+          tags: { include: { tag: true } },
+          _count: { select: { views: true, likes: true, ratings: true } },
+        },
+      }),
+      this.prisma.contentItem.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getContentForEdit(userId: string, userRole: string, contentId: string) {
+    const content = await this.prisma.contentItem.findUnique({
+      where: { id: contentId },
+      include: {
+        node: true,
+        qnaDetail: true,
+        articleDetail: true,
+        mediaDetail: true,
+        tags: { include: { tag: true } },
+        reviewHistory: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          include: { reviewer: { select: { name: true } } },
+        },
+      },
+    });
+
+    if (!content) throw new NotFoundException('Konten tidak ditemukan');
+    if (content.authorId !== userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
+      throw new ForbiddenException('Anda tidak memiliki akses ke konten ini');
+    }
+
+    return { data: content };
+  }
+
+  async updateContent(userId: string, userRole: string, contentId: string, dto: UpdateContentDto) {
+    const existing = await this.prisma.contentItem.findUnique({ where: { id: contentId } });
+    if (!existing) throw new NotFoundException('Konten tidak ditemukan');
+    if (existing.authorId !== userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
+      throw new ForbiddenException('Anda tidak memiliki akses ke konten ini');
+    }
+
+    // Update main content
+    const updated = await this.prisma.contentItem.update({
+      where: { id: contentId },
+      data: {
+        title: dto.title,
+        description: dto.description,
+        type: dto.type,
+        ageGroup: dto.ageGroup,
+        nodeId: dto.nodeId,
+        metaTitle: dto.metaTitle,
+        metaDesc: dto.metaDesc,
+        // Reset to draft if was in revision
+        status: existing.status === 'REVISION' ? 'DRAFT' : existing.status,
+      },
+    });
+
+    // Update QnA Detail
+    if (dto.type === 'QNA' && dto.qnaDetail) {
+      await this.prisma.qnaDetail.upsert({
+        where: { contentId },
+        update: {
+          question: dto.qnaDetail.question,
+          answerQuick: dto.qnaDetail.answerQuick,
+          dialogBlocks: dto.qnaDetail.dialogBlocks || [],
+          dalilBlocks: dto.qnaDetail.dalilBlocks || [],
+          analogyBlocks: dto.qnaDetail.analogyBlocks || [],
+          tipsBlocks: dto.qnaDetail.tipsBlocks || [],
+        },
+        create: {
+          contentId,
+          question: dto.qnaDetail.question || dto.title,
+          answerQuick: dto.qnaDetail.answerQuick || '',
+          dialogBlocks: dto.qnaDetail.dialogBlocks || [],
+          dalilBlocks: dto.qnaDetail.dalilBlocks || [],
+          analogyBlocks: dto.qnaDetail.analogyBlocks || [],
+          tipsBlocks: dto.qnaDetail.tipsBlocks || [],
+        },
+      });
+    }
+
+    // Update Article Detail
+    if (dto.type === 'ARTICLE' && dto.articleDetail) {
+      await this.prisma.articleDetail.upsert({
+        where: { contentId },
+        update: {
+          coverUrl: dto.articleDetail.coverUrl,
+          blocks: dto.articleDetail.blocks || [],
+        },
+        create: {
+          contentId,
+          coverUrl: dto.articleDetail.coverUrl,
+          blocks: dto.articleDetail.blocks || [],
+        },
+      });
+    }
+
+    // Update tags: clear old, add new
+    if (dto.tags) {
+      await this.prisma.contentItemTag.deleteMany({ where: { contentId } });
+      for (const tagName of dto.tags) {
+        const tag = await this.prisma.contentTag.upsert({
+          where: { slug: slugify(tagName, { lower: true, strict: true }) },
+          update: { usageCount: { increment: 1 } },
+          create: { name: tagName, slug: slugify(tagName, { lower: true, strict: true }), usageCount: 1 },
+        });
+        await this.prisma.contentItemTag.create({
+          data: { contentId, tagId: tag.id },
+        });
+      }
+    }
+
+    return { data: updated, message: 'Konten berhasil diperbarui' };
+  }
+
+  async deleteContent(userId: string, userRole: string, contentId: string) {
+    const existing = await this.prisma.contentItem.findUnique({ where: { id: contentId } });
+    if (!existing) throw new NotFoundException('Konten tidak ditemukan');
+    if (existing.authorId !== userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
+      throw new ForbiddenException('Anda tidak memiliki akses');
+    }
+    // Only allow delete if not published (safety)
+    if (existing.status === 'PUBLISHED' && userRole === 'EDITOR') {
+      throw new ForbiddenException('Editor tidak bisa menghapus konten yang sudah dipublikasikan');
+    }
+
+    await this.prisma.contentItem.delete({ where: { id: contentId } });
+    return { message: 'Konten berhasil dihapus' };
+  }
+
+  async submitForReview(userId: string, contentId: string) {
+    const content = await this.prisma.contentItem.findUnique({ where: { id: contentId } });
+    if (!content) throw new NotFoundException('Konten tidak ditemukan');
+    if (content.authorId !== userId) throw new ForbiddenException('Bukan konten Anda');
+    if (!['DRAFT', 'REVISION'].includes(content.status)) {
+      throw new BadRequestException('Hanya konten Draft atau Revisi yang bisa diajukan');
+    }
+
+    await this.prisma.contentItem.update({
+      where: { id: contentId },
+      data: { status: 'REVIEW' },
+    });
+
+    return { message: 'Konten berhasil diajukan untuk review' };
+  }
+
+  async getNodes() {
+    const nodes = await this.prisma.contentNode.findMany({
+      where: { isActive: true },
+      orderBy: { order: 'asc' },
+      select: { id: true, slug: true, title: true, type: true, parentId: true, ageGroups: true },
+    });
+
+    // Build nested tree for dropdown
+    const buildTree = (parentId: string | null = null): any[] => {
+      return nodes
+        .filter(n => n.parentId === parentId)
+        .map(n => ({ ...n, children: buildTree(n.id) }));
+    };
+
+    return { data: buildTree() };
+  }
+
+  async getTags() {
+    const tags = await this.prisma.contentTag.findMany({
+      orderBy: { usageCount: 'desc' },
+      take: 100,
+    });
+    return { data: tags };
   }
 }

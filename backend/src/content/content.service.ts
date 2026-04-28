@@ -74,8 +74,8 @@ export class ContentService {
     return sameNode;
   }
 
-  async getList(query: { age?: string; sort?: string; page?: number; limit?: number }) {
-    const { age, sort = 'newest', page = 1, limit = 10 } = query;
+  async getList(query: { age?: string; sort?: string; page?: number; limit?: number; type?: string }) {
+    const { age, sort = 'newest', page = 1, limit = 10, type } = query;
     const skip = (page - 1) * limit;
 
     let orderBy: any = { publishedAt: 'desc' };
@@ -91,7 +91,6 @@ export class ContentService {
         orderBy = { avgRating: 'desc' };
         break;
       case 'popular':
-        // For Prisma, we sort by multiple fields to simulate popular
         orderBy = [
           { likeCount: 'desc' },
           { avgRating: 'desc' },
@@ -105,6 +104,9 @@ export class ContentService {
     const where: any = { status: 'PUBLISHED' };
     if (age && age !== 'Semua') {
       where.ageGroup = age;
+    }
+    if (type) {
+      where.type = type;
     }
 
     const [data, total] = await Promise.all([
@@ -122,8 +124,12 @@ export class ContentService {
           viewCount: true,
           likeCount: true,
           avgRating: true,
+          ratingCount: true,
           publishedAt: true,
-          author: { select: { name: true } }
+          description: true,
+          author: { select: { name: true } },
+          node: { select: { title: true } },
+          tags: { include: { tag: { select: { name: true, slug: true } } } },
         }
       }),
       this.prisma.contentItem.count({ where })

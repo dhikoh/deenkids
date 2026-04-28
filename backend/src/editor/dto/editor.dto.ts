@@ -57,6 +57,10 @@ export class CreateContentDto {
   @IsObject()
   @IsOptional()
   mediaDetail?: any;
+
+  @ApiProperty({ type: [String] })
+  @IsOptional()
+  tags?: string[];
 }
 
 export class UpdateContentDto extends CreateContentDto {}
