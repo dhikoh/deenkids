@@ -11,7 +11,7 @@ export function Footer() {
               <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-1.5 rounded-lg">
                 <BookOpen className="h-5 w-5" />
               </div>
-              <span className="font-bold text-xl text-white">Deen<span className="text-emerald-400">Kids</span></span>
+              <span className="font-bold text-xl text-white">Adab<span className="text-emerald-400">ly</span></span>
             </Link>
             <p className="text-sm leading-relaxed">
               Platform parenting Islami untuk orang tua. Sesuai Alquran dan Hadist.
