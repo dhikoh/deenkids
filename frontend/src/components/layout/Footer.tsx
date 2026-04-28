@@ -23,7 +23,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link href="/" className="hover:text-emerald-400 transition-colors">Beranda</Link></li>
               <li><Link href="/kurikulum" className="hover:text-emerald-400 transition-colors">Kurikulum</Link></li>
-              <li><Link href="/qna" className="hover:text-emerald-400 transition-colors">QnA Anak</Link></li>
+              <li><Link href="/qna" className="hover:text-emerald-400 transition-colors">Tanya Jawab</Link></li>
               <li><Link href="/artikel" className="hover:text-emerald-400 transition-colors">Artikel</Link></li>
             </ul>
           </div>

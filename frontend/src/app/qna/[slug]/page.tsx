@@ -18,7 +18,7 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 pt-28 max-w-3xl">
       <Link href="/qna" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-8 font-bold text-sm">
-        <ChevronLeft className="h-4 w-4 mr-1" /> Kembali ke Bank QnA
+        <ChevronLeft className="h-4 w-4 mr-1" /> Kembali ke Tanya Jawab
       </Link>
 
       <div className="mb-8">

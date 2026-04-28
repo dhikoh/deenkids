@@ -17,7 +17,7 @@ export default function SettingsPage() {
 
   const loadSettings = async () => {
     try {
-      const token = Cookies.get("token");
+      const token = Cookies.get("access_token");
       if (!token) return;
       const data = await fetchAiToggle(token);
       setAiEnabled(data.aiEnabled);
@@ -31,7 +31,7 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const token = Cookies.get("token");
+      const token = Cookies.get("access_token");
       if (!token) return;
       await updateAiToggle(aiEnabled, token);
       toast.success("Pengaturan berhasil disimpan");

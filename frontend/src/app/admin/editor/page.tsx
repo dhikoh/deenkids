@@ -34,7 +34,7 @@ export default function EditorPage() {
     }
 
     setIsSaving(true);
-    const token = Cookies.get("token");
+    const token = Cookies.get("access_token");
 
     try {
       const payload = {

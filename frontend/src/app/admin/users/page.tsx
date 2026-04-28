@@ -16,7 +16,7 @@ export default function UsersPage() {
 
   const loadUsers = async () => {
     try {
-      const token = Cookies.get("token");
+      const token = Cookies.get("access_token");
       if (!token) return;
       const data = await fetchUsersList(token);
       setUsers(data);
