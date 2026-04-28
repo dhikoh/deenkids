@@ -377,3 +377,105 @@ export async function updateAnnouncementAdmin(data: any, token: string) {
     body: JSON.stringify(data),
   });
 }
+
+// ═══════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════
+
+export async function searchContent(q: string, type?: string, age?: string, page?: number) {
+  const params = new URLSearchParams({ q });
+  if (type) params.set('type', type);
+  if (age) params.set('age', age);
+  if (page) params.set('page', String(page));
+  return apiFetch(`${API_BASE_URL}/content/search?${params}`);
+}
+
+// ═══════════════════════════════════════
+// USER MANAGEMENT
+// ═══════════════════════════════════════
+
+export async function createUser(data: any, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/users`, { method: 'POST', headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export async function updateUser(id: string, data: any, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/users/${id}`, { method: 'PUT', headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export async function deleteUser(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/users/${id}`, { method: 'DELETE', headers: authHeaders(token) });
+}
+
+export async function resetUserPassword(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/users/${id}/reset-password`, { method: 'PUT', headers: authHeaders(token) });
+}
+
+// ═══════════════════════════════════════
+// PROFILE
+// ═══════════════════════════════════════
+
+export async function fetchProfile(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/profile`, { headers: authHeaders(token) });
+}
+
+export async function updateProfile(data: any, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/profile`, { method: 'PUT', headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export async function updateBankInfo(data: any, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/profile/bank`, { method: 'PUT', headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+// ═══════════════════════════════════════
+// REWARDS
+// ═══════════════════════════════════════
+
+export async function fetchPointBalance(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/points/balance`, { headers: authHeaders(token) });
+}
+
+export async function fetchPointLedger(token: string, page = 1) {
+  return apiFetch(`${API_BASE_URL}/admin/points/ledger?page=${page}`, { headers: authHeaders(token) });
+}
+
+export async function requestWithdrawal(pointsAmount: number, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/points/withdraw`, { method: 'POST', headers: authHeaders(token), body: JSON.stringify({ pointsAmount }) });
+}
+
+export async function fetchLeaderboard(token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/points/leaderboard`, { headers: authHeaders(token) });
+}
+
+export async function fetchWithdrawals(token: string, page = 1) {
+  return apiFetch(`${API_BASE_URL}/superadmin/withdrawals?page=${page}`, { headers: authHeaders(token) });
+}
+
+export async function processWithdrawal(id: string, action: string, token: string, notes?: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/withdrawals/${id}/process`, { method: 'PUT', headers: authHeaders(token), body: JSON.stringify({ action, notes }) });
+}
+
+export async function fetchRewardSettings(token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/reward-settings`, { headers: authHeaders(token) });
+}
+
+export async function updateRewardSettings(data: any, token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/reward-settings`, { method: 'PUT', headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+// ═══════════════════════════════════════
+// EXPORT / IMPORT / BACKUP
+// ═══════════════════════════════════════
+
+export async function triggerBackup(token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/backup/trigger`, { method: 'POST', headers: authHeaders(token) });
+}
+
+export async function fetchBackupList(token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/backup/list`, { headers: authHeaders(token) });
+}
+
+export async function fetchAuditLogs(token: string, page = 1, action?: string) {
+  const params = new URLSearchParams({ page: String(page) });
+  if (action) params.set('action', action);
+  return apiFetch(`${API_BASE_URL}/superadmin/audit-log?${params}`, { headers: authHeaders(token) });
+}

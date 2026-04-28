@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, Menu, UserCircle, BookOpen, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -61,9 +62,11 @@ export function Navbar() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
-          <button className={`p-2.5 rounded-full transition-colors ${scrolled ? 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-600' : 'text-slate-600 lg:text-white/80 hover:bg-white/20'}`}>
+          <Link href="/search" className={`p-2.5 rounded-full transition-colors ${scrolled ? 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-600' : 'text-slate-600 lg:text-white/80 hover:bg-white/20'}`}>
             <Search className="h-5 w-5" />
-          </button>
+          </Link>
+
+          <LanguageSwitcher />
           
           <Link href="/login" className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm rounded-full transition-all hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5">
             <UserCircle className="h-5 w-5" />

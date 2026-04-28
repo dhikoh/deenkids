@@ -3,6 +3,7 @@ import { Search, ChevronRight, BookOpen, Star, ArrowRight, Sparkles } from "luci
 import { fetchContentTree } from "@/lib/api";
 import LandingDonation from "@/components/LandingDonation";
 import LandingFeedback from "@/components/LandingFeedback";
+import HeroSearchForm from "@/components/HeroSearchForm";
 
 export default async function Home() {
   let curriculumNodes = [];
@@ -39,15 +40,7 @@ export default async function Home() {
           <p className="max-w-2xl text-lg text-slate-600 md:text-xl mb-12 font-medium">
             Temukan jawaban syar&#39;i, analogi sederhana, dan dalil shahih dalam hitungan detik.
           </p>
-          <div className="w-full max-w-2xl bg-white/80 backdrop-blur-xl p-2.5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-white/50 flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-grow flex items-center">
-              <Search className="absolute left-4 h-5 w-5 text-emerald-500" />
-              <input type="text" placeholder="Cari: Kenapa kita shalat?" className="w-full h-14 pl-12 pr-4 bg-transparent outline-none text-slate-700 placeholder:text-slate-400 font-medium text-lg" />
-            </div>
-            <button className="h-14 px-8 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
-              Cari Jawaban <ArrowRight className="h-5 w-5" />
-            </button>
-          </div>
+          <HeroSearchForm />
           <div className="flex flex-wrap justify-center items-center gap-3 mt-10">
             <p className="text-slate-500 font-semibold text-sm mr-2 hidden sm:block">Filter Cepat:</p>
             {['Balita (3-5)', 'Anak (5-7)', 'Pramuka (7-10)'].map((age, i) => (

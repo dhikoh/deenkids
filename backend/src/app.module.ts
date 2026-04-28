@@ -12,6 +12,8 @@ import { EngagementModule } from './engagement/engagement.module';
 import { AdminModule } from './admin/admin.module';
 import { SuperadminModule } from './superadmin/superadmin.module';
 import { NotificationModule } from './notification/notification.module';
+import { RewardModule } from './reward/reward.module';
+import { MessageModule } from './message/message.module';
 import { SeedController } from './seed.controller';
 import { CronService } from './common/cron/cron.service';
 
@@ -35,6 +37,8 @@ import { CronService } from './common/cron/cron.service';
     AdminModule,
     SuperadminModule,
     NotificationModule,
+    RewardModule,
+    MessageModule,
   ],
   controllers: [SeedController],
   providers: [

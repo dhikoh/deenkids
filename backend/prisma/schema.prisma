@@ -19,6 +19,13 @@ model User {
   passwordHash     String
   name             String
   role             Role                   @default(AUTHOR)
+  phone            String?
+  bio              String?
+  bankName         String?
+  bankAccount      String?
+  bankHolder       String?
+  points           Int                    @default(0)
+  locale           String                 @default("id")
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
   refreshTokens    RefreshToken[]
@@ -28,6 +35,11 @@ model User {
   notifications    InternalNotification[] @relation("NotifiedUser")
   sentNotification InternalNotification[] @relation("NotifierUser")
   rewards          Reward[]
+  pointLedger      PointLedger[]
+  withdrawals      WithdrawalRequest[]
+  conversationsA   Conversation[]         @relation("ConversationA")
+  conversationsB   Conversation[]         @relation("ConversationB")
+  sentMessages     Message[]
 }
 
 model RefreshToken {
@@ -269,6 +281,10 @@ enum NotificationType {
   REVISION_NEEDED
   DONATION_RECEIVED
   FEEDBACK_RECEIVED
+  POINTS_EARNED
+  WITHDRAWAL_REQUESTED
+  WITHDRAWAL_PROCESSED
+  NEW_MESSAGE
   SYSTEM_ALERT
 }
 
@@ -347,3 +363,57 @@ model FeedbackSubmission {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+model PointLedger {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int
+  type      String   // EARNED | BONUS | WITHDRAWAL
+  reason    String
+  contentId String?
+  createdAt DateTime @default(now())
+}
+
+model WithdrawalRequest {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointsAmount Int
+  rupiahAmount Int
+  bankName     String
+  bankAccount  String
+  bankHolder   String
+  status       String    @default("PENDING")
+  processedBy  String?
+  processedAt  DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+}
+
+model Conversation {
+  id             String    @id @default(uuid())
+  participantAId String
+  participantBId String
+  participantA   User      @relation("ConversationA", fields: [participantAId], references: [id])
+  participantB   User      @relation("ConversationB", fields: [participantBId], references: [id])
+  lastMessageAt  DateTime  @default(now())
+  messages       Message[]
+  createdAt      DateTime  @default(now())
+
+  @@unique([participantAId, participantBId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  text           String?
+  attachmentUrl  String?
+  attachmentType String?
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+}
+

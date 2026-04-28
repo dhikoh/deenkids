@@ -93,6 +93,21 @@ async function main() {
     create: { group: 'announcement', key: 'announcement_type', value: 'info' },
   });
 
+  // Reward settings
+  const rewardSettings = [
+    { group: 'reward', key: 'point_per_approved', value: '10' },
+    { group: 'reward', key: 'point_views_milestone', value: '5' },
+    { group: 'reward', key: 'point_likes_milestone', value: '3' },
+    { group: 'reward', key: 'point_to_rupiah', value: '1000' },
+    { group: 'reward', key: 'min_withdrawal_points', value: '50' },
+    { group: 'reward', key: 'max_submit_per_day', value: '5' },
+    { group: 'ai', key: 'ai_api_key', value: '' },
+  ];
+  for (const s of rewardSettings) {
+    await prisma.setting.upsert({ where: { key: s.key }, update: {}, create: s });
+  }
+  console.log('✅ Reward & AI settings initialized');
+
   // ===================== TAGS =====================
   const tagNames = ['Tauhid', 'Aqidah', 'Ibadah', 'Shalat', 'Adab', 'Akhlak', 'Kisah Nabi', 'Doa', 'Puasa', 'Quran'];
   const tags: Record<string, any> = {};

@@ -83,4 +83,79 @@ export class CronService {
     }
     this.logger.log(`🗑️ Cleaned up ${deleted} proof images older than 3 months`);
   }
+
+  // Award bonus points for engagement milestones
+  @Cron(CronExpression.EVERY_HOUR)
+  async checkEngagementMilestones() {
+    const contents = await this.prisma.contentItem.findMany({
+      where: { status: 'PUBLISHED' },
+      select: { id: true, authorId: true, viewCount: true, likeCount: true, title: true },
+    });
+
+    const settingRows = await this.prisma.setting.findMany({ where: { key: { in: ['point_views_milestone', 'point_likes_milestone'] } } });
+    const settings = Object.fromEntries(settingRows.map(s => [s.key, s.value]));
+    const viewBonus = parseInt(settings.point_views_milestone || '5');
+    const likeBonus = parseInt(settings.point_likes_milestone || '3');
+
+    let awarded = 0;
+    for (const c of contents) {
+      const viewMilestones = Math.floor(c.viewCount / 500);
+      if (viewMilestones > 0) {
+        const existing = await this.prisma.pointLedger.count({
+          where: { contentId: c.id, type: 'BONUS', reason: { startsWith: 'Bonus views' } },
+        });
+        if (viewMilestones > existing) {
+          await this.prisma.$transaction([
+            this.prisma.pointLedger.create({ data: { userId: c.authorId, amount: viewBonus, type: 'BONUS', reason: `Bonus views ${viewMilestones * 500}: ${c.title}`, contentId: c.id } }),
+            this.prisma.user.update({ where: { id: c.authorId }, data: { points: { increment: viewBonus } } }),
+          ]);
+          awarded++;
+        }
+      }
+      const likeMilestones = Math.floor(c.likeCount / 50);
+      if (likeMilestones > 0) {
+        const existing = await this.prisma.pointLedger.count({
+          where: { contentId: c.id, type: 'BONUS', reason: { startsWith: 'Bonus likes' } },
+        });
+        if (likeMilestones > existing) {
+          await this.prisma.$transaction([
+            this.prisma.pointLedger.create({ data: { userId: c.authorId, amount: likeBonus, type: 'BONUS', reason: `Bonus likes ${likeMilestones * 50}: ${c.title}`, contentId: c.id } }),
+            this.prisma.user.update({ where: { id: c.authorId }, data: { points: { increment: likeBonus } } }),
+          ]);
+          awarded++;
+        }
+      }
+    }
+    if (awarded > 0) this.logger.log(`🏆 Awarded ${awarded} engagement bonuses`);
+  }
+
+  // Daily database backup
+  @Cron('0 2 * * *') // Every day at 2AM
+  async dailyDatabaseBackup() {
+    const dir = join(process.cwd(), 'backups');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    const filename = `adably-backup-${new Date().toISOString().slice(0, 10)}.sql`;
+    const filepath = join(dir, filename);
+    const dbUrl = process.env.DATABASE_URL || '';
+
+    try {
+      const { execSync } = require('child_process');
+      execSync(`pg_dump "${dbUrl}" > "${filepath}"`, { timeout: 120000 });
+      this.logger.log(`💾 Backup berhasil: ${filename}`);
+    } catch (e: any) {
+      this.logger.warn(`⚠️ Backup gagal: ${e.message}`);
+    }
+
+    // Cleanup backups older than 7 days
+    try {
+      const files = fs.readdirSync(dir).filter(f => f.endsWith('.sql')).sort();
+      if (files.length > 7) {
+        for (const old of files.slice(0, files.length - 7)) {
+          fs.unlinkSync(join(dir, old));
+        }
+        this.logger.log(`🧹 Cleaned up ${files.length - 7} old backups`);
+      }
+    } catch {}
+  }
 }

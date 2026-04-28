@@ -43,6 +43,42 @@ export class ContentController {
     return { data: tags };
   }
 
+  @Get('search')
+  @ApiOperation({ summary: 'Search content by query' })
+  @ApiQuery({ name: 'q', required: true })
+  @ApiQuery({ name: 'type', required: false })
+  @ApiQuery({ name: 'age', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  async search(
+    @Query('q') q: string,
+    @Query('type') type?: string,
+    @Query('age') age?: string,
+    @Query('page') page?: string,
+  ) {
+    if (!q || q.length < 2) return { data: [], meta: { total: 0 } };
+    const take = 20;
+    const skip = ((page ? parseInt(page) : 1) - 1) * take;
+    const where: any = {
+      status: 'PUBLISHED',
+      OR: [
+        { title: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+      ],
+    };
+    if (type) where.type = type;
+    if (age) where.ageGroup = age;
+
+    const [data, total] = await Promise.all([
+      this.prisma.contentItem.findMany({
+        where, take, skip,
+        orderBy: { publishedAt: 'desc' },
+        select: { id: true, title: true, slug: true, description: true, type: true, ageGroup: true, viewCount: true, likeCount: true, avgRating: true, publishedAt: true },
+      }),
+      this.prisma.contentItem.count({ where }),
+    ]);
+    return { data, meta: { page: page ? parseInt(page) : 1, totalPages: Math.ceil(total / take), total } };
+  }
+
   @Get('donation')
   @ApiOperation({ summary: 'Get public donation settings' })
   async getDonation() {
