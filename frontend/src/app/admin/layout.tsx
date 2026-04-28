@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift } from "lucide-react";
 import Cookies from "js-cookie";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -34,10 +34,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const menu = [
     { name: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/admin", show: true },
     { name: "Tulis Konten", icon: <PenLine size={20} />, href: "/admin/editor", show: true },
-    // Only Admin & SuperAdmin can review
+    { name: "Konten Saya", icon: <FileText size={20} />, href: "/admin/my-contents", show: true },
     { name: "Review Konten", icon: <CheckCircle size={20} />, href: "/admin/review", show: isAdminOrSuper },
-    // Only SuperAdmin
+    { name: "Kelola Struktur", icon: <FolderTree size={20} />, href: "/admin/structure", show: isAdminOrSuper },
     { name: "Manajemen User", icon: <Users size={20} />, href: "/admin/users", show: isSuperAdmin },
+    { name: "Donasi", icon: <Gift size={20} />, href: "/admin/donation", show: isSuperAdmin },
     { name: "Pengaturan", icon: <Settings size={20} />, href: "/admin/settings", show: isSuperAdmin },
   ].filter(m => m.show);
 
