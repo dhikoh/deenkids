@@ -3,21 +3,31 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift } from "lucide-react";
+import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Megaphone } from "lucide-react";
 import Cookies from "js-cookie";
+import { fetchUnreadCount } from "@/lib/api";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<{name: string, role: string, email: string} | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    // Read user from local storage
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
+      if (storedUser) setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    if (token) {
+      fetchUnreadCount(token).then(r => setUnreadCount(r.count || 0)).catch(() => {});
+      const interval = setInterval(() => {
+        fetchUnreadCount(token).then(r => setUnreadCount(r.count || 0)).catch(() => {});
+      }, 30000);
+      return () => clearInterval(interval);
     }
   }, []);
 
@@ -27,18 +37,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/login');
   };
 
-  // Dynamic menu based on role
   const isSuperAdmin = user?.role === 'SUPERADMIN';
   const isAdminOrSuper = isSuperAdmin || user?.role === 'ADMIN';
 
   const menu = [
     { name: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/admin", show: true },
-    { name: "Tulis Konten", icon: <PenLine size={20} />, href: "/admin/AUTHOR", show: true },
+    { name: "Tulis Konten", icon: <PenLine size={20} />, href: "/admin/editor", show: true },
     { name: "Konten Saya", icon: <FileText size={20} />, href: "/admin/my-contents", show: true },
+    { name: "Inbox", icon: <Bell size={20} />, href: "/admin/inbox", show: true, badge: unreadCount },
     { name: "Review Konten", icon: <CheckCircle size={20} />, href: "/admin/review", show: isAdminOrSuper },
     { name: "Kelola Struktur", icon: <FolderTree size={20} />, href: "/admin/structure", show: isAdminOrSuper },
+    { name: "Donasi Masuk", icon: <DollarSign size={20} />, href: "/admin/donation-inbox", show: isSuperAdmin },
+    { name: "Kritik & Saran", icon: <MessageSquare size={20} />, href: "/admin/feedback", show: isSuperAdmin },
     { name: "Manajemen User", icon: <Users size={20} />, href: "/admin/users", show: isSuperAdmin },
-    { name: "Donasi", icon: <Gift size={20} />, href: "/admin/donation", show: isSuperAdmin },
+    { name: "Donasi Settings", icon: <Gift size={20} />, href: "/admin/donation", show: isSuperAdmin },
     { name: "Pengaturan", icon: <Settings size={20} />, href: "/admin/settings", show: isSuperAdmin },
   ].filter(m => m.show);
 
@@ -51,13 +63,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-1.5 rounded-lg shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
               <LayoutDashboard size={20} />
             </div>
-            <span className="font-extrabold text-slate-800 text-xl tracking-tight">Deen<span className="text-emerald-500">Kids</span></span>
+            <span className="font-extrabold text-slate-800 text-xl tracking-tight">Adab<span className="text-emerald-500">ly</span></span>
           </Link>
         </div>
         
-        <nav className="flex-1 py-6 flex flex-col gap-2 px-4 overflow-y-auto">
+        <nav className="flex-1 py-6 flex flex-col gap-1.5 px-4 overflow-y-auto">
           <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Menu Utama</p>
-          {menu.map((item) => {
+          {menu.map((item: any) => {
             const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin');
             return (
               <Link
@@ -72,7 +84,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className={`${isActive ? "text-emerald-600" : "text-slate-400"}`}>
                   {item.icon}
                 </div>
-                {item.name}
+                <span className="flex-1">{item.name}</span>
+                {item.badge > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">{item.badge > 99 ? '99+' : item.badge}</span>
+                )}
               </Link>
             );
           })}
@@ -95,27 +110,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Topbar */}
         <header className="h-24 flex items-center justify-between px-8 z-10">
           <div>
             <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Halo, {user?.name?.split(' ')[0] || 'Admin'} 👋</h1>
             <p className="text-sm font-medium text-slate-500">Selamat datang kembali di panel kontrol.</p>
           </div>
           
-          <div className="flex items-center gap-4 bg-white p-2 pr-4 rounded-full shadow-sm border border-slate-100">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold uppercase shadow-inner">
-              {user?.name?.substring(0, 2) || 'DK'}
-            </div>
-            <div className="text-right hidden md:block">
-              <p className="text-sm font-bold text-slate-800 leading-tight">{user?.name || 'Loading...'}</p>
-              <div className="inline-flex items-center px-2 py-0.5 mt-0.5 rounded-full bg-emerald-50 border border-emerald-100">
-                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wide">{user?.role || 'User'}</p>
+          <div className="flex items-center gap-4">
+            <Link href="/admin/inbox" className="relative p-2.5 rounded-full hover:bg-emerald-50 transition-colors">
+              <Bell size={22} className="text-slate-500" />
+              {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+            </Link>
+            <div className="flex items-center gap-4 bg-white p-2 pr-4 rounded-full shadow-sm border border-slate-100">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold uppercase shadow-inner">
+                {user?.name?.substring(0, 2) || 'AD'}
+              </div>
+              <div className="text-right hidden md:block">
+                <p className="text-sm font-bold text-slate-800 leading-tight">{user?.name || 'Loading...'}</p>
+                <div className="inline-flex items-center px-2 py-0.5 mt-0.5 rounded-full bg-emerald-50 border border-emerald-100">
+                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wide">{user?.role || 'User'}</p>
+                </div>
               </div>
             </div>
           </div>
         </header>
         
-        {/* Page Content */}
         <div className="flex-1 overflow-auto px-8 pb-8">
           <div className="bg-white rounded-3xl min-h-full shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 p-8">
             {children}

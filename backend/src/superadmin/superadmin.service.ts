@@ -108,4 +108,33 @@ export class SuperadminService {
     this.logger.log('Donation settings updated');
     return { message: 'Pengaturan donasi berhasil disimpan' };
   }
+
+  // ── Announcement Banner ──
+  async getAnnouncementSettings() {
+    const keys = ['announcement_enabled', 'announcement_text', 'announcement_type', 'announcement_link'];
+    const settings = await this.prisma.setting.findMany({ where: { key: { in: keys } } });
+    const get = (k: string) => settings.find(s => s.key === k)?.value;
+    return {
+      enabled: get('announcement_enabled') === 'true',
+      text: get('announcement_text') || '',
+      type: get('announcement_type') || 'info',
+      link: get('announcement_link') || '',
+    };
+  }
+
+  async updateAnnouncementSettings(body: { enabled: boolean; text?: string; type?: string; link?: string }) {
+    const upsert = (key: string, value: string) => this.prisma.setting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value, group: 'announcement' },
+    });
+    await Promise.all([
+      upsert('announcement_enabled', body.enabled.toString()),
+      body.text !== undefined && upsert('announcement_text', body.text),
+      body.type !== undefined && upsert('announcement_type', body.type),
+      body.link !== undefined && upsert('announcement_link', body.link),
+    ].filter(Boolean));
+    this.logger.log('Announcement settings updated');
+    return { message: 'Pengaturan pengumuman berhasil disimpan' };
+  }
 }

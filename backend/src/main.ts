@@ -2,12 +2,22 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import * as cookieParser from 'cookie-parser';
+import { join } from 'path';
+import * as fs from 'fs';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Ensure uploads directory exists
+  const uploadsDir = join(process.cwd(), 'uploads', 'proofs');
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+  // Serve uploaded files statically
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   // CORS — must be configured BEFORE helmet
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';

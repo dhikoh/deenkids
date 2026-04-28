@@ -48,11 +48,47 @@ export async function fetchDonationSettings() {
   return apiFetch(`${API_BASE_URL}/content/donation`);
 }
 
+export async function fetchDonationTestimonials() {
+  return apiFetch(`${API_BASE_URL}/content/donation/testimonials`);
+}
+
+export async function submitPublicDonation(formData: FormData) {
+  const res = await fetch(`${API_BASE_URL}/content/donation/submit`, {
+    method: 'POST',
+    body: formData, // multipart form — no Content-Type header
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: 'Gagal mengirim donasi' }));
+    throw new Error(error.message);
+  }
+  return res.json();
+}
+
+export async function submitPublicFeedback(data: { name: string; email?: string; type: string; message: string }) {
+  return apiFetch(`${API_BASE_URL}/content/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchAnnouncement() {
+  return apiFetch(`${API_BASE_URL}/content/announcement`);
+}
+
 // ── Auth ──
 export async function login(data: any) {
   return apiFetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function changePassword(data: { currentPassword: string; newPassword: string }, token: string) {
+  return apiFetch(`${API_BASE_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: authHeaders(token),
     body: JSON.stringify(data),
   });
 }
@@ -91,11 +127,11 @@ export async function recordView(contentId: string, userHash: string) {
 }
 
 // ═══════════════════════════════════════
-// AUTHOR (Authenticated) ENDPOINTS
+// EDITOR (Authenticated) ENDPOINTS
 // ═══════════════════════════════════════
 
 export async function createContent(data: any, token: string) {
-  return apiFetch(`${API_BASE_URL}/AUTHOR/content`, {
+  return apiFetch(`${API_BASE_URL}/editor/content`, {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(data),
@@ -106,19 +142,19 @@ export async function fetchMyContents(token: string, status?: string, page?: num
   const params = new URLSearchParams();
   if (status) params.append('status', status);
   if (page) params.append('page', page.toString());
-  return apiFetch(`${API_BASE_URL}/AUTHOR/my-contents?${params.toString()}`, {
+  return apiFetch(`${API_BASE_URL}/editor/my-contents?${params.toString()}`, {
     headers: authHeaders(token),
   });
 }
 
 export async function fetchContentForEdit(token: string, id: string) {
-  return apiFetch(`${API_BASE_URL}/AUTHOR/content/${id}`, {
+  return apiFetch(`${API_BASE_URL}/editor/content/${id}`, {
     headers: authHeaders(token),
   });
 }
 
 export async function updateContent(id: string, data: any, token: string) {
-  return apiFetch(`${API_BASE_URL}/AUTHOR/content/${id}`, {
+  return apiFetch(`${API_BASE_URL}/editor/content/${id}`, {
     method: 'PUT',
     headers: authHeaders(token),
     body: JSON.stringify(data),
@@ -126,27 +162,27 @@ export async function updateContent(id: string, data: any, token: string) {
 }
 
 export async function deleteContent(id: string, token: string) {
-  return apiFetch(`${API_BASE_URL}/AUTHOR/content/${id}`, {
+  return apiFetch(`${API_BASE_URL}/editor/content/${id}`, {
     method: 'DELETE',
     headers: authHeaders(token),
   });
 }
 
 export async function submitContentForReview(id: string, token: string) {
-  return apiFetch(`${API_BASE_URL}/AUTHOR/content/${id}/submit`, {
+  return apiFetch(`${API_BASE_URL}/editor/content/${id}/submit`, {
     method: 'POST',
     headers: authHeaders(token),
   });
 }
 
-export async function fetchAUTHORNodes(token: string) {
-  return apiFetch(`${API_BASE_URL}/AUTHOR/nodes`, {
+export async function fetchEditorNodes(token: string) {
+  return apiFetch(`${API_BASE_URL}/editor/nodes`, {
     headers: authHeaders(token),
   });
 }
 
-export async function fetchAUTHORTags(token: string) {
-  return apiFetch(`${API_BASE_URL}/AUTHOR/tags`, {
+export async function fetchEditorTags(token: string) {
+  return apiFetch(`${API_BASE_URL}/editor/tags`, {
     headers: authHeaders(token),
   });
 }
@@ -221,6 +257,67 @@ export async function fetchAllContents(token: string, status?: string, page?: nu
   });
 }
 
+// ── Admin Donation Inbox ──
+export async function fetchDonationSubmissions(token: string, page = 1) {
+  return apiFetch(`${API_BASE_URL}/admin/donation/submissions?page=${page}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function verifyDonation(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/donation/submissions/${id}/verify`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+  });
+}
+
+export async function fetchDonationReport(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/donation/report`, {
+    headers: authHeaders(token),
+  });
+}
+
+// ── Admin Feedback Inbox ──
+export async function fetchFeedbackList(token: string, page = 1) {
+  return apiFetch(`${API_BASE_URL}/admin/feedback?page=${page}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function markFeedbackRead(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/feedback/${id}/read`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+  });
+}
+
+// ── Notifications ──
+export async function fetchNotifications(token: string, page = 1) {
+  return apiFetch(`${API_BASE_URL}/admin/notifications?page=${page}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function fetchUnreadCount(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/notifications/unread-count`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function markNotificationRead(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/notifications/${id}/read`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+  });
+}
+
+export async function markAllNotificationsRead(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/notifications/read-all`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+  });
+}
+
 // ═══════════════════════════════════════
 // SUPERADMIN ENDPOINTS
 // ═══════════════════════════════════════
@@ -261,6 +358,20 @@ export async function fetchDonationAdmin(token: string) {
 
 export async function updateDonationAdmin(data: any, token: string) {
   return apiFetch(`${API_BASE_URL}/superadmin/settings/donation`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchAnnouncementAdmin(token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/settings/announcement`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function updateAnnouncementAdmin(data: any, token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/settings/announcement`, {
     method: 'PUT',
     headers: authHeaders(token),
     body: JSON.stringify(data),

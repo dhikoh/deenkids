@@ -58,5 +58,18 @@ export class SuperadminController {
     return this.superadminService.updateDonationSettings(body);
   }
 
-  // ── Public Donation (no auth) ──
+  // ── Announcement Banner ──
+  @Get('settings/announcement')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Get announcement banner settings' })
+  async getAnnouncement() {
+    return this.superadminService.getAnnouncementSettings();
+  }
+
+  @Put('settings/announcement')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Update announcement banner settings' })
+  async updateAnnouncement(@Body() body: { enabled: boolean; text?: string; type?: string; link?: string }) {
+    return this.superadminService.updateAnnouncementSettings(body);
+  }
 }

@@ -38,11 +38,11 @@ async function main() {
     create: {
       email: 'editor@adably.id',
       passwordHash: await bcrypt.hash('editor123', salt),
-      name: 'Ustadz Farid (Editor)',
+      name: 'Ustadz Farid (Author)',
       role: Role.AUTHOR,
     },
   });
-  console.log('✅ Users created (SuperAdmin, Admin, Editor)');
+  console.log('✅ Users created (SuperAdmin, Admin, Author)');
 
   // ===================== SETTINGS =====================
   await prisma.setting.upsert({
@@ -75,6 +75,23 @@ async function main() {
     ]) },
   });
   console.log('✅ Settings initialized (AI + Donation)');
+
+  // Announcement banner
+  await prisma.setting.upsert({
+    where: { key: 'announcement_enabled' },
+    update: {},
+    create: { group: 'announcement', key: 'announcement_enabled', value: 'false' },
+  });
+  await prisma.setting.upsert({
+    where: { key: 'announcement_text' },
+    update: {},
+    create: { group: 'announcement', key: 'announcement_text', value: 'Selamat datang di Adably! Platform edukasi Islam anak.' },
+  });
+  await prisma.setting.upsert({
+    where: { key: 'announcement_type' },
+    update: {},
+    create: { group: 'announcement', key: 'announcement_type', value: 'info' },
+  });
 
   // ===================== TAGS =====================
   const tagNames = ['Tauhid', 'Aqidah', 'Ibadah', 'Shalat', 'Adab', 'Akhlak', 'Kisah Nabi', 'Doa', 'Puasa', 'Quran'];
@@ -364,7 +381,7 @@ async function main() {
   console.log('📋 Login Credentials:');
   console.log('   SuperAdmin: superadmin@adably.id / superadmin123');
   console.log('   Admin:      admin@adably.id / admin123');
-  console.log('   Editor:     editor@adably.id / editor123');
+  console.log('   Author:     editor@adably.id / editor123');
 }
 
 main()

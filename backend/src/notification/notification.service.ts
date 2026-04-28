@@ -1,0 +1,92 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationType } from '@prisma/client';
+
+@Injectable()
+export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
+
+  constructor(private prisma: PrismaService) {}
+
+  async createNotification(data: {
+    userId: string;
+    actorId?: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    linkUrl?: string;
+  }) {
+    return this.prisma.internalNotification.create({ data });
+  }
+
+  async notifyByRole(role: string, actorId: string | null, type: NotificationType, title: string, message: string, linkUrl?: string) {
+    const users = await this.prisma.user.findMany({
+      where: { role: role as any },
+      select: { id: true },
+    });
+    const notifications = users.map(u => ({
+      userId: u.id,
+      actorId,
+      type,
+      title,
+      message,
+      linkUrl,
+    }));
+    if (notifications.length > 0) {
+      await this.prisma.internalNotification.createMany({ data: notifications });
+    }
+    this.logger.log(`Notified ${notifications.length} ${role}(s): ${title}`);
+  }
+
+  async notifySuperAdmins(actorId: string | null, type: NotificationType, title: string, message: string, linkUrl?: string) {
+    return this.notifyByRole('SUPERADMIN', actorId, type, title, message, linkUrl);
+  }
+
+  async notifyAdminsAndSuperAdmins(actorId: string | null, type: NotificationType, title: string, message: string, linkUrl?: string) {
+    const users = await this.prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'SUPERADMIN'] as any } },
+      select: { id: true },
+    });
+    const notifications = users.map(u => ({
+      userId: u.id, actorId, type, title, message, linkUrl,
+    }));
+    if (notifications.length > 0) {
+      await this.prisma.internalNotification.createMany({ data: notifications });
+    }
+  }
+
+  async getNotifications(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.internalNotification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: { actor: { select: { name: true } } },
+      }),
+      this.prisma.internalNotification.count({ where: { userId } }),
+    ]);
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
+  async getUnreadCount(userId: string) {
+    return this.prisma.internalNotification.count({
+      where: { userId, isRead: false },
+    });
+  }
+
+  async markAsRead(userId: string, notifId: string) {
+    return this.prisma.internalNotification.updateMany({
+      where: { id: notifId, userId },
+      data: { isRead: true },
+    });
+  }
+
+  async markAllAsRead(userId: string) {
+    return this.prisma.internalNotification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true },
+    });
+  }
+}

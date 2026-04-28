@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as fs from 'fs';
+import { join } from 'path';
 
 @Injectable()
 export class CronService {
@@ -49,5 +51,36 @@ export class CronService {
       });
     }
     this.logger.log(`📊 Recalculated stats for ${authors.length} authors`);
+  }
+
+  // Cleanup proof images older than 3 months (data stays in DB)
+  @Cron('0 4 1 * *') // 1st of every month at 4AM
+  async cleanupOldProofImages() {
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    const oldDonations = await this.prisma.donationSubmission.findMany({
+      where: { createdAt: { lt: threeMonthsAgo }, proofUrl: { not: null } },
+      select: { id: true, proofUrl: true },
+    });
+
+    let deleted = 0;
+    for (const d of oldDonations) {
+      if (d.proofUrl) {
+        const filePath = join(process.cwd(), d.proofUrl);
+        try {
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            deleted++;
+          }
+        } catch {}
+        // Clear proofUrl but keep financial record
+        await this.prisma.donationSubmission.update({
+          where: { id: d.id },
+          data: { proofUrl: null },
+        });
+      }
+    }
+    this.logger.log(`🗑️ Cleaned up ${deleted} proof images older than 3 months`);
   }
 }
