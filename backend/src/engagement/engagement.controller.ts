@@ -31,4 +31,10 @@ export class EngagementController {
   async recordView(@Body() dto: ToggleEngagementDto) {
     return this.engagementService.recordView(dto.contentId, dto.userHash);
   }
+
+  @Post('share')
+  @ApiOperation({ summary: 'Record Content Share' })
+  async recordShare(@Body() body: { contentId: string }) {
+    return this.engagementService.recordShare(body.contentId);
+  }
 }

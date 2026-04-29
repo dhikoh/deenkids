@@ -1,4 +1,7 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { EditorService } from './editor.service';
 import { CreateContentDto, UpdateContentDto } from './dto/editor.dto';
 import { RolesGuard, JwtAuthGuard } from '../common/guards/roles.guard';
@@ -72,5 +75,30 @@ export class EditorController {
   @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
   async getTags() {
     return this.editorService.getTags();
+  }
+
+  @Post('upload')
+  @ApiOperation({ summary: 'Upload image for content blocks' })
+  @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: '/app/uploads',
+      filename: (_req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, unique + extname(file.originalname));
+      },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (_req, file, cb) => {
+      if (!file.mimetype.match(/^image\//)) {
+        return cb(new BadRequestException('Hanya file gambar yang diperbolehkan'), false);
+      }
+      cb(null, true);
+    },
+  }))
+  async uploadFile(@UploadedFile() file: any) {
+    if (!file) throw new BadRequestException('File tidak ditemukan');
+    const apiBase = process.env.API_BASE_URL || 'https://api.adably.id';
+    return { url: `${apiBase}/uploads/${file.filename}` };
   }
 }

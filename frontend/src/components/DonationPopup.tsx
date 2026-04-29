@@ -12,6 +12,23 @@ const iconMap: Record<string, any> = {
   other: <ExternalLink size={18} className="text-slate-600" />,
 };
 
+function isDismissedToday(): boolean {
+  const dismissedAt = localStorage.getItem("donation_dismissed_at");
+  if (!dismissedAt) return false;
+  const dismissedDate = new Date(parseInt(dismissedAt));
+  const now = new Date();
+  // Same calendar day check
+  return (
+    dismissedDate.getFullYear() === now.getFullYear() &&
+    dismissedDate.getMonth() === now.getMonth() &&
+    dismissedDate.getDate() === now.getDate()
+  );
+}
+
+function dismissForToday() {
+  localStorage.setItem("donation_dismissed_at", Date.now().toString());
+}
+
 export default function DonationPopup() {
   const [show, setShow] = useState(false);
   const [data, setData] = useState<any>(null);
@@ -22,8 +39,7 @@ export default function DonationPopup() {
 
   useEffect(() => {
     if (!isPublicPage) return;
-    const dismissed = sessionStorage.getItem("donation_dismissed");
-    if (dismissed) return;
+    if (isDismissedToday()) return;
 
     const timer = setTimeout(() => {
       fetchDonationSettings()
@@ -34,13 +50,13 @@ export default function DonationPopup() {
     }, 20000); // Show after 20 seconds
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [isPublicPage]);
 
   if (!show || !data) return null;
 
   const handleClose = () => {
     setShow(false);
-    sessionStorage.setItem("donation_dismissed", "true");
+    dismissForToday();
   };
 
   return (

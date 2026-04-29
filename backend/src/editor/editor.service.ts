@@ -30,8 +30,9 @@ export class EditorService {
         type: dto.type,
         status: forcedStatus,
         ageGroup: dto.ageGroup,
-        nodeId: dto.nodeId,
+        nodeId: dto.nodeId || null,
         authorId,
+        displayAuthorName: author?.role === 'SUPERADMIN' ? (dto as any).displayAuthorName || null : null,
         metaTitle: dto.metaTitle,
         metaDesc: dto.metaDesc,
       },
@@ -154,19 +155,25 @@ export class EditorService {
     }
 
     // Update main content
-    const updated = await this.prisma.contentItem.update({
-      where: { id: contentId },
-      data: {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const updateData: any = {
         title: dto.title,
         description: dto.description,
         type: dto.type,
         ageGroup: dto.ageGroup,
-        nodeId: dto.nodeId,
+        nodeId: dto.nodeId || null,
         metaTitle: dto.metaTitle,
         metaDesc: dto.metaDesc,
         // Reset to draft if was in revision
         status: existing.status === 'REVISION' ? 'DRAFT' : existing.status,
-      },
+    };
+    // Only SuperAdmin can set displayAuthorName
+    if (user?.role === 'SUPERADMIN' && (dto as any).displayAuthorName !== undefined) {
+      updateData.displayAuthorName = (dto as any).displayAuthorName || null;
+    }
+    const updated = await this.prisma.contentItem.update({
+      where: { id: contentId },
+      data: updateData,
     });
 
     // Update QnA Detail

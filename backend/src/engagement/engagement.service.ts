@@ -119,4 +119,13 @@ export class EngagementService {
     
     return { success: true };
   }
+
+  async recordShare(contentId: string) {
+    await this.validateContent(contentId);
+    await this.prisma.contentItem.update({
+      where: { id: contentId },
+      data: { shareCount: { increment: 1 } },
+    });
+    return { success: true };
+  }
 }

@@ -9,6 +9,23 @@ async function main() {
 
   const salt = await bcrypt.genSalt(10);
 
+  // ===================== CLEANUP OLD USERS =====================
+  const oldEmails = ['admin@deenkids.com', 'superadmin@deenkids.com', 'editor@deenkids.com'];
+  for (const email of oldEmails) {
+    const oldUser = await prisma.user.findUnique({ where: { email } });
+    if (oldUser) {
+      // Delete all related data (cascading handles most, but manual for non-cascade)
+      await prisma.contentItem.deleteMany({ where: { authorId: oldUser.id } });
+      await prisma.internalNotification.deleteMany({ where: { userId: oldUser.id } });
+      await prisma.pointLedger.deleteMany({ where: { userId: oldUser.id } });
+      await prisma.withdrawalRequest.deleteMany({ where: { userId: oldUser.id } });
+      await prisma.authorStat.deleteMany({ where: { authorId: oldUser.id } });
+      await prisma.reward.deleteMany({ where: { userId: oldUser.id } });
+      await prisma.user.delete({ where: { id: oldUser.id } });
+      console.log(`🗑️ Removed old user: ${email}`);
+    }
+  }
+
   // ===================== USERS =====================
   const superadmin = await prisma.user.upsert({
     where: { email: 'superadmin@adably.id' },

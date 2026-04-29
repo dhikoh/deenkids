@@ -91,40 +91,42 @@ enum ContentType {
 }
 
 model ContentItem {
-  id              String            @id @default(uuid())
-  slug            String            @unique
-  title           String
-  description     String?
-  type            ContentType
-  status          ContentStatus     @default(DRAFT)
-  nodeId          String
-  node            ContentNode       @relation(fields: [nodeId], references: [id])
-  authorId        String
-  author          User              @relation(fields: [authorId], references: [id])
-  ageGroup        String // e.g., "3-5"
-  metaTitle       String?
-  metaDesc        String?
-  viewCount       Int               @default(0)
-  likeCount       Int               @default(0)
-  bookmarkCount   Int               @default(0)
-  avgRating       Float             @default(0.0)
-  ratingCount     Int               @default(0)
-  publishedAt     DateTime?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  qnaDetail       QnaDetail?
-  articleDetail   ArticleDetail?
-  mediaDetail     MediaDetail?
-  tags            ContentItemTag[]
-  likes           ContentLike[]
-  bookmarks       ContentBookmark[]
-  ratings         ContentRating[]
-  views           ContentView[]
-  versions        ContentVersion[]
-  reviewHistory   ReviewHistory[]
-  aiCheckResults  AiCheckResult[]
-  relatedFrom     RelatedContent[]  @relation("SourceContent")
-  relatedTo       RelatedContent[]  @relation("TargetContent")
+  id                String            @id @default(uuid())
+  slug              String            @unique
+  title             String
+  description       String?
+  type              ContentType
+  status            ContentStatus     @default(DRAFT)
+  nodeId            String?
+  node              ContentNode?      @relation(fields: [nodeId], references: [id])
+  authorId          String
+  author            User              @relation(fields: [authorId], references: [id])
+  displayAuthorName String?           // SuperAdmin alias — if set, shown instead of author.name
+  ageGroup          String            // e.g., "3-5"
+  metaTitle         String?
+  metaDesc          String?
+  viewCount         Int               @default(0)
+  likeCount         Int               @default(0)
+  bookmarkCount     Int               @default(0)
+  shareCount        Int               @default(0)
+  avgRating         Float             @default(0.0)
+  ratingCount       Int               @default(0)
+  publishedAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  qnaDetail         QnaDetail?
+  articleDetail     ArticleDetail?
+  mediaDetail       MediaDetail?
+  tags              ContentItemTag[]
+  likes             ContentLike[]
+  bookmarks         ContentBookmark[]
+  ratings           ContentRating[]
+  views             ContentView[]
+  versions          ContentVersion[]
+  reviewHistory     ReviewHistory[]
+  aiCheckResults    AiCheckResult[]
+  relatedFrom       RelatedContent[]  @relation("SourceContent")
+  relatedTo         RelatedContent[]  @relation("TargetContent")
 }
 
 model QnaDetail {

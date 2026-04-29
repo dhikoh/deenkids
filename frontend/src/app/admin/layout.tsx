@@ -26,16 +26,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const token = Cookies.get('access_token');
-    if (token) {
-      const poll = () => {
-        fetchUnreadCount(token).then(r => setUnreadNotif(r.count || 0)).catch(() => {});
-        fetch(`${API}/admin/messages/unread-count`, { headers: { Authorization: `Bearer ${token}` } })
-          .then(r => r.json()).then(r => setUnreadMsg(r.count || 0)).catch(() => {});
-      };
-      poll();
-      const interval = setInterval(poll, 30000);
-      return () => clearInterval(interval);
-    }
+    if (!token) return;
+
+    let active = true;
+    const poll = async () => {
+      try {
+        const notifRes = await fetch(`${API}/admin/notifications/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
+        if (notifRes.status === 401) { handleLogout(); return; }
+        if (notifRes.ok) { const r = await notifRes.json(); if (active) setUnreadNotif(r.count || 0); }
+      } catch {}
+      try {
+        const msgRes = await fetch(`${API}/admin/messages/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
+        if (msgRes.status === 401) { handleLogout(); return; }
+        if (msgRes.ok) { const r = await msgRes.json(); if (active) setUnreadMsg(r.count || 0); }
+      } catch {}
+    };
+    poll();
+    const interval = setInterval(poll, 30000);
+    return () => { active = false; clearInterval(interval); };
   }, []);
 
   const handleLogout = () => {

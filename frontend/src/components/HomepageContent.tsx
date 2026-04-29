@@ -40,7 +40,7 @@ function ContentCard({ item, index }: { item: any; index: number }) {
         <div className="flex items-center gap-4 text-xs text-slate-400">
           <span className="flex items-center gap-1"><Eye size={14} /> {(item.viewCount || 0).toLocaleString()}</span>
           <span className="flex items-center gap-1"><Heart size={14} /> {(item.likeCount || 0).toLocaleString()}</span>
-          {item.author?.name && <span className="ml-auto font-medium text-slate-500">{item.author.name}</span>}
+          {(item.displayAuthorName || item.author?.name) && <span className="ml-auto font-medium text-slate-500">{item.displayAuthorName || item.author.name}</span>}
         </div>
       </div>
     </Link>

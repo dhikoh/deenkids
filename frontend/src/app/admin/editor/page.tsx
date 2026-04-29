@@ -1,18 +1,48 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle, Save, Sparkles, AlertCircle, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X } from "lucide-react";
+import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { createContent, fetchEditorNodes, fetchEditorTags } from "@/lib/api";
 
-interface DialogBlock { role: "anak" | "ortu"; text: string }
-interface DalilBlock { arabic: string; translation: string; source: string }
-interface AnalogyBlock { title: string; text: string }
-interface TipBlock { text: string }
+type ContentTypeOption = "PEMBELAJARAN" | "QNA" | "ARTICLE";
+type BlockType = "paragraph" | "quick_answer" | "dialog" | "dalil" | "analogy" | "tip" | "image" | "video";
 
-export default function AUTHORPage() {
-  const [contentType, setContentType] = useState<"QNA" | "ARTICLE">("QNA");
+interface EditorBlock {
+  id: string;
+  type: BlockType;
+  data: any;
+}
+
+const BLOCK_TYPES: { type: BlockType; label: string; icon: any; color: string }[] = [
+  { type: "paragraph", label: "Isi Konten", icon: "📝", color: "bg-slate-100 text-slate-700" },
+  { type: "quick_answer", label: "Jawaban Instan", icon: "💡", color: "bg-emerald-100 text-emerald-700" },
+  { type: "dialog", label: "Simulasi Dialog", icon: "💬", color: "bg-amber-100 text-amber-700" },
+  { type: "dalil", label: "Dalil/Landasan", icon: "📖", color: "bg-orange-100 text-orange-700" },
+  { type: "analogy", label: "Analogi Sederhana", icon: "🧩", color: "bg-teal-100 text-teal-700" },
+  { type: "tip", label: "Catatan/Tips", icon: "ℹ️", color: "bg-sky-100 text-sky-700" },
+  { type: "image", label: "Gambar (Upload)", icon: "🖼️", color: "bg-pink-100 text-pink-700" },
+  { type: "video", label: "Video (URL)", icon: "🎬", color: "bg-purple-100 text-purple-700" },
+];
+
+function genId() { return Math.random().toString(36).substring(2, 9); }
+
+function defaultData(type: BlockType): any {
+  switch (type) {
+    case "paragraph": return { text: "" };
+    case "quick_answer": return { text: "" };
+    case "dialog": return { role: "anak", text: "" };
+    case "dalil": return { arabic: "", translation: "", source: "" };
+    case "analogy": return { title: "", text: "" };
+    case "tip": return { text: "" };
+    case "image": return { url: "", caption: "", file: null };
+    case "video": return { url: "", caption: "" };
+  }
+}
+
+export default function EditorPage() {
+  const [contentType, setContentType] = useState<ContentTypeOption>("QNA");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [ageGroup, setAgeGroup] = useState("3-5");
@@ -21,23 +51,16 @@ export default function AUTHORPage() {
   const [tagInput, setTagInput] = useState("");
   const [useAi, setUseAi] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  // QNA fields
-  const [answerQuick, setAnswerQuick] = useState("");
-  const [dialogBlocks, setDialogBlocks] = useState<DialogBlock[]>([{ role: "anak", text: "" }]);
-  const [dalilBlocks, setDalilBlocks] = useState<DalilBlock[]>([]);
-  const [analogyBlocks, setAnalogyBlocks] = useState<AnalogyBlock[]>([]);
-  const [tipsBlocks, setTipsBlocks] = useState<TipBlock[]>([]);
-
-  // Article fields
-  const [articleBlocks, setArticleBlocks] = useState<any[]>([]);
-
-  // Data from API
+  const [displayAuthorName, setDisplayAuthorName] = useState("");
+  const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [nodes, setNodes] = useState<any[]>([]);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const token = Cookies.get("access_token");
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) setUser(JSON.parse(storedUser));
     if (token) {
       fetchEditorNodes(token).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
       fetchEditorTags(token).then(r => setAvailableTags(r.data || [])).catch(() => {});
@@ -54,27 +77,80 @@ export default function AUTHORPage() {
     return result;
   };
 
+  const isSuperAdmin = user?.role === "SUPERADMIN";
+
+  const addBlock = (type: BlockType) => {
+    setBlocks([...blocks, { id: genId(), type, data: defaultData(type) }]);
+  };
+
+  const removeBlock = (id: string) => {
+    setBlocks(blocks.filter(b => b.id !== id));
+  };
+
+  const moveBlock = (index: number, dir: -1 | 1) => {
+    const newIndex = index + dir;
+    if (newIndex < 0 || newIndex >= blocks.length) return;
+    const newBlocks = [...blocks];
+    [newBlocks[index], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[index]];
+    setBlocks(newBlocks);
+  };
+
+  const updateBlock = (id: string, data: any) => {
+    setBlocks(blocks.map(b => b.id === id ? { ...b, data: { ...b.data, ...data } } : b));
+  };
+
   const addTag = () => {
     const t = tagInput.trim();
     if (t && !tags.includes(t)) { setTags([...tags, t]); setTagInput(""); }
   };
 
+  const handleImageUpload = async (blockId: string, file: File) => {
+    const token = Cookies.get("access_token");
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+      const res = await fetch(`${API}/editor/upload`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
+      if (!res.ok) throw new Error("Upload gagal");
+      const result = await res.json();
+      updateBlock(blockId, { url: result.url });
+      toast.success("Gambar berhasil diupload!");
+    } catch (e: any) {
+      toast.error(e.message || "Upload gagal");
+    }
+  };
+
   const handleSave = async () => {
     if (!title) return toast.error("Judul wajib diisi");
-    if (!nodeId) return toast.error("Pilih kategori pembelajaran");
+    if (contentType === "PEMBELAJARAN" && !nodeId) return toast.error("Kategori pembelajaran wajib dipilih");
     setIsSaving(true);
     const token = Cookies.get("access_token");
     try {
+      const apiType = contentType === "PEMBELAJARAN" ? "ARTICLE" : contentType;
       const payload: any = {
-        title, description, type: contentType, nodeId, ageGroup, useAiChecker: useAi, tags,
+        title, description, type: apiType, ageGroup, useAiChecker: useAi, tags,
+        nodeId: contentType === "PEMBELAJARAN" ? nodeId : (nodeId || undefined),
+        displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
+        articleDetail: { blocks: blocks.map(b => ({ type: b.type, ...b.data })) },
       };
       if (contentType === "QNA") {
-        payload.qnaDetail = { question: title, answerQuick, dialogBlocks, dalilBlocks, analogyBlocks, tipsBlocks };
-      } else {
-        payload.articleDetail = { blocks: articleBlocks };
+        const quickAnswer = blocks.find(b => b.type === "quick_answer");
+        const dialogs = blocks.filter(b => b.type === "dialog");
+        const dalils = blocks.filter(b => b.type === "dalil");
+        const analogies = blocks.filter(b => b.type === "analogy");
+        const tips = blocks.filter(b => b.type === "tip");
+        payload.qnaDetail = {
+          question: title,
+          answerQuick: quickAnswer?.data?.text || "",
+          dialogBlocks: dialogs.map(b => b.data),
+          dalilBlocks: dalils.map(b => b.data),
+          analogyBlocks: analogies.map(b => b.data),
+          tipsBlocks: tips.map(b => b.data),
+        };
       }
       await createContent(payload, token || "");
       toast.success("Draft berhasil disimpan!");
+      setTitle(""); setDescription(""); setBlocks([]); setTags([]);
     } catch (error: any) {
       toast.error(error.message || "Gagal menyimpan konten");
     } finally {
@@ -82,12 +158,69 @@ export default function AUTHORPage() {
     }
   };
 
+  const renderBlockEditor = (block: EditorBlock, index: number) => {
+    const { id, type, data } = block;
+    return (
+      <div key={id} className="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden group">
+        <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 border-b border-slate-100">
+          <GripVertical size={14} className="text-slate-300" />
+          <span className="text-xs font-bold text-slate-500 uppercase">{BLOCK_TYPES.find(b => b.type === type)?.icon} {BLOCK_TYPES.find(b => b.type === type)?.label}</span>
+          <div className="ml-auto flex items-center gap-1">
+            <button onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"><ArrowUp size={14} /></button>
+            <button onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"><ArrowDown size={14} /></button>
+            <button onClick={() => removeBlock(id)} className="p-1 text-slate-400 hover:text-rose-500"><Trash2 size={14} /></button>
+          </div>
+        </div>
+        <div className="p-4">
+          {type === "paragraph" && <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Tulis isi konten..." className="w-full border-slate-200 rounded-lg p-3 min-h-[100px] focus:border-emerald-500 focus:ring-emerald-500" />}
+          {type === "quick_answer" && <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Jawaban singkat yang langsung dibacakan ke anak..." className="w-full border-slate-200 rounded-lg p-3 min-h-[80px] focus:border-emerald-500 text-lg font-medium bg-emerald-50/50" />}
+          {type === "dialog" && (
+            <div className={`flex gap-3 ${data.role === "anak" ? "bg-amber-50/50" : "bg-emerald-50/50"} rounded-xl p-3`}>
+              <select value={data.role} onChange={e => updateBlock(id, { role: e.target.value })} className="border-slate-200 rounded-lg text-sm p-2 font-bold w-32">
+                <option value="anak">👦 Anak</option>
+                <option value="ortu">👩 Orang Tua</option>
+              </select>
+              <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder={data.role === "anak" ? "Pertanyaan anak..." : "Jawaban orang tua..."} className="flex-1 border-slate-200 rounded-lg text-sm p-3 min-h-[60px]" />
+            </div>
+          )}
+          {type === "dalil" && (
+            <div className="space-y-2 bg-[#faf8f5] rounded-xl p-3">
+              <textarea value={data.arabic} onChange={e => updateBlock(id, { arabic: e.target.value })} placeholder="Teks Arab (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[50px] text-right font-serif text-lg" dir="rtl" />
+              <textarea value={data.translation} onChange={e => updateBlock(id, { translation: e.target.value })} placeholder="Terjemahan / isi dalil" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px]" />
+              <input type="text" value={data.source} onChange={e => updateBlock(id, { source: e.target.value })} placeholder="Sumber: QS. Al-Baqarah: 43" className="w-full border-slate-200 rounded-lg text-sm p-2 font-bold" />
+            </div>
+          )}
+          {type === "analogy" && (
+            <div className="bg-teal-50/50 rounded-xl p-3 space-y-2">
+              <input type="text" value={data.title} onChange={e => updateBlock(id, { title: e.target.value })} placeholder="Judul analogi (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2 font-bold" />
+              <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Bayangkan Allah memberi kita hadiah..." className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[80px]" />
+            </div>
+          )}
+          {type === "tip" && <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Tips untuk orang tua..." className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px] bg-sky-50/50" />}
+          {type === "image" && (
+            <div className="space-y-2">
+              {data.url && <img src={data.url} alt="" className="rounded-xl max-h-60 object-cover border border-slate-200" />}
+              <input type="file" accept="image/*" onChange={e => { if (e.target.files?.[0]) handleImageUpload(id, e.target.files[0]); }} className="text-sm" />
+              <input type="text" value={data.caption || ""} onChange={e => updateBlock(id, { caption: e.target.value })} placeholder="Keterangan gambar (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2" />
+            </div>
+          )}
+          {type === "video" && (
+            <div className="space-y-2">
+              <input type="url" value={data.url} onChange={e => updateBlock(id, { url: e.target.value })} placeholder="URL Video (YouTube, dll)" className="w-full border-slate-200 rounded-lg text-sm p-2" />
+              <input type="text" value={data.caption || ""} onChange={e => updateBlock(id, { caption: e.target.value })} placeholder="Keterangan video (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2" />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Block AUTHOR CMS</h1>
-          <p className="text-slate-500">Buat konten interaktif — Tanya Jawab atau Artikel.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Tulis Konten ✍️</h1>
+          <p className="text-slate-500">Buat konten interaktif — Pembelajaran, Tanya Jawab, atau Artikel.</p>
         </div>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
@@ -108,28 +241,30 @@ export default function AUTHORPage() {
             <div className="space-y-4">
               {/* Content Type Selector */}
               <div className="flex gap-3">
-                {(["QNA", "ARTICLE"] as const).map(t => (
+                {(["PEMBELAJARAN", "QNA", "ARTICLE"] as ContentTypeOption[]).map(t => (
                   <button key={t} onClick={() => setContentType(t)} className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${contentType === t ? "bg-emerald-600 text-white shadow-md" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
-                    {t === "QNA" ? "🗨️ Tanya Jawab" : "📝 Artikel"}
+                    {t === "PEMBELAJARAN" ? "📚 Pembelajaran" : t === "QNA" ? "🗨️ Tanya Jawab" : "📝 Artikel"}
                   </button>
                 ))}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">{contentType === "QNA" ? "Judul Pertanyaan" : "Judul Artikel"}</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={contentType === "QNA" ? "Contoh: Apakah Allah melihat saat aku sembunyi?" : "Contoh: Pentingnya Mengajarkan Tauhid Sejak Dini"} className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500" />
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Judul</label>
+                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Judul konten..." className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Deskripsi Singkat</label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ringkasan konten..." className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500 min-h-[60px]" />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Kategori Pembelajaran</label>
-                  <select value={nodeId} onChange={(e) => setNodeId(e.target.value)} className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500">
-                    <option value="">— Pilih Kategori —</option>
-                    {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
-                  </select>
-                </div>
+                {contentType === "PEMBELAJARAN" && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Kategori Pembelajaran <span className="text-rose-500">*</span></label>
+                    <select value={nodeId} onChange={(e) => setNodeId(e.target.value)} className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500">
+                      <option value="">— Pilih Kategori —</option>
+                      {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Kelompok Usia</label>
                   <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500">
@@ -139,6 +274,14 @@ export default function AUTHORPage() {
                   </select>
                 </div>
               </div>
+              {/* SuperAdmin: Author Disguise */}
+              {isSuperAdmin && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2"><UserCircle size={16} className="text-emerald-600" /> Nama Penulis Tampil (Opsional)</label>
+                  <input type="text" value={displayAuthorName} onChange={(e) => setDisplayAuthorName(e.target.value)} placeholder="Kosongkan untuk pakai nama asli" className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500" />
+                  <p className="text-xs text-slate-400 mt-1">Alias ini akan ditampilkan di halaman publik menggantikan nama asli Anda.</p>
+                </div>
+              )}
               {/* Tags */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Tag</label>
@@ -158,120 +301,28 @@ export default function AUTHORPage() {
             </div>
           </div>
 
-          {/* QNA BLOCKS */}
-          {contentType === "QNA" && (
-            <>
-              {/* 1. Quick Answer */}
-              <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-0.5 rounded-2xl">
-                <div className="bg-white rounded-[14px] p-6">
-                  <h2 className="text-sm font-extrabold text-emerald-600 uppercase tracking-wider mb-3 flex items-center gap-2"><Lightbulb size={16} /> Jawaban Instan (Langsung Bacakan)</h2>
-                  <textarea value={answerQuick} onChange={(e) => setAnswerQuick(e.target.value)} placeholder="Tuliskan jawaban singkat yang bisa langsung dibacakan ke anak..." className="w-full border border-slate-200 rounded-lg p-3 min-h-[100px] focus:border-emerald-500 focus:ring-emerald-500 text-lg font-medium" />
-                </div>
+          {/* Dynamic Content Blocks */}
+          <div className="space-y-4">
+            {blocks.map((block, index) => renderBlockEditor(block, index))}
+            {blocks.length === 0 && (
+              <div className="text-center p-12 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400">
+                <p className="font-bold text-lg mb-2">Belum ada blok konten</p>
+                <p className="text-sm">Klik tombol di bawah untuk mulai menulis.</p>
               </div>
+            )}
+          </div>
 
-              {/* 2. Dialog */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div className="flex justify-between items-center mb-4 border-b pb-2">
-                  <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><MessageCircle size={18} className="text-emerald-600" /> Simulasi Dialog Mengalir</h2>
-                  <div className="flex gap-2">
-                    <button onClick={() => setDialogBlocks([...dialogBlocks, { role: "anak", text: "" }])} className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg font-bold hover:bg-amber-200 flex items-center gap-1"><Plus size={14} /> Anak</button>
-                    <button onClick={() => setDialogBlocks([...dialogBlocks, { role: "ortu", text: "" }])} className="text-xs bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-200 flex items-center gap-1"><Plus size={14} /> Orang Tua</button>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {dialogBlocks.map((block, i) => (
-                    <div key={i} className={`flex gap-3 p-3 rounded-xl border ${block.role === "anak" ? "bg-amber-50/50 border-amber-100" : "bg-emerald-50/50 border-emerald-100"}`}>
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg ${block.role === "anak" ? "bg-amber-200" : "bg-emerald-200"}`}>{block.role === "anak" ? "👦" : "👩"}</div>
-                      <div className="flex-1 relative">
-                        <textarea value={block.text} onChange={(e) => { const n = [...dialogBlocks]; n[i].text = e.target.value; setDialogBlocks(n); }} placeholder={block.role === "anak" ? "Pertanyaan anak..." : "Jawaban orang tua..."} className="w-full border-slate-200 rounded-lg text-sm p-3 min-h-[70px] focus:border-emerald-500 pr-10" />
-                        <button onClick={() => setDialogBlocks(dialogBlocks.filter((_, j) => j !== i))} className="absolute top-2 right-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
-                      </div>
-                    </div>
-                  ))}
-                  {dialogBlocks.length === 0 && <div className="text-center p-6 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 text-sm">Belum ada dialog. Klik tombol di atas.</div>}
-                </div>
-              </div>
-
-              {/* 3. Analogi */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div className="flex justify-between items-center mb-4 border-b pb-2">
-                  <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Lightbulb size={18} className="text-amber-500" /> Analogi Sederhana</h2>
-                  <button onClick={() => setAnalogyBlocks([...analogyBlocks, { title: "", text: "" }])} className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg font-bold hover:bg-amber-200 flex items-center gap-1"><Plus size={14} /> Tambah</button>
-                </div>
-                <div className="space-y-3">
-                  {analogyBlocks.map((a, i) => (
-                    <div key={i} className="p-4 bg-amber-50 border border-amber-100 rounded-xl relative">
-                      <button onClick={() => setAnalogyBlocks(analogyBlocks.filter((_, j) => j !== i))} className="absolute top-2 right-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
-                      <input type="text" value={a.title} onChange={(e) => { const n = [...analogyBlocks]; n[i].title = e.target.value; setAnalogyBlocks(n); }} placeholder="Judul analogi (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2 mb-2 font-bold" />
-                      <textarea value={a.text} onChange={(e) => { const n = [...analogyBlocks]; n[i].text = e.target.value; setAnalogyBlocks(n); }} placeholder="Bayangkan Allah memberi kita hadiah mainan yang sangat banyak..." className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[80px]" />
-                    </div>
-                  ))}
-                  {analogyBlocks.length === 0 && <div className="text-center p-4 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 text-sm">Belum ada analogi.</div>}
-                </div>
-              </div>
-
-              {/* 4. Dalil / Landasan Syar'i */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div className="flex justify-between items-center mb-4 border-b pb-2">
-                  <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><BookOpen size={18} className="text-amber-600" /> Landasan Syar&apos;i</h2>
-                  <button onClick={() => setDalilBlocks([...dalilBlocks, { arabic: "", translation: "", source: "" }])} className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg font-bold hover:bg-amber-200 flex items-center gap-1"><Plus size={14} /> Tambah Dalil</button>
-                </div>
-                <div className="space-y-4">
-                  {dalilBlocks.map((d, i) => (
-                    <div key={i} className="p-4 bg-[#faf8f5] border border-[#e6dfd1] rounded-xl relative space-y-2">
-                      <button onClick={() => setDalilBlocks(dalilBlocks.filter((_, j) => j !== i))} className="absolute top-2 right-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
-                      <textarea value={d.arabic} onChange={(e) => { const n = [...dalilBlocks]; n[i].arabic = e.target.value; setDalilBlocks(n); }} placeholder="Teks Arab (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[50px] text-right font-serif text-lg" dir="rtl" />
-                      <textarea value={d.translation} onChange={(e) => { const n = [...dalilBlocks]; n[i].translation = e.target.value; setDalilBlocks(n); }} placeholder="Terjemahan / isi dalil" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px]" />
-                      <input type="text" value={d.source} onChange={(e) => { const n = [...dalilBlocks]; n[i].source = e.target.value; setDalilBlocks(n); }} placeholder="Sumber: QS. Al-Baqarah: 43 / HR. Bukhari No. 1234" className="w-full border-slate-200 rounded-lg text-sm p-2 font-bold" />
-                    </div>
-                  ))}
-                  {dalilBlocks.length === 0 && <div className="text-center p-4 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 text-sm">Belum ada dalil.</div>}
-                </div>
-              </div>
-
-              {/* 5. Tips */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div className="flex justify-between items-center mb-4 border-b pb-2">
-                  <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Info size={18} className="text-slate-500" /> Catatan Redaksi (Tips)</h2>
-                  <button onClick={() => setTipsBlocks([...tipsBlocks, { text: "" }])} className="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-200 flex items-center gap-1"><Plus size={14} /> Tambah</button>
-                </div>
-                <div className="space-y-2">
-                  {tipsBlocks.map((tip, i) => (
-                    <div key={i} className="flex gap-2 items-start">
-                      <span className="text-emerald-500 font-bold mt-2">•</span>
-                      <textarea value={tip.text} onChange={(e) => { const n = [...tipsBlocks]; n[i].text = e.target.value; setTipsBlocks(n); }} placeholder="Tips untuk orang tua..." className="flex-1 border-slate-200 rounded-lg text-sm p-2 min-h-[50px]" />
-                      <button onClick={() => setTipsBlocks(tipsBlocks.filter((_, j) => j !== i))} className="text-slate-400 hover:text-rose-500 mt-2"><Trash2 size={16} /></button>
-                    </div>
-                  ))}
-                  {tipsBlocks.length === 0 && <div className="text-center p-4 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 text-sm">Belum ada tips.</div>}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ARTICLE BLOCKS */}
-          {contentType === "ARTICLE" && (
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <div className="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 className="text-lg font-bold text-slate-800">Blok Artikel</h2>
-                <div className="flex gap-2">
-                  {["heading", "paragraph", "dalil", "tip"].map(t => (
-                    <button key={t} onClick={() => setArticleBlocks([...articleBlocks, { type: t, text: "" }])} className="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-200 capitalize">{t === "dalil" ? "Dalil" : t === "tip" ? "Tips" : t === "heading" ? "Heading" : "Paragraf"}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-3">
-                {articleBlocks.map((block, i) => (
-                  <div key={i} className="relative">
-                    <span className="absolute top-2 left-2 text-[10px] uppercase font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded">{block.type}</span>
-                    <button onClick={() => setArticleBlocks(articleBlocks.filter((_, j) => j !== i))} className="absolute top-2 right-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
-                    <textarea value={block.text} onChange={(e) => { const n = [...articleBlocks]; n[i].text = e.target.value; setArticleBlocks(n); }} className={`w-full border rounded-lg p-3 pt-8 min-h-[80px] ${block.type === "heading" ? "font-bold text-lg border-slate-300" : block.type === "dalil" ? "border-amber-200 bg-amber-50 italic" : block.type === "tip" ? "border-emerald-200 bg-emerald-50" : "border-slate-200"}`} placeholder={block.type === "heading" ? "Judul Bagian" : block.type === "dalil" ? "Dalil / Ayat / Hadits..." : block.type === "tip" ? "💡 Tips..." : "Tulis paragraf..."} />
-                  </div>
-                ))}
-                {articleBlocks.length === 0 && <div className="text-center p-8 border-2 border-dashed border-slate-200 rounded-xl text-slate-500">Klik tombol di atas untuk menambah blok konten.</div>}
-              </div>
+          {/* Add Block Buttons */}
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Tambah Blok Konten</p>
+            <div className="flex flex-wrap gap-2">
+              {BLOCK_TYPES.map(bt => (
+                <button key={bt.type} onClick={() => addBlock(bt.type)} className={`${bt.color} px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:opacity-80 transition-opacity border border-transparent`}>
+                  {bt.icon} {bt.label}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Sidebar */}
@@ -282,6 +333,7 @@ export default function AUTHORPage() {
               <li className="flex items-center gap-2 text-sm text-slate-600"><CheckCircle size={16} className="text-emerald-500" /> Status: Draft</li>
               <li className="flex items-center gap-2 text-sm text-slate-600"><CheckCircle size={16} className={useAi ? "text-amber-500" : "text-slate-300"} /> AI Checker: {useAi ? "Aktif" : "Nonaktif"}</li>
               <li className="flex items-center gap-2 text-sm text-slate-600"><CheckCircle size={16} className="text-slate-300" /> Persetujuan: Menunggu</li>
+              <li className="flex items-center gap-2 text-sm text-slate-600"><CheckCircle size={16} className="text-slate-300" /> Blok: {blocks.length} buah</li>
             </ul>
             <button onClick={handleSave} disabled={isSaving} className="w-full bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-70">
               Simpan & Ajukan Review <ArrowRight size={16} />

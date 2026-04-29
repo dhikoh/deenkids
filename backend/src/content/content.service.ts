@@ -36,6 +36,7 @@ export class ContentService {
       where: { slug, status: 'PUBLISHED' },
       include: {
         node: true,
+        author: { select: { id: true, name: true } },
         qnaDetail: true,
         articleDetail: true,
         mediaDetail: true,
@@ -47,14 +48,19 @@ export class ContentService {
       throw new NotFoundException('Konten tidak ditemukan');
     }
 
-    // Process related content (placeholder logic for now)
+    // Process related content
     const related = await this.getRelatedContent(content.id, content.nodeId);
 
-    return { ...content, related };
+    // Return with resolved author name (alias takes priority)
+    return {
+      ...content,
+      authorName: content.displayAuthorName || content.author?.name || 'Anonim',
+      related,
+    };
   }
 
-  private async getRelatedContent(contentId: string, nodeId: string) {
-    // Strategy 1: Same Node (excluding self), max 5
+  private async getRelatedContent(contentId: string, nodeId: string | null) {
+    if (!nodeId) return [];
     const sameNode = await this.prisma.contentItem.findMany({
       where: {
         nodeId,
@@ -127,10 +133,12 @@ export class ContentService {
           ageGroup: true,
           viewCount: true,
           likeCount: true,
+          shareCount: true,
           avgRating: true,
           ratingCount: true,
           publishedAt: true,
           description: true,
+          displayAuthorName: true,
           author: { select: { name: true } },
           node: { select: { title: true } },
           tags: { include: { tag: { select: { name: true, slug: true } } } },
