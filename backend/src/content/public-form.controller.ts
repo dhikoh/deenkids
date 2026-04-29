@@ -178,4 +178,27 @@ export class AdminInboxController {
     await this.prisma.feedbackSubmission.update({ where: { id }, data: { isRead: true } });
     return { message: 'Feedback ditandai sudah dibaca' };
   }
+
+  // ── Public Settings (no auth) ──
+  @Get('settings/public')
+  @ApiOperation({ summary: 'Get public site settings (donation, announcement)' })
+  async getPublicSettings() {
+    const keys = ['donation_enabled', 'donation_title', 'donation_message', 'donation_methods', 'announcement_enabled', 'announcement_text', 'announcement_type', 'announcement_link'];
+    const settings = await this.prisma.setting.findMany({ where: { key: { in: keys } } });
+    const get = (k: string) => settings.find(s => s.key === k)?.value;
+    return {
+      donation: {
+        enabled: get('donation_enabled') === 'true',
+        title: get('donation_title') || 'Dukung Adably 🌱',
+        message: get('donation_message') || '',
+        methods: get('donation_methods') ? JSON.parse(get('donation_methods')!) : [],
+      },
+      announcement: {
+        enabled: get('announcement_enabled') === 'true',
+        text: get('announcement_text') || '',
+        type: get('announcement_type') || 'info',
+        link: get('announcement_link') || '',
+      },
+    };
+  }
 }

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsObject, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsObject, IsEnum, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ContentType, ContentStatus } from '@prisma/client';
 
@@ -21,46 +21,57 @@ export class CreateContentDto {
   @IsOptional()
   status?: ContentStatus;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsString()
-  nodeId: string;
-
-  @ApiProperty({ type: [String] })
   @IsOptional()
-  ageGroups: string[];
+  nodeId?: string;
 
-  @ApiProperty()
+  @ApiProperty({ type: [String], required: false })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  ageGroups?: string[];
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  displayAuthorName?: string;
+
+  @ApiProperty({ required: false })
   @IsOptional()
   metaTitle?: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   metaDesc?: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
   useAiChecker?: boolean;
 
   // Polymorphic Details based on type
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsObject()
   @IsOptional()
   qnaDetail?: any;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsObject()
   @IsOptional()
   articleDetail?: any;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsObject()
   @IsOptional()
   mediaDetail?: any;
 
-  @ApiProperty({ type: [String] })
+  @ApiProperty({ type: [String], required: false })
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
   tags?: string[];
 }
 
 export class UpdateContentDto extends CreateContentDto {}
+

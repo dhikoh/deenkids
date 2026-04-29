@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
-import { createContent, fetchEditorNodes, fetchEditorTags } from "@/lib/api";
+import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle } from "@/lib/api";
 
 type ContentTypeOption = "PEMBELAJARAN" | "QNA" | "ARTICLE";
 type BlockType = "paragraph" | "quick_answer" | "dialog" | "dalil" | "analogy" | "tip" | "image" | "video";
@@ -33,14 +33,16 @@ function defaultData(type: BlockType): any {
   switch (type) {
     case "paragraph": return { text: "" };
     case "quick_answer": return { text: "" };
-    case "dialog": return { role: "anak", text: "" };
-    case "dalil": return { arabic: "", translation: "", source: "" };
+    case "dialog": return { lines: [{ role: "anak", text: "" }] };
+    case "dalil": return { entries: [{ arabic: "", translation: "", source: "" }] };
     case "analogy": return { title: "", text: "" };
     case "tip": return { text: "" };
     case "image": return { url: "", caption: "", file: null };
     case "video": return { url: "", caption: "" };
   }
 }
+
+const AUTO_SAVE_KEY = "adably_editor_draft";
 
 function EditorContent() {
   const [contentType, setContentType] = useState<ContentTypeOption>("QNA");
@@ -51,6 +53,7 @@ function EditorContent() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [useAi, setUseAi] = useState(true);
+  const [aiGlobalEnabled, setAiGlobalEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [displayAuthorName, setDisplayAuthorName] = useState("");
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
@@ -60,6 +63,8 @@ function EditorContent() {
   const [editId, setEditId] = useState<string | null>(null);
   const [showTerms, setShowTerms] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [lastAutoSave, setLastAutoSave] = useState<string | null>(null);
+  const [showRecovery, setShowRecovery] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -69,6 +74,13 @@ function EditorContent() {
     if (token) {
       fetchEditorNodes(token).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
       fetchEditorTags(token).then(r => setAvailableTags(r.data || [])).catch(() => {});
+      // Fetch AI global toggle
+      fetchAiToggle(token).then(r => { setAiGlobalEnabled(r.aiEnabled); if (!r.aiEnabled) setUseAi(false); }).catch(() => {});
+      // Check localStorage for auto-draft recovery
+      if (!searchParams.get("id")) {
+        const saved = localStorage.getItem(AUTO_SAVE_KEY);
+        if (saved) { try { const d = JSON.parse(saved); if (d.title) setShowRecovery(true); } catch {} }
+      }
       // Edit mode: load existing content
       const id = searchParams.get("id");
       if (id) {
@@ -88,8 +100,14 @@ function EditorContent() {
               const loadedBlocks: EditorBlock[] = [];
               if (c.qnaDetail) {
                 if (c.qnaDetail.answerQuick) loadedBlocks.push({ id: genId(), type: "quick_answer", data: { text: c.qnaDetail.answerQuick } });
-                (c.qnaDetail.dialogBlocks || []).forEach((d: any) => loadedBlocks.push({ id: genId(), type: "dialog", data: d }));
-                (c.qnaDetail.dalilBlocks || []).forEach((d: any) => loadedBlocks.push({ id: genId(), type: "dalil", data: d }));
+                (c.qnaDetail.dialogBlocks || []).forEach((d: any) => {
+                  const lines = d.lines || [{ role: d.role || 'anak', text: d.text || '' }];
+                  loadedBlocks.push({ id: genId(), type: "dialog", data: { lines } });
+                });
+                (c.qnaDetail.dalilBlocks || []).forEach((d: any) => {
+                  const entries = d.entries || [{ arabic: d.arabic || '', translation: d.translation || '', source: d.source || '' }];
+                  loadedBlocks.push({ id: genId(), type: "dalil", data: { entries } });
+                });
                 (c.qnaDetail.analogyBlocks || []).forEach((a: any) => loadedBlocks.push({ id: genId(), type: "analogy", data: a }));
                 (c.qnaDetail.tipsBlocks || []).forEach((t: any) => loadedBlocks.push({ id: genId(), type: "tip", data: t }));
               }
@@ -117,6 +135,42 @@ function EditorContent() {
   };
 
   const isSuperAdmin = user?.role === "SUPERADMIN";
+
+  // Auto-save to localStorage every 30s
+  useEffect(() => {
+    if (editId) return; // Don't auto-save when editing existing content
+    const timer = setInterval(() => {
+      if (title || blocks.length > 0) {
+        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, savedAt: new Date().toISOString() };
+        localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft));
+        setLastAutoSave(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
+      }
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, editId]);
+
+  const recoverDraft = () => {
+    try {
+      const saved = localStorage.getItem(AUTO_SAVE_KEY);
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (d.title) setTitle(d.title);
+        if (d.description) setDescription(d.description);
+        if (d.contentType) setContentType(d.contentType);
+        if (d.ageGroups) setAgeGroups(d.ageGroups);
+        if (d.nodeId) setNodeId(d.nodeId);
+        if (d.tags) setTags(d.tags);
+        if (d.blocks) setBlocks(d.blocks);
+        if (d.displayAuthorName) setDisplayAuthorName(d.displayAuthorName);
+        toast.success("Draft berhasil dipulihkan!");
+      }
+    } catch {} finally { setShowRecovery(false); }
+  };
+
+  const dismissRecovery = () => {
+    localStorage.removeItem(AUTO_SAVE_KEY);
+    setShowRecovery(false);
+  };
 
   const addBlock = (type: BlockType) => {
     setBlocks([...blocks, { id: genId(), type, data: defaultData(type) }]);
@@ -192,10 +246,13 @@ function EditorContent() {
         await fetch(`${API}/editor/content/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) }).then(r => { if (!r.ok) throw new Error("Gagal update"); return r.json(); });
         toast.success("Konten berhasil diperbarui!");
       } else {
-        await createContent(payload, token || "");
+        const res = await createContent(payload, token || "");
         toast.success("Draft berhasil disimpan!");
+        if (res?.data?.id) setEditId(res.data.id);
+        localStorage.removeItem(AUTO_SAVE_KEY);
         setTitle(""); setDescription(""); setBlocks([]); setTags([]);
       }
+      localStorage.removeItem(AUTO_SAVE_KEY);
     } catch (error: any) {
       toast.error(error.message || "Gagal menyimpan konten");
     } finally {
@@ -236,19 +293,32 @@ function EditorContent() {
           {type === "paragraph" && <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Tulis isi konten..." className="w-full border-slate-200 rounded-lg p-3 min-h-[100px] focus:border-emerald-500 focus:ring-emerald-500" />}
           {type === "quick_answer" && <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Jawaban singkat yang langsung dibacakan ke anak..." className="w-full border-slate-200 rounded-lg p-3 min-h-[80px] focus:border-emerald-500 text-lg font-medium bg-emerald-50/50" />}
           {type === "dialog" && (
-            <div className={`flex gap-3 ${data.role === "anak" ? "bg-amber-50/50" : "bg-emerald-50/50"} rounded-xl p-3`}>
-              <select value={data.role} onChange={e => updateBlock(id, { role: e.target.value })} className="border-slate-200 rounded-lg text-sm p-2 font-bold w-32">
-                <option value="anak">👦 Anak</option>
-                <option value="ortu">👩 Orang Tua</option>
-              </select>
-              <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder={data.role === "anak" ? "Pertanyaan anak..." : "Jawaban orang tua..."} className="flex-1 border-slate-200 rounded-lg text-sm p-3 min-h-[60px]" />
+            <div className="space-y-2">
+              {(data.lines || []).map((line: any, li: number) => (
+                <div key={li} className={`flex gap-2 ${line.role === "anak" ? "bg-amber-50/50" : line.role === "ibu" ? "bg-emerald-50/50" : "bg-blue-50/50"} rounded-xl p-3 items-start`}>
+                  <select value={line.role} onChange={e => { const nl = [...data.lines]; nl[li] = { ...nl[li], role: e.target.value }; updateBlock(id, { lines: nl }); }} className="border-slate-200 rounded-lg text-sm p-2 font-bold w-28 shrink-0">
+                    <option value="anak">👦 Anak</option>
+                    <option value="ibu">👩 Ibu</option>
+                    <option value="ayah">👨 Ayah</option>
+                  </select>
+                  <textarea value={line.text} onChange={e => { const nl = [...data.lines]; nl[li] = { ...nl[li], text: e.target.value }; updateBlock(id, { lines: nl }); }} placeholder={line.role === "anak" ? "Pertanyaan anak..." : "Jawaban orang tua..."} className="flex-1 border-slate-200 rounded-lg text-sm p-2 min-h-[50px]" />
+                  {data.lines.length > 1 && <button onClick={() => { const nl = data.lines.filter((_: any, j: number) => j !== li); updateBlock(id, { lines: nl }); }} className="p-1 text-slate-400 hover:text-rose-500 shrink-0"><Trash2 size={14} /></button>}
+                </div>
+              ))}
+              <button onClick={() => updateBlock(id, { lines: [...(data.lines || []), { role: "anak", text: "" }] })} className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100"><Plus size={12} /> Tambah Baris Dialog</button>
             </div>
           )}
           {type === "dalil" && (
-            <div className="space-y-2 bg-[#faf8f5] rounded-xl p-3">
-              <textarea value={data.arabic} onChange={e => updateBlock(id, { arabic: e.target.value })} placeholder="Teks Arab (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[50px] text-right font-serif text-lg" dir="rtl" />
-              <textarea value={data.translation} onChange={e => updateBlock(id, { translation: e.target.value })} placeholder="Terjemahan / isi dalil" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px]" />
-              <input type="text" value={data.source} onChange={e => updateBlock(id, { source: e.target.value })} placeholder="Sumber: QS. Al-Baqarah: 43" className="w-full border-slate-200 rounded-lg text-sm p-2 font-bold" />
+            <div className="space-y-3">
+              {(data.entries || []).map((entry: any, ei: number) => (
+                <div key={ei} className="space-y-2 bg-[#faf8f5] rounded-xl p-3 relative">
+                  {data.entries.length > 1 && <button onClick={() => { const ne = data.entries.filter((_: any, j: number) => j !== ei); updateBlock(id, { entries: ne }); }} className="absolute top-2 right-2 p-1 text-slate-400 hover:text-rose-500"><Trash2 size={14} /></button>}
+                  <textarea value={entry.arabic} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], arabic: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="Teks Arab (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[50px] text-right font-serif text-lg" dir="rtl" />
+                  <textarea value={entry.translation} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], translation: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="Terjemahan / isi dalil" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px]" />
+                  <input type="text" value={entry.source} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], source: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="Sumber: QS. Al-Baqarah: 43" className="w-full border-slate-200 rounded-lg text-sm p-2 font-bold" />
+                </div>
+              ))}
+              <button onClick={() => updateBlock(id, { entries: [...(data.entries || []), { arabic: "", translation: "", source: "" }] })} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-100"><Plus size={12} /> Tambah Dalil</button>
             </div>
           )}
           {type === "analogy" && (
@@ -278,16 +348,36 @@ function EditorContent() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* Recovery Modal */}
+      {showRecovery && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Clock size={20} className="text-amber-600" />
+            <div>
+              <p className="font-bold text-amber-800 text-sm">Draft yang belum tersimpan ditemukan</p>
+              <p className="text-xs text-amber-600">Ingin memulihkan draft terakhir?</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={recoverDraft} className="px-4 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600">Pulihkan</button>
+            <button onClick={dismissRecovery} className="px-4 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-300">Buang</button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Tulis Konten ✍️</h1>
           <p className="text-slate-500">Buat konten interaktif — Pembelajaran, Tanya Jawab, atau Artikel.</p>
+          {lastAutoSave && <p className="text-xs text-emerald-500 mt-1 flex items-center gap-1"><Clock size={12} /> Tersimpan otomatis {lastAutoSave}</p>}
         </div>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-            <input type="checkbox" checked={useAi} onChange={(e) => setUseAi(e.target.checked)} className="w-4 h-4 text-emerald-600 rounded" />
-            <span className="text-sm font-medium flex items-center gap-1"><Sparkles className="h-4 w-4 text-amber-500" /> AI Checker</span>
-          </label>
+          {aiGlobalEnabled && (
+            <label className="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
+              <input type="checkbox" checked={useAi} onChange={(e) => setUseAi(e.target.checked)} className="w-4 h-4 text-emerald-600 rounded" />
+              <span className="text-sm font-medium flex items-center gap-1"><Sparkles className="h-4 w-4 text-amber-500" /> AI Checker</span>
+            </label>
+          )}
           <button onClick={handleSave} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-70">
             <Save size={18} /> {isSaving ? "Menyimpan..." : "Simpan Draft"}
           </button>

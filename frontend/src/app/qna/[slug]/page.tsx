@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCircle, User } from "lucide-react";
 import { EngagementBar } from "@/components/ui/EngagementBar";
+import { ROLE_CONFIG } from "@/components/DialogIcons";
 
 export default async function QnaDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -48,14 +49,20 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
             <div>
               <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><MessageCircle className="h-5 w-5 text-emerald-600" /> Contoh Dialog</h2>
               <div className="space-y-3">
-                {(qna.dialogBlocks as any[]).map((block: any, i: number) => (
-                  <div key={i} className={`flex ${block.role === 'anak' ? 'justify-start' : 'justify-end'}`}>
-                    <div className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm font-medium ${block.role === 'anak' ? 'bg-slate-100 text-slate-700 rounded-bl-sm' : 'bg-emerald-500 text-white rounded-br-sm'}`}>
-                      <p className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-60">{block.role === 'anak' ? '👦 Anak' : '👩 Orang Tua'}</p>
-                      {block.text}
-                    </div>
-                  </div>
-                ))}
+                {(qna.dialogBlocks as any[]).map((block: any, i: number) => {
+                  const lines = block.lines || [{ role: block.role || 'anak', text: block.text || '' }];
+                  return lines.map((line: any, j: number) => {
+                    const cfg = ROLE_CONFIG[line.role] || ROLE_CONFIG.anak;
+                    return (
+                      <div key={`${i}-${j}`} className={`flex ${cfg.align}`}>
+                        <div className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm font-medium ${cfg.chatBg}`}>
+                          <p className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-60">{cfg.label}</p>
+                          {line.text}
+                        </div>
+                      </div>
+                    );
+                  });
+                })}
               </div>
             </div>
           )}
@@ -64,13 +71,16 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
             <div>
               <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><BookOpen className="h-5 w-5 text-amber-600" /> Dalil & Sumber</h2>
               <div className="space-y-4">
-                {(qna.dalilBlocks as any[]).map((dalil: any, i: number) => (
-                  <blockquote key={i} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
-                    {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
-                    <p className="text-slate-700 italic font-medium leading-relaxed">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
-                    <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {dalil.source}</cite>
-                  </blockquote>
-                ))}
+                {(qna.dalilBlocks as any[]).map((dalilBlock: any, i: number) => {
+                  const entries = dalilBlock.entries || [dalilBlock];
+                  return entries.map((dalil: any, j: number) => (
+                    <blockquote key={`${i}-${j}`} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
+                      {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
+                      <p className="text-slate-700 italic font-medium leading-relaxed">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
+                      <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {dalil.source}</cite>
+                    </blockquote>
+                  ));
+                })}
               </div>
             </div>
           )}
