@@ -8,7 +8,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
 @ApiTags('CMS Editor')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('AUTHOR')
+@Controller('editor')
 export class EditorController {
   constructor(private readonly editorService: EditorService) {}
 

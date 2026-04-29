@@ -74,8 +74,12 @@ export class ContentService {
     return sameNode;
   }
 
-  async getList(query: { age?: string; sort?: string; page?: number; limit?: number; type?: string }) {
-    const { age, sort = 'newest', page = 1, limit = 10, type } = query;
+  async getList(query: { age?: string; sort?: string; page?: any; limit?: any; type?: string }) {
+    const age = query.age;
+    const sort = query.sort || 'newest';
+    const type = query.type;
+    const page = Math.max(1, parseInt(query.page) || 1);
+    const limit = Math.max(1, parseInt(query.limit) || 10);
     const skip = (page - 1) * limit;
 
     let orderBy: any = { publishedAt: 'desc' };
