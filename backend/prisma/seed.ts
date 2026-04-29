@@ -357,6 +357,206 @@ async function main() {
     },
   });
 
+  // --- QnA 4: Apa itu Syirik (7-10) ---
+  const qna4Title = 'Apa itu syirik dan kenapa sangat bahaya?';
+  const qna4 = await prisma.contentItem.upsert({
+    where: { slug: slugify(qna4Title, { lower: true }) },
+    update: {},
+    create: {
+      title: qna4Title, slug: slugify(qna4Title, { lower: true }),
+      type: ContentType.QNA, status: ContentStatus.PUBLISHED,
+      nodeId: modRukunIman.id, authorId: editor.id, ageGroup: '7-10',
+      viewCount: 134, likeCount: 55, avgRating: 4.8, ratingCount: 20, publishedAt: new Date(),
+      description: 'Penjelasan tentang syirik dengan bahasa yang mudah dipahami anak usia 7-10 tahun.',
+      qnaDetail: {
+        create: {
+          question: 'Apa itu syirik? Kenapa kata Ustadz itu dosa paling besar?',
+          answerQuick: 'Syirik adalah menyembah atau meminta tolong kepada selain Allah dalam perkara yang hanya Allah yang mampu. Ini dosa terbesar karena Allah tidak mengampuninya jika pelakunya tidak bertaubat.',
+          dialogBlocks: [
+            { role: 'anak', text: 'Abi, kata Ustadz syirik itu dosa paling besar. Memangnya apa sih syirik?' },
+            { role: 'ortu', text: 'Syirik itu artinya menyekutukan Allah. Misalnya, berdoa kepada selain Allah, atau percaya ada yang bisa memberi rezeki selain Allah.' },
+            { role: 'anak', text: 'Kalau pakai jimat biar nggak sakit, itu syirik?' },
+            { role: 'ortu', text: 'Benar sekali, Nak. Yang menyembuhkan hanya Allah. Jimat tidak punya kekuatan apa-apa. Rasulullah ﷺ melarang memakai jimat.' },
+          ],
+          dalilBlocks: [
+            { text: 'Sesungguhnya Allah tidak mengampuni dosa syirik, dan Dia mengampuni dosa selain itu bagi siapa yang Dia kehendaki.', source: 'QS. An-Nisa: 48' },
+            { text: 'Rasulullah ﷺ bersabda: "Barangsiapa menggantungkan jimat, maka dia telah berbuat syirik."', source: 'HR. Ahmad, dishahihkan Al-Albani' },
+          ],
+          analogyBlocks: [
+            { title: 'Remote TV', text: 'Bayangkan kamu minta remote TV untuk memasak nasi. Bisa nggak? Tentu tidak! Nah, meminta tolong kepada batu, pohon, atau makhluk dalam urusan yang hanya Allah mampu itu sama anehnya!' },
+          ],
+          tipsBlocks: [
+            { text: 'Jelaskan dengan lembut bahwa syirik bukan hanya menyembah patung, tapi juga percaya kepada jimat, dukun, dan ramalan bintang.' },
+            { text: 'Ajarkan anak selalu berdoa langsung kepada Allah tanpa perantara.' },
+          ],
+        },
+      },
+    },
+  });
+
+  // --- QnA 5: Siapa yang menciptakan alam (3-5) ---
+  const qna5Title = 'Siapa yang menciptakan langit dan bumi?';
+  const qna5 = await prisma.contentItem.upsert({
+    where: { slug: slugify(qna5Title, { lower: true }) },
+    update: {},
+    create: {
+      title: qna5Title, slug: slugify(qna5Title, { lower: true }),
+      type: ContentType.QNA, status: ContentStatus.PUBLISHED,
+      nodeId: topicMahaMelihat.id, authorId: admin.id, ageGroup: '3-5',
+      viewCount: 198, likeCount: 72, avgRating: 4.9, ratingCount: 28, publishedAt: new Date(),
+      description: 'Mengenalkan konsep Allah sebagai Pencipta kepada anak balita dengan bahasa sederhana.',
+      qnaDetail: {
+        create: {
+          question: 'Ummi, siapa yang bikin langit? Siapa yang bikin kucing?',
+          answerQuick: 'Allah yang menciptakan semuanya! Langit, bumi, gunung, kucing, bunga — semuanya ciptaan Allah.',
+          dialogBlocks: [
+            { role: 'anak', text: 'Ummi, siapa yang bikin bulan?' },
+            { role: 'ortu', text: 'Allah yang membuatnya, Sayang. Allah yang membuat bulan, bintang, matahari, semuanya!' },
+            { role: 'anak', text: 'Kalau kucing? Siapa yang bikin kucing?' },
+            { role: 'ortu', text: 'Allah juga! Allah menciptakan semua hewan — kucing, burung, ikan, semut. Hebat kan Allah?' },
+          ],
+          dalilBlocks: [
+            { text: 'Allah-lah yang menciptakan langit dan bumi dan apa yang ada di antara keduanya dalam enam masa.', source: 'QS. As-Sajdah: 4' },
+          ],
+          analogyBlocks: [
+            { title: 'Siapa yang Buat Kue?', text: 'Kalau ada kue di meja, pasti ada yang membuatnya kan? Nah, langit dan bumi ini jauh lebih hebat dari kue — pasti ada yang membuatnya, yaitu Allah!' },
+          ],
+          tipsBlocks: [
+            { text: 'Ajak anak jalan-jalan ke taman dan tunjukkan ciptaan Allah: pohon, bunga, burung. Katakan "Subhanallah, ini ciptaan Allah!"' },
+          ],
+        },
+      },
+    },
+  });
+
+  // --- QnA 6: Bagaimana cara berwudhu (5-7) ---
+  const qna6Title = 'Bagaimana cara berwudhu yang benar?';
+  const qna6 = await prisma.contentItem.upsert({
+    where: { slug: slugify(qna6Title, { lower: true }) },
+    update: {},
+    create: {
+      title: qna6Title, slug: slugify(qna6Title, { lower: true }),
+      type: ContentType.QNA, status: ContentStatus.PUBLISHED,
+      nodeId: modWudhu.id, authorId: editor.id, ageGroup: '5-7',
+      viewCount: 267, likeCount: 88, avgRating: 4.9, ratingCount: 35, publishedAt: new Date(),
+      description: 'Langkah-langkah wudhu sesuai Sunnah untuk anak-anak.',
+      qnaDetail: {
+        create: {
+          question: 'Bagaimana cara wudhu yang benar seperti Rasulullah ﷺ?',
+          answerQuick: 'Wudhu dimulai dengan niat, lalu cuci tangan, kumur, hidung, muka, tangan sampai siku, usap kepala, dan terakhir cuci kaki.',
+          dialogBlocks: [
+            { role: 'anak', text: 'Abi, aku mau belajar wudhu. Gimana caranya?' },
+            { role: 'ortu', text: 'Bagus sekali! Pertama, niatkan dalam hati untuk berwudhu karena Allah. Lalu baca Bismillah.' },
+            { role: 'anak', text: 'Terus cuci apa dulu?' },
+            { role: 'ortu', text: 'Cuci kedua telapak tangan 3 kali, kumur-kumur 3 kali, lalu masukkan air ke hidung dan keluarkan 3 kali. Setelah itu cuci muka 3 kali.' },
+          ],
+          dalilBlocks: [
+            { text: 'Wahai orang-orang yang beriman, apabila kamu hendak mengerjakan shalat, maka basuhlah mukamu dan tanganmu sampai ke siku, dan sapulah kepalamu dan (basuh) kakimu sampai kedua mata kaki.', source: 'QS. Al-Maidah: 6' },
+            { text: 'Rasulullah ﷺ berwudhu dengan membasuh setiap anggota wudhu tiga kali.', source: 'HR. Bukhari no. 159' },
+          ],
+          analogyBlocks: [
+            { title: 'Mandi Sebelum ke Pesta', text: 'Sebelum ke pesta, kita mandi dulu biar bersih dan wangi kan? Nah, sebelum bertemu Allah di shalat, kita wudhu dulu biar suci dan siap!' },
+          ],
+          tipsBlocks: [
+            { text: 'Praktikkan bersama anak di depan wastafel. Biarkan anak menirukan gerakan Anda step by step.' },
+            { text: 'Jangan lupa ajarkan doa setelah wudhu: "Asyhadu an laa ilaaha illallah wa asyhadu anna Muhammadan abduhu wa rasuuluh"' },
+          ],
+        },
+      },
+    },
+  });
+
+  // --- Article 3: Doa Sehari-hari (3-5) ---
+  const art3Title = 'Doa Sehari-hari untuk Anak Muslim';
+  const art3 = await prisma.contentItem.upsert({
+    where: { slug: slugify(art3Title, { lower: true }) },
+    update: {},
+    create: {
+      title: art3Title, slug: slugify(art3Title, { lower: true }),
+      type: ContentType.ARTICLE, status: ContentStatus.PUBLISHED,
+      nodeId: categoryNodes['Doa & Dzikir Anak'].id, authorId: admin.id, ageGroup: '3-5',
+      viewCount: 210, likeCount: 67, avgRating: 4.8, ratingCount: 22, publishedAt: new Date(),
+      description: 'Kumpulan doa harian yang mudah dihafal untuk anak balita.',
+      articleDetail: {
+        create: {
+          blocks: [
+            { type: 'heading', text: '1. Doa Sebelum Makan' },
+            { type: 'paragraph', text: '"Bismillah" — Dengan menyebut nama Allah. Rasulullah ﷺ bersabda: "Jika salah seorang kalian makan, hendaklah menyebut nama Allah." (HR. Abu Dawud no. 3767, dishahihkan Al-Albani)' },
+            { type: 'heading', text: '2. Doa Sesudah Makan' },
+            { type: 'paragraph', text: '"Alhamdulillahilladzi ath\'amanii haadza wa razaqaniihi min ghairi haulin minnii wa laa quwwah" — Segala puji bagi Allah yang telah memberi makan ini dan memberi rezeki kepadaku tanpa daya dan kekuatan dariku. (HR. Abu Dawud no. 4023, dihasankan Al-Albani)' },
+            { type: 'heading', text: '3. Doa Sebelum Tidur' },
+            { type: 'paragraph', text: '"Bismika Allahumma amuutu wa ahyaa" — Dengan nama-Mu ya Allah aku mati dan aku hidup. (HR. Bukhari no. 6324)' },
+            { type: 'heading', text: '4. Doa Bangun Tidur' },
+            { type: 'paragraph', text: '"Alhamdulillahilladzi ahyaanaa ba\'da maa amaatanaa wa ilaihin nusyuur" — Segala puji bagi Allah yang menghidupkan kami setelah mematikan kami, dan kepada-Nya lah kami dikembalikan. (HR. Bukhari no. 6325)' },
+            { type: 'tip', text: 'Ajarkan satu doa setiap minggu. Tempelkan di dinding kamar anak agar mudah dihafal. Praktikkan bersama setiap hari.' },
+          ],
+        },
+      },
+    },
+  });
+
+  // --- Article 4: Mengenal Rukun Islam (5-7) ---
+  const art4Title = 'Mengenal Lima Rukun Islam';
+  const art4 = await prisma.contentItem.upsert({
+    where: { slug: slugify(art4Title, { lower: true }) },
+    update: {},
+    create: {
+      title: art4Title, slug: slugify(art4Title, { lower: true }),
+      type: ContentType.ARTICLE, status: ContentStatus.PUBLISHED,
+      nodeId: modShalat.id, authorId: editor.id, ageGroup: '5-7',
+      viewCount: 175, likeCount: 58, avgRating: 4.7, ratingCount: 19, publishedAt: new Date(),
+      description: 'Penjelasan lima rukun Islam dengan bahasa anak-anak.',
+      articleDetail: {
+        create: {
+          blocks: [
+            { type: 'heading', text: 'Apa itu Rukun Islam?' },
+            { type: 'paragraph', text: 'Rukun Islam adalah lima tiang utama dalam agama Islam. Seperti rumah butuh tiang agar berdiri kokoh, agama kita juga butuh lima tiang ini.' },
+            { type: 'heading', text: '1. Syahadat' },
+            { type: 'paragraph', text: 'Mengucapkan "Asyhadu an laa ilaaha illallah wa asyhadu anna Muhammadan Rasulullah" — Aku bersaksi tidak ada Tuhan yang berhak disembah selain Allah, dan aku bersaksi bahwa Muhammad adalah utusan Allah.' },
+            { type: 'heading', text: '2. Shalat' },
+            { type: 'paragraph', text: 'Mendirikan shalat lima waktu: Subuh, Dzuhur, Ashar, Maghrib, dan Isya. Rasulullah ﷺ bersabda: "Perintahkanlah anak-anak kalian untuk shalat ketika berusia tujuh tahun." (HR. Abu Dawud no. 495)' },
+            { type: 'heading', text: '3. Zakat' },
+            { type: 'paragraph', text: 'Memberikan sebagian harta kepada yang membutuhkan. Ini mengajarkan kita untuk berbagi.' },
+            { type: 'heading', text: '4. Puasa Ramadhan' },
+            { type: 'paragraph', text: 'Menahan makan dan minum dari terbit fajar sampai terbenam matahari di bulan Ramadhan.' },
+            { type: 'heading', text: '5. Haji' },
+            { type: 'paragraph', text: 'Pergi ke Mekkah untuk beribadah bagi yang mampu. Ini dilakukan sekali seumur hidup.' },
+            { type: 'dalil', text: '"Islam dibangun di atas lima perkara: Syahadat bahwa tidak ada Tuhan selain Allah dan Muhammad adalah utusan-Nya, mendirikan shalat, menunaikan zakat, berpuasa Ramadhan, dan haji ke Baitullah." (HR. Bukhari no. 8, Muslim no. 16)' },
+          ],
+        },
+      },
+    },
+  });
+
+  // --- Article 5: Kisah Nabi Nuh (7-10) ---
+  const art5Title = 'Kisah Nabi Nuh dan Bahtera Penyelamat';
+  const art5 = await prisma.contentItem.upsert({
+    where: { slug: slugify(art5Title, { lower: true }) },
+    update: {},
+    create: {
+      title: art5Title, slug: slugify(art5Title, { lower: true }),
+      type: ContentType.ARTICLE, status: ContentStatus.PUBLISHED,
+      nodeId: categoryNodes['Kisah Nabi & Sahabat'].id, authorId: admin.id, ageGroup: '7-10',
+      viewCount: 145, likeCount: 51, avgRating: 4.8, ratingCount: 17, publishedAt: new Date(),
+      description: 'Kisah keteguhan Nabi Nuh alaihissalam dalam berdakwah selama 950 tahun.',
+      articleDetail: {
+        create: {
+          blocks: [
+            { type: 'heading', text: 'Dakwah 950 Tahun' },
+            { type: 'paragraph', text: 'Nabi Nuh alaihissalam berdakwah kepada kaumnya selama 950 tahun! Bayangkan betapa sabarnya beliau. Siang dan malam beliau mengajak kaumnya untuk menyembah Allah saja, tapi kebanyakan mereka menolak dan mengejeknya.' },
+            { type: 'heading', text: 'Perintah Membuat Bahtera' },
+            { type: 'paragraph', text: 'Allah memerintahkan Nabi Nuh membuat kapal besar (bahtera) di atas bukit. Orang-orang kafir menertawakannya: "Untuk apa membuat kapal di atas bukit?" Tapi Nabi Nuh tetap taat kepada Allah.' },
+            { type: 'heading', text: 'Banjir Besar' },
+            { type: 'paragraph', text: 'Ketika bahtera selesai, Allah menurunkan hujan sangat lebat dan air memancar dari dalam bumi. Banjir besar melanda seluruh tempat. Nabi Nuh dan orang-orang beriman naik ke bahtera bersama sepasang-sepasang hewan. Mereka selamat atas izin Allah.' },
+            { type: 'dalil', text: '"Dan Nuh berkata: Naiklah kamu sekalian ke dalamnya dengan menyebut nama Allah pada waktu berlayar dan berlabuhnya. Sesungguhnya Tuhanku benar-benar Maha Pengampun lagi Maha Penyayang." (QS. Hud: 41)' },
+            { type: 'heading', text: 'Pelajaran dari Kisah Nabi Nuh' },
+            { type: 'paragraph', text: '1. Sabar dalam berdakwah meskipun diejek.\n2. Taat kepada Allah meskipun tidak masuk akal bagi manusia.\n3. Allah pasti menyelamatkan orang-orang beriman.\n4. Keselamatan bukan karena hubungan darah, tapi karena iman. Anak Nabi Nuh sendiri tenggelam karena menolak beriman.' },
+          ],
+        },
+      },
+    },
+  });
+
   // Link tags to content
   const tagLinks = [
     { contentId: qna1.id, tagId: tags['Tauhid'].id },
@@ -365,9 +565,16 @@ async function main() {
     { contentId: qna2.id, tagId: tags['Aqidah'].id },
     { contentId: qna3.id, tagId: tags['Ibadah'].id },
     { contentId: qna3.id, tagId: tags['Shalat'].id },
+    { contentId: qna4.id, tagId: tags['Tauhid'].id },
+    { contentId: qna4.id, tagId: tags['Aqidah'].id },
+    { contentId: qna5.id, tagId: tags['Tauhid'].id },
+    { contentId: qna6.id, tagId: tags['Ibadah'].id },
     { contentId: art1.id, tagId: tags['Adab'].id },
     { contentId: art1.id, tagId: tags['Akhlak'].id },
     { contentId: art2.id, tagId: tags['Kisah Nabi'].id },
+    { contentId: art3.id, tagId: tags['Doa'].id },
+    { contentId: art4.id, tagId: tags['Ibadah'].id },
+    { contentId: art5.id, tagId: tags['Kisah Nabi'].id },
   ];
 
   for (const link of tagLinks) {
@@ -383,12 +590,12 @@ async function main() {
   await prisma.authorStat.upsert({
     where: { authorId: editor.id },
     update: {},
-    create: { authorId: editor.id, totalPublished: 3, totalViews: 746, totalLikes: 235, avgContentRating: 4.87 },
+    create: { authorId: editor.id, totalPublished: 6, totalViews: 1335, totalLikes: 423, avgContentRating: 4.87 },
   });
   await prisma.authorStat.upsert({
     where: { authorId: admin.id },
     update: {},
-    create: { authorId: admin.id, totalPublished: 1, totalViews: 156, totalLikes: 43, avgContentRating: 4.7 },
+    create: { authorId: admin.id, totalPublished: 4, totalViews: 709, totalLikes: 233, avgContentRating: 4.8 },
   });
   console.log('✅ Author Stats created');
 

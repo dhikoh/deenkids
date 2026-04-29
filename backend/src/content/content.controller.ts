@@ -96,10 +96,38 @@ export class ContentController {
     };
   }
 
+  @Get('donation/testimonials')
+  @ApiOperation({ summary: 'Get verified donation testimonials' })
+  async getDonationTestimonials() {
+    const data = await this.prisma.donationSubmission.findMany({
+      where: { verified: true },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: { name: true, amount: true, message: true, createdAt: true },
+    });
+    return { data };
+  }
+
+  @Get('announcement')
+  @ApiOperation({ summary: 'Get active announcement banner' })
+  async getAnnouncement() {
+    const [enabled, text, type, link] = await Promise.all([
+      this.prisma.setting.findUnique({ where: { key: 'announcement_enabled' } }),
+      this.prisma.setting.findUnique({ where: { key: 'announcement_text' } }),
+      this.prisma.setting.findUnique({ where: { key: 'announcement_type' } }),
+      this.prisma.setting.findUnique({ where: { key: 'announcement_link' } }),
+    ]);
+    return {
+      enabled: enabled?.value === 'true',
+      text: text?.value || '',
+      type: type?.value || 'info',
+      link: link?.value || '',
+    };
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Get specific content details by slug' })
   async getContentDetail(@Param('slug') slug: string) {
     return this.contentService.getContentDetail(slug);
   }
 }
-

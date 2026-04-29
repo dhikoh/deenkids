@@ -97,23 +97,6 @@ export class PublicFormController {
 
     return { message: 'Terima kasih atas masukan Anda!' };
   }
-
-  @Get('announcement')
-  @ApiOperation({ summary: 'Get active announcement banner' })
-  async getAnnouncement() {
-    const [enabled, text, type, link] = await Promise.all([
-      this.prisma.setting.findUnique({ where: { key: 'announcement_enabled' } }),
-      this.prisma.setting.findUnique({ where: { key: 'announcement_text' } }),
-      this.prisma.setting.findUnique({ where: { key: 'announcement_type' } }),
-      this.prisma.setting.findUnique({ where: { key: 'announcement_link' } }),
-    ]);
-    return {
-      enabled: enabled?.value === 'true',
-      text: text?.value || '',
-      type: type?.value || 'info',
-      link: link?.value || '',
-    };
-  }
 }
 
 // ─── Admin Donation + Feedback Controllers ───
