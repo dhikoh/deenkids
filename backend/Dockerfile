@@ -5,14 +5,16 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --ignore-scripts
-RUN npx prisma generate || true
+
+ENV NODE_ENV=development
+RUN npm install
 
 COPY . .
 RUN npx prisma generate && npm run build
 
+ENV NODE_ENV=production
 RUN npm prune --production
 
 EXPOSE 4000
 
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "dist/main.js"]
