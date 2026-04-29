@@ -96,18 +96,6 @@ export class ContentController {
     };
   }
 
-  @Get('donation/testimonials')
-  @ApiOperation({ summary: 'Get verified donation testimonials' })
-  async getDonationTestimonials() {
-    const data = await this.prisma.donationSubmission.findMany({
-      where: { verified: true },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-      select: { name: true, amount: true, message: true, createdAt: true },
-    });
-    return { data };
-  }
-
   @Get('announcement')
   @ApiOperation({ summary: 'Get active announcement banner' })
   async getAnnouncement() {
