@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { X, Gift, CreditCard, QrCode, ExternalLink } from "lucide-react";
 import { fetchDonationSettings } from "@/lib/api";
 
@@ -14,8 +15,13 @@ const iconMap: Record<string, any> = {
 export default function DonationPopup() {
   const [show, setShow] = useState(false);
   const [data, setData] = useState<any>(null);
+  const pathname = usePathname();
+
+  // Only show for public visitors, not in admin panel or login
+  const isPublicPage = !pathname.startsWith('/admin') && !pathname.startsWith('/login');
 
   useEffect(() => {
+    if (!isPublicPage) return;
     const dismissed = sessionStorage.getItem("donation_dismissed");
     if (dismissed) return;
 

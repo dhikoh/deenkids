@@ -61,7 +61,7 @@ export default function MyContentsPage() {
           <h1 className="text-2xl font-bold text-slate-800">Konten Saya</h1>
           <p className="text-slate-500">Kelola semua konten yang Anda buat.</p>
         </div>
-        <Link href="/admin/AUTHOR" className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-2"><FileText size={18} /> Buat Baru</Link>
+        <Link href="/admin/editor" className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-2"><FileText size={18} /> Buat Baru</Link>
       </div>
 
       <div className="flex gap-2">

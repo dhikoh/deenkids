@@ -25,7 +25,7 @@ export default function AdminDashboardPage() {
   if (isLoading) return <div className="p-8 text-center text-slate-500">Memuat dashboard...</div>;
 
   const isAUTHOR = stats?.role === "AUTHOR";
-  const roleLabel = stats?.role === "SUPERADMIN" ? "SuperAdmin" : stats?.role === "ADMIN" ? "Admin" : "AUTHOR";
+  const roleLabel = stats?.role === "SUPERADMIN" ? "SuperAdmin" : stats?.role === "ADMIN" ? "Admin" : "Penulis";
 
   return (
     <div className="space-y-8">
@@ -34,7 +34,7 @@ export default function AdminDashboardPage() {
           <h1 className="text-2xl font-bold text-slate-800">Dashboard {roleLabel}</h1>
           <p className="text-slate-500">{isAUTHOR ? "Pantau statistik konten Anda." : "Ringkasan performa dan metrik Adably Platform."}</p>
         </div>
-        <Link href="/admin/AUTHOR" className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm transition-colors flex items-center gap-2">
+        <Link href="/admin/editor" className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm transition-colors flex items-center gap-2">
           <PenLine size={18} /> Tulis Konten Baru
         </Link>
       </div>
@@ -75,7 +75,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-sky-100 flex items-center justify-center text-sky-600">{isAUTHOR ? <AlertCircle size={24} /> : <Users size={24} />}</div>
             <div>
-              <p className="text-sm font-medium text-slate-500">{isAUTHOR ? "Menunggu Review" : "AUTHOR Aktif"}</p>
+              <p className="text-sm font-medium text-slate-500">{isAUTHOR ? "Menunggu Review" : "Penulis Aktif"}</p>
               <h3 className="text-2xl font-bold text-slate-800">{isAUTHOR ? (stats?.inReview || 0) : (stats?.totalAUTHORs || 0)}</h3>
             </div>
           </div>
