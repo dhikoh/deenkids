@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards } from '@nestjs/common';
 import { SuperadminService } from './superadmin.service';
 import { RolesGuard, JwtAuthGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -10,20 +10,6 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 @Controller('superadmin')
 export class SuperadminController {
   constructor(private readonly superadminService: SuperadminService) {}
-
-  // ── Users ──
-  @Get('users')
-  @Roles('SUPERADMIN')
-  async getUsers() {
-    return this.superadminService.getUsers();
-  }
-
-  @Put('users/:id/role')
-  @Roles('SUPERADMIN')
-  @ApiOperation({ summary: 'Update user role' })
-  async updateUserRole(@Param('id') id: string, @Body() body: { role: string }) {
-    return this.superadminService.updateUserRole(id, body.role);
-  }
 
   // ── AI Settings ──
   @Get('settings/ai-toggle')

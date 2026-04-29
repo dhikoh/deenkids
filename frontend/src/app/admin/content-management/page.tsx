@@ -26,7 +26,7 @@ export default function ContentManagementPage() {
       const params = new URLSearchParams();
       if (filter) params.append("status", filter);
       params.append("page", page.toString());
-      const res = await apiFetch(`${API}/admin/all-contents?${params}`, { headers: authH(token) });
+      const res = await apiFetch(`${API}/admin/contents?${params}`, { headers: authH(token) });
       setContents(res.data || []); setMeta(res.meta || {});
     } catch { toast.error("Gagal memuat konten"); }
     finally { setLoading(false); }

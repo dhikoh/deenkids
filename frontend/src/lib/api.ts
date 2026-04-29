@@ -337,13 +337,13 @@ export async function updateAiToggle(enabled: boolean, token: string) {
 }
 
 export async function fetchUsersList(token: string) {
-  return apiFetch(`${API_BASE_URL}/superadmin/users`, {
+  return apiFetch(`${API_BASE_URL}/admin/users`, {
     headers: authHeaders(token),
   });
 }
 
 export async function updateUserRole(userId: string, role: string, token: string) {
-  return apiFetch(`${API_BASE_URL}/superadmin/users/${userId}/role`, {
+  return apiFetch(`${API_BASE_URL}/admin/users/${userId}`, {
     method: 'PUT',
     headers: authHeaders(token),
     body: JSON.stringify({ role }),
