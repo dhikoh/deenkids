@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronLeft, Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCircle, User } from "lucide-react";
 import { EngagementBar } from "@/components/ui/EngagementBar";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
+import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
 
 export default async function ArtikelDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -36,6 +37,17 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
           <span className="flex items-center gap-1"><Eye className="h-4 w-4" /> {content.viewCount}</span>
         </div>
       </div>
+
+      {/* Audio Player */}
+      <AudioPlayerWrapper blocks={
+        content.articleDetail?.blocks || [
+          ...(content.qnaDetail?.answerQuick ? [{ type: 'quick_answer', text: content.qnaDetail.answerQuick }] : []),
+          ...(content.qnaDetail?.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
+          ...(content.qnaDetail?.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
+          ...(content.qnaDetail?.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
+          ...(content.qnaDetail?.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+        ]
+      } enableAudio={content.enableAudio} contentType={content.type} />
 
       {/* Article Blocks Renderer */}
       {content.articleDetail && (

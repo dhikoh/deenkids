@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronLeft, Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCircle, User } from "lucide-react";
 import { EngagementBar } from "@/components/ui/EngagementBar";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
+import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
 
 export default async function QnaDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -40,6 +41,13 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
 
       {qna && (
         <div className="space-y-8">
+          <AudioPlayerWrapper blocks={[
+            ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
+            ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
+            ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
+            ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
+            ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+          ]} enableAudio={content.enableAudio} contentType={content.type} />
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
             <h2 className="font-bold text-emerald-800 mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5" /> Jawaban Ringkas</h2>
             <p className="text-emerald-900 font-medium leading-relaxed">{qna.answerQuick}</p>

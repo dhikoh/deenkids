@@ -50,6 +50,11 @@ export class CreateContentDto {
   @IsOptional()
   useAiChecker?: boolean;
 
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  enableAudio?: boolean;
+
   // Polymorphic Details based on type
   @ApiProperty({ required: false })
   @IsObject()

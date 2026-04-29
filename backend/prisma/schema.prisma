@@ -127,6 +127,7 @@ model ContentItem {
   aiCheckResults    AiCheckResult[]
   relatedFrom       RelatedContent[]  @relation("SourceContent")
   relatedTo         RelatedContent[]  @relation("TargetContent")
+  enableAudio       Boolean           @default(false)
 }
 
 model QnaDetail {

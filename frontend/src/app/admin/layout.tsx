@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database } from "lucide-react";
+import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2 } from "lucide-react";
 import Cookies from "js-cookie";
 import { fetchUnreadCount } from "@/lib/api";
 
@@ -72,6 +72,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       { name: "Manajemen User", icon: <Users size={20} />, href: "/admin/users", show: isAdminOrSuper },
     ]},
     { label: "SuperAdmin", items: [
+      { name: "Prompt Generator", icon: <Wand2 size={20} />, href: "/admin/prompt-generator", show: isSuperAdmin },
       { name: "Donasi Masuk", icon: <DollarSign size={20} />, href: "/admin/donation-inbox", show: isSuperAdmin },
       { name: "Kritik & Saran", icon: <MessageSquare size={20} />, href: "/admin/feedback", show: isSuperAdmin },
       { name: "Withdrawal", icon: <Wallet size={20} />, href: "/admin/withdrawal-inbox", show: isSuperAdmin },

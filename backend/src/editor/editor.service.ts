@@ -33,6 +33,7 @@ export class EditorService {
         nodeId: dto.nodeId || null,
         authorId,
         displayAuthorName: author?.role === 'SUPERADMIN' ? (dto as any).displayAuthorName || null : null,
+        enableAudio: dto.enableAudio || false,
         metaTitle: dto.metaTitle,
         metaDesc: dto.metaDesc,
       },
@@ -169,6 +170,7 @@ export class EditorService {
         type: dto.type,
         ageGroups: dto.ageGroups || [],
         nodeId: dto.nodeId || null,
+        enableAudio: dto.enableAudio || false,
         metaTitle: dto.metaTitle,
         metaDesc: dto.metaDesc,
         // Reset to draft if was in revision

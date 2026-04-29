@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock } from "lucide-react";
+import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock, Volume2, VolumeX } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle } from "@/lib/api";
@@ -56,6 +56,7 @@ function EditorContent() {
   const [aiGlobalEnabled, setAiGlobalEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [displayAuthorName, setDisplayAuthorName] = useState("");
+  const [enableAudio, setEnableAudio] = useState(false);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [nodes, setNodes] = useState<any[]>([]);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
@@ -76,10 +77,22 @@ function EditorContent() {
       fetchEditorTags(token).then(r => setAvailableTags(r.data || [])).catch(() => {});
       // Fetch AI global toggle
       fetchAiToggle(token).then(r => { setAiGlobalEnabled(r.aiEnabled); if (!r.aiEnabled) setUseAi(false); }).catch(() => {});
-      // Check localStorage for auto-draft recovery
+      // Check localStorage for auto-draft recovery (3 month expiry)
       if (!searchParams.get("id")) {
         const saved = localStorage.getItem(AUTO_SAVE_KEY);
-        if (saved) { try { const d = JSON.parse(saved); if (d.title) setShowRecovery(true); } catch {} }
+        if (saved) {
+          try {
+            const d = JSON.parse(saved);
+            const savedDate = new Date(d.savedAt);
+            const now = new Date();
+            const diffDays = (now.getTime() - savedDate.getTime()) / (1000 * 60 * 60 * 24);
+            if (d.title && diffDays <= 90) {
+              setShowRecovery(true);
+            } else if (diffDays > 90) {
+              localStorage.removeItem(AUTO_SAVE_KEY);
+            }
+          } catch {}
+        }
       }
       // Edit mode: load existing content
       const id = searchParams.get("id");
@@ -141,13 +154,13 @@ function EditorContent() {
     if (editId) return; // Don't auto-save when editing existing content
     const timer = setInterval(() => {
       if (title || blocks.length > 0) {
-        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, savedAt: new Date().toISOString() };
+        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, savedAt: new Date().toISOString() };
         localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft));
         setLastAutoSave(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
       }
     }, 30000);
     return () => clearInterval(timer);
-  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, editId]);
+  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, editId]);
 
   const recoverDraft = () => {
     try {
@@ -162,6 +175,7 @@ function EditorContent() {
         if (d.tags) setTags(d.tags);
         if (d.blocks) setBlocks(d.blocks);
         if (d.displayAuthorName) setDisplayAuthorName(d.displayAuthorName);
+        if (d.enableAudio !== undefined) setEnableAudio(d.enableAudio);
         toast.success("Draft berhasil dipulihkan!");
       }
     } catch {} finally { setShowRecovery(false); }
@@ -221,7 +235,7 @@ function EditorContent() {
     try {
       const apiType = contentType === "PEMBELAJARAN" ? "ARTICLE" : contentType;
       const payload: any = {
-        title, description, type: apiType, ageGroups, useAiChecker: useAi, tags,
+        title, description, type: apiType, ageGroups, useAiChecker: useAi, enableAudio, tags,
         nodeId: contentType === "PEMBELAJARAN" ? nodeId : (nodeId || undefined),
         displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
         articleDetail: { blocks: blocks.map(b => ({ type: b.type, ...b.data })) },
@@ -355,7 +369,7 @@ function EditorContent() {
             <Clock size={20} className="text-amber-600" />
             <div>
               <p className="font-bold text-amber-800 text-sm">Draft yang belum tersimpan ditemukan</p>
-              <p className="text-xs text-amber-600">Ingin memulihkan draft terakhir?</p>
+              <p className="text-xs text-amber-600">Ingin memulihkan draft terakhir? {(() => { try { const s = localStorage.getItem(AUTO_SAVE_KEY); if (s) { const d = JSON.parse(s); return `(Tersimpan: ${new Date(d.savedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })})`; } } catch {} return ''; })()}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -378,6 +392,10 @@ function EditorContent() {
               <span className="text-sm font-medium flex items-center gap-1"><Sparkles className="h-4 w-4 text-amber-500" /> AI Checker</span>
             </label>
           )}
+          <label className={`flex items-center gap-2 cursor-pointer px-4 py-2 rounded-xl border shadow-sm transition-all ${enableAudio ? "bg-purple-50 border-purple-300" : "bg-white border-slate-200"}`}>
+            <input type="checkbox" checked={enableAudio} onChange={(e) => setEnableAudio(e.target.checked)} className="w-4 h-4 text-purple-600 rounded" />
+            <span className="text-sm font-medium flex items-center gap-1">{enableAudio ? <Volume2 className="h-4 w-4 text-purple-500" /> : <VolumeX className="h-4 w-4 text-slate-400" />} Audio</span>
+          </label>
           <button onClick={handleSave} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-70">
             <Save size={18} /> {isSaving ? "Menyimpan..." : "Simpan Draft"}
           </button>
