@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle } from "lucide-react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { createContent, fetchEditorNodes, fetchEditorTags } from "@/lib/api";
@@ -41,7 +42,7 @@ function defaultData(type: BlockType): any {
   }
 }
 
-export default function EditorPage() {
+function EditorContent() {
   const [contentType, setContentType] = useState<ContentTypeOption>("QNA");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -56,6 +57,10 @@ export default function EditorPage() {
   const [nodes, setNodes] = useState<any[]>([]);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [showTerms, setShowTerms] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const token = Cookies.get("access_token");
@@ -64,8 +69,42 @@ export default function EditorPage() {
     if (token) {
       fetchEditorNodes(token).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
       fetchEditorTags(token).then(r => setAvailableTags(r.data || [])).catch(() => {});
+      // Edit mode: load existing content
+      const id = searchParams.get("id");
+      if (id) {
+        setEditId(id);
+        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+        fetch(`${API}/editor/content/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+          .then(r => r.json()).then(res => {
+            const c = res.data;
+            if (c) {
+              setTitle(c.title || ""); setDescription(c.description || "");
+              setAgeGroup(c.ageGroup || "3-5"); setNodeId(c.nodeId || "");
+              setDisplayAuthorName(c.displayAuthorName || "");
+              setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
+              const cType = c.nodeId ? "PEMBELAJARAN" : c.type === "QNA" ? "QNA" : "ARTICLE";
+              setContentType(cType);
+              // Load blocks from articleDetail or qnaDetail
+              const loadedBlocks: EditorBlock[] = [];
+              if (c.qnaDetail) {
+                if (c.qnaDetail.answerQuick) loadedBlocks.push({ id: genId(), type: "quick_answer", data: { text: c.qnaDetail.answerQuick } });
+                (c.qnaDetail.dialogBlocks || []).forEach((d: any) => loadedBlocks.push({ id: genId(), type: "dialog", data: d }));
+                (c.qnaDetail.dalilBlocks || []).forEach((d: any) => loadedBlocks.push({ id: genId(), type: "dalil", data: d }));
+                (c.qnaDetail.analogyBlocks || []).forEach((a: any) => loadedBlocks.push({ id: genId(), type: "analogy", data: a }));
+                (c.qnaDetail.tipsBlocks || []).forEach((t: any) => loadedBlocks.push({ id: genId(), type: "tip", data: t }));
+              }
+              if (c.articleDetail?.blocks) {
+                (c.articleDetail.blocks as any[]).forEach((b: any) => {
+                  const { type, ...data } = b;
+                  loadedBlocks.push({ id: genId(), type: type as BlockType, data });
+                });
+              }
+              if (loadedBlocks.length) setBlocks(loadedBlocks);
+            }
+          }).catch(() => toast.error("Gagal memuat konten untuk edit"));
+      }
     }
-  }, []);
+  }, [searchParams]);
 
   const flattenNodes = (tree: any[], prefix = ""): any[] => {
     let result: any[] = [];
@@ -148,14 +187,36 @@ export default function EditorPage() {
           tipsBlocks: tips.map(b => b.data),
         };
       }
-      await createContent(payload, token || "");
-      toast.success("Draft berhasil disimpan!");
-      setTitle(""); setDescription(""); setBlocks([]); setTags([]);
+      if (editId) {
+        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+        await fetch(`${API}/editor/content/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) }).then(r => { if (!r.ok) throw new Error("Gagal update"); return r.json(); });
+        toast.success("Konten berhasil diperbarui!");
+      } else {
+        await createContent(payload, token || "");
+        toast.success("Draft berhasil disimpan!");
+        setTitle(""); setDescription(""); setBlocks([]); setTags([]);
+      }
     } catch (error: any) {
       toast.error(error.message || "Gagal menyimpan konten");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSubmitReview = () => {
+    setShowTerms(true);
+    setTermsAccepted(false);
+  };
+
+  const confirmSubmitReview = async () => {
+    if (!editId) { toast.error("Simpan konten terlebih dahulu"); return; }
+    const token = Cookies.get("access_token");
+    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+    try {
+      await fetch(`${API}/editor/content/${editId}/submit`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).then(r => { if (!r.ok) throw new Error(); return r.json(); });
+      toast.success("Konten diajukan untuk review!");
+      setShowTerms(false);
+    } catch { toast.error("Gagal mengajukan review"); }
   };
 
   const renderBlockEditor = (block: EditorBlock, index: number) => {
@@ -330,17 +391,62 @@ export default function EditorPage() {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <h3 className="font-bold text-slate-800 mb-4 border-b pb-2">Publikasi</h3>
             <ul className="space-y-3 mb-6">
-              <li className="flex items-center gap-2 text-sm text-slate-600"><CheckCircle size={16} className="text-emerald-500" /> Status: Draft</li>
+              <li className="flex items-center gap-2 text-sm text-slate-600"><CheckCircle size={16} className="text-emerald-500" /> Mode: {editId ? "Edit" : "Baru"}</li>
               <li className="flex items-center gap-2 text-sm text-slate-600"><CheckCircle size={16} className={useAi ? "text-amber-500" : "text-slate-300"} /> AI Checker: {useAi ? "Aktif" : "Nonaktif"}</li>
-              <li className="flex items-center gap-2 text-sm text-slate-600"><CheckCircle size={16} className="text-slate-300" /> Persetujuan: Menunggu</li>
               <li className="flex items-center gap-2 text-sm text-slate-600"><CheckCircle size={16} className="text-slate-300" /> Blok: {blocks.length} buah</li>
             </ul>
-            <button onClick={handleSave} disabled={isSaving} className="w-full bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-70">
-              Simpan & Ajukan Review <ArrowRight size={16} />
-            </button>
+            <div className="space-y-2">
+              <button onClick={handleSave} disabled={isSaving} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-70">
+                <Save size={16} /> {isSaving ? "Menyimpan..." : "Simpan Draft"}
+              </button>
+              {editId && (
+                <button onClick={handleSubmitReview} className="w-full bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2">
+                  Ajukan Review <ArrowRight size={16} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Terms Modal */}
+      {showTerms && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white flex items-center gap-3">
+              <AlertTriangle size={24} />
+              <h3 className="text-lg font-extrabold">Ketentuan Penerbitan Konten</h3>
+            </div>
+            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+              <p className="text-sm text-slate-700 leading-relaxed">Dengan mengajukan konten ini untuk ditinjau, saya menyatakan:</p>
+              <ol className="space-y-3 text-sm text-slate-600 list-decimal list-inside">
+                <li>Konten yang saya tulis bersumber dari <span className="font-bold text-slate-800">Al-Quran dan Hadits Shahih</span> sesuai pemahaman Salafus Shalih.</li>
+                <li>Saya tidak mencantumkan hadits dha&apos;if atau maudhu&apos; tanpa keterangan status hadits.</li>
+                <li>Konten tidak mengandung unsur SARA, ujaran kebencian, atau fitnah terhadap individu/kelompok manapun.</li>
+                <li>Saya memberikan hak kepada <span className="font-bold">Adably</span> untuk mengedit, merevisi, atau menghapus konten jika dianggap perlu oleh tim editorial.</li>
+                <li>Konten yang sudah dipublikasikan menjadi milik bersama Adably dan tidak dapat ditarik sepihak oleh penulis.</li>
+                <li>Adably berhak mengubah nama penulis yang ditampilkan (alias) demi kepentingan editorial.</li>
+              </ol>
+              <label className="flex items-start gap-3 bg-emerald-50 p-4 rounded-xl border border-emerald-100 cursor-pointer">
+                <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="w-5 h-5 text-emerald-600 rounded mt-0.5" />
+                <span className="text-sm font-bold text-emerald-800">Saya menyetujui ketentuan di atas.</span>
+              </label>
+            </div>
+            <div className="flex justify-end gap-3 p-4 border-t border-slate-100">
+              <button onClick={() => setShowTerms(false)} className="px-5 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-sm">Batalkan</button>
+              <button onClick={confirmSubmitReview} disabled={!termsAccepted} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm disabled:opacity-50">Ajukan Review</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function EditorPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500">Memuat editor...</div>}>
+      <EditorContent />
+    </Suspense>
   );
 }

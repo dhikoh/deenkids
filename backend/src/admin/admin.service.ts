@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RewardService } from '../reward/reward.service';
 import { ReviewAction } from '@prisma/client';
 import slugify from 'slugify';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private rewardService: RewardService) {}
 
   // ── Dashboard Stats ──
   async getDashboardStats(userId: string, userRole: string) {
@@ -120,6 +121,18 @@ export class AdminService {
         },
       }),
     ]);
+
+    // Award points to author when content is published
+    if (action === 'APPROVED') {
+      const settings = await this.rewardService.getRewardSettings();
+      await this.rewardService.addPoints(
+        content.authorId,
+        settings.pointPerApproved,
+        'EARNED',
+        `Konten dipublikasikan: ${content.title}`,
+        contentId,
+      );
+    }
 
     return { message: `Konten berhasil di-${action.toLowerCase().replace('_', ' ')}` };
   }

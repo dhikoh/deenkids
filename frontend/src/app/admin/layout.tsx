@@ -67,6 +67,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ]},
     { label: "Kelola", items: [
       { name: "Review Konten", icon: <CheckCircle size={20} />, href: "/admin/review", show: isAdminOrSuper },
+      { name: "Kelola Konten", icon: <FileText size={20} />, href: "/admin/content-management", show: isAdminOrSuper },
       { name: "Kelola Struktur", icon: <FolderTree size={20} />, href: "/admin/structure", show: isAdminOrSuper },
       { name: "Manajemen User", icon: <Users size={20} />, href: "/admin/users", show: isAdminOrSuper },
     ]},

@@ -153,6 +153,10 @@ export class EditorService {
     if (existing.authorId !== userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
       throw new ForbiddenException('Anda tidak memiliki akses ke konten ini');
     }
+    // Author cannot edit published content — only Admin/SuperAdmin can
+    if (existing.status === 'PUBLISHED' && existing.authorId === userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
+      throw new ForbiddenException('Konten yang sudah dipublikasikan hanya bisa diedit oleh Admin/SuperAdmin');
+    }
 
     // Update main content
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });

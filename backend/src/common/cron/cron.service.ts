@@ -89,16 +89,19 @@ export class CronService {
   async checkEngagementMilestones() {
     const contents = await this.prisma.contentItem.findMany({
       where: { status: 'PUBLISHED' },
-      select: { id: true, authorId: true, viewCount: true, likeCount: true, title: true },
+      select: { id: true, authorId: true, viewCount: true, likeCount: true, shareCount: true, avgRating: true, ratingCount: true, title: true },
     });
 
-    const settingRows = await this.prisma.setting.findMany({ where: { key: { in: ['point_views_milestone', 'point_likes_milestone'] } } });
+    const settingRows = await this.prisma.setting.findMany({ where: { key: { in: ['point_views_milestone', 'point_likes_milestone', 'point_shares_milestone', 'point_rating_bonus'] } } });
     const settings = Object.fromEntries(settingRows.map(s => [s.key, s.value]));
     const viewBonus = parseInt(settings.point_views_milestone || '5');
     const likeBonus = parseInt(settings.point_likes_milestone || '3');
+    const shareBonus = parseInt(settings.point_shares_milestone || '3');
+    const ratingBonus = parseInt(settings.point_rating_bonus || '5');
 
     let awarded = 0;
     for (const c of contents) {
+      // Views milestone (every 500 views)
       const viewMilestones = Math.floor(c.viewCount / 500);
       if (viewMilestones > 0) {
         const existing = await this.prisma.pointLedger.count({
@@ -112,6 +115,7 @@ export class CronService {
           awarded++;
         }
       }
+      // Likes milestone (every 50 likes)
       const likeMilestones = Math.floor(c.likeCount / 50);
       if (likeMilestones > 0) {
         const existing = await this.prisma.pointLedger.count({
@@ -121,6 +125,33 @@ export class CronService {
           await this.prisma.$transaction([
             this.prisma.pointLedger.create({ data: { userId: c.authorId, amount: likeBonus, type: 'BONUS', reason: `Bonus likes ${likeMilestones * 50}: ${c.title}`, contentId: c.id } }),
             this.prisma.user.update({ where: { id: c.authorId }, data: { points: { increment: likeBonus } } }),
+          ]);
+          awarded++;
+        }
+      }
+      // Shares milestone (every 100 shares)
+      const shareMilestones = Math.floor((c as any).shareCount / 100);
+      if (shareMilestones > 0) {
+        const existing = await this.prisma.pointLedger.count({
+          where: { contentId: c.id, type: 'BONUS', reason: { startsWith: 'Bonus shares' } },
+        });
+        if (shareMilestones > existing) {
+          await this.prisma.$transaction([
+            this.prisma.pointLedger.create({ data: { userId: c.authorId, amount: shareBonus, type: 'BONUS', reason: `Bonus shares ${shareMilestones * 100}: ${c.title}`, contentId: c.id } }),
+            this.prisma.user.update({ where: { id: c.authorId }, data: { points: { increment: shareBonus } } }),
+          ]);
+          awarded++;
+        }
+      }
+      // Rating bonus (avg >= 4.5 with min 10 ratings — one-time)
+      if ((c as any).avgRating >= 4.5 && (c as any).ratingCount >= 10) {
+        const existing = await this.prisma.pointLedger.count({
+          where: { contentId: c.id, type: 'BONUS', reason: { startsWith: 'Bonus rating' } },
+        });
+        if (existing === 0) {
+          await this.prisma.$transaction([
+            this.prisma.pointLedger.create({ data: { userId: c.authorId, amount: ratingBonus, type: 'BONUS', reason: `Bonus rating ⭐${(c as any).avgRating.toFixed(1)}: ${c.title}`, contentId: c.id } }),
+            this.prisma.user.update({ where: { id: c.authorId }, data: { points: { increment: ratingBonus } } }),
           ]);
           awarded++;
         }

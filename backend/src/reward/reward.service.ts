@@ -129,13 +129,15 @@ export class RewardService {
   }
 
   async getRewardSettings() {
-    const keys = ['point_per_approved', 'point_views_milestone', 'point_likes_milestone', 'point_to_rupiah', 'min_withdrawal_points', 'max_submit_per_day'];
+    const keys = ['point_per_approved', 'point_views_milestone', 'point_likes_milestone', 'point_shares_milestone', 'point_rating_bonus', 'point_to_rupiah', 'min_withdrawal_points', 'max_submit_per_day'];
     const settings = await this.prisma.setting.findMany({ where: { key: { in: keys } } });
     const map = Object.fromEntries(settings.map(s => [s.key, s.value]));
     return {
       pointPerApproved: parseInt(map.point_per_approved || '10'),
       pointViewsMilestone: parseInt(map.point_views_milestone || '5'),
       pointLikesMilestone: parseInt(map.point_likes_milestone || '3'),
+      pointSharesMilestone: parseInt(map.point_shares_milestone || '3'),
+      pointRatingBonus: parseInt(map.point_rating_bonus || '5'),
       pointToRupiah: parseInt(map.point_to_rupiah || '1000'),
       minWithdrawalPoints: parseInt(map.min_withdrawal_points || '50'),
       maxSubmitPerDay: parseInt(map.max_submit_per_day || '5'),
