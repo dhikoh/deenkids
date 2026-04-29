@@ -50,12 +50,12 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Kurikulum */}
+      {/* Pembelajaran */}
       <section className="py-24 bg-white relative z-20 -mt-10 rounded-t-[3rem] shadow-[0_-10px_40px_rgb(0,0,0,0.03)] border-t border-slate-100">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
             <div>
-              <h2 className="text-3xl font-extrabold text-slate-800">Kurikulum Utama</h2>
+              <h2 className="text-3xl font-extrabold text-slate-800">Pembelajaran Utama</h2>
               <p className="text-slate-500 mt-2 text-lg">Modul materi dasar keislaman yang terstruktur.</p>
             </div>
             <Link href="/kurikulum" className="inline-flex items-center bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold py-2.5 px-6 rounded-xl border border-slate-200">

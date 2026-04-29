@@ -21,7 +21,7 @@ export function Navbar() {
 
   const navLinks = [
     { name: "Beranda", href: "/" },
-    { name: "Kurikulum", href: "/kurikulum" },
+    { name: "Pembelajaran", href: "/kurikulum" },
     { name: "Tanya Jawab", href: "/qna" },
     { name: "Artikel", href: "/artikel" },
   ];

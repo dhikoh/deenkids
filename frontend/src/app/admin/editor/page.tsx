@@ -61,7 +61,7 @@ export default function AUTHORPage() {
 
   const handleSave = async () => {
     if (!title) return toast.error("Judul wajib diisi");
-    if (!nodeId) return toast.error("Pilih kategori kurikulum");
+    if (!nodeId) return toast.error("Pilih kategori pembelajaran");
     setIsSaving(true);
     const token = Cookies.get("access_token");
     try {
@@ -124,7 +124,7 @@ export default function AUTHORPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Kategori Kurikulum</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Kategori Pembelajaran</label>
                   <select value={nodeId} onChange={(e) => setNodeId(e.target.value)} className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500">
                     <option value="">— Pilih Kategori —</option>
                     {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}

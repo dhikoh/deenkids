@@ -16,7 +16,7 @@ export default async function KurikulumPage() {
         <div className="bg-emerald-100 p-3 rounded-full text-emerald-600 mb-4">
           <Layers className="h-8 w-8" />
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-800 mb-2">Kurikulum Islami</h1>
+        <h1 className="text-3xl font-extrabold text-slate-800 mb-2">Pembelajaran Islami</h1>
         <p className="text-slate-500 max-w-xl font-medium">
           Struktur materi keislaman yang terorganisir untuk pendidikan anak Anda.
         </p>
@@ -49,7 +49,7 @@ export default async function KurikulumPage() {
         {tree.length === 0 && (
           <div className="col-span-full py-16 text-center text-slate-500 bg-white rounded-2xl border border-dashed border-slate-300">
             <Layers className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-            <p className="font-bold text-lg">Belum ada kurikulum</p>
+            <p className="font-bold text-lg">Belum ada pembelajaran</p>
             <p className="text-sm mt-1">Jalankan seed untuk menambahkan data awal.</p>
           </div>
         )}

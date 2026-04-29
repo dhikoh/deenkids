@@ -90,7 +90,7 @@ export default function StructurePage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div><h1 className="text-2xl font-bold text-slate-800">Kelola Struktur Kurikulum</h1><p className="text-slate-500">Atur hierarki Kategori, Modul, dan Topik.</p></div>
+        <div><h1 className="text-2xl font-bold text-slate-800">Kelola Struktur Pembelajaran</h1><p className="text-slate-500">Atur hierarki Kategori, Modul, dan Topik.</p></div>
         <button onClick={() => { setForm({ title: "", type: "CATEGORY", parentId: "", description: "", ageGroups: ["3-5", "5-7", "7-10"], order: 0 }); setEditingId(null); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-2"><Plus size={18} /> Tambah Kategori</button>
       </div>
 
