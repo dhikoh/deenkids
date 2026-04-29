@@ -3,13 +3,14 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { FileText, Trash2, Edit2, Film, Eye, Search } from "lucide-react";
+import { FileText, Trash2, Edit2, Film, Search } from "lucide-react";
 import { copyVideoScript } from "@/lib/videoScript";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
 const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
 
+const AGE_OPTIONS = ["", "3-5", "5-7", "7-10", "10-13"];
 const statusColors: Record<string, string> = { DRAFT: "bg-slate-100 text-slate-600", REVIEW: "bg-amber-100 text-amber-700", REVISION: "bg-rose-100 text-rose-700", PUBLISHED: "bg-emerald-100 text-emerald-700", ARCHIVED: "bg-slate-200 text-slate-500" };
 const statusLabels: Record<string, string> = { DRAFT: "Draft", REVIEW: "Review", REVISION: "Revisi", PUBLISHED: "Terbit", ARCHIVED: "Arsip" };
 
@@ -17,6 +18,8 @@ export default function ContentManagementPage() {
   const [contents, setContents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [ageFilter, setAgeFilter] = useState("");
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<any>({});
 
@@ -25,6 +28,8 @@ export default function ContentManagementPage() {
     try {
       const params = new URLSearchParams();
       if (filter) params.append("status", filter);
+      if (search) params.append("search", search);
+      if (ageFilter) params.append("age", ageFilter);
       params.append("page", page.toString());
       const res = await apiFetch(`${API}/admin/contents?${params}`, { headers: authH(token) });
       setContents(res.data || []); setMeta(res.meta || {});
@@ -32,7 +37,7 @@ export default function ContentManagementPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, [filter, page]);
+  useEffect(() => { setLoading(true); load(); }, [filter, page, search, ageFilter]);
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Hapus konten "${title}"? Tindakan ini tidak bisa dibatalkan.`)) return;
@@ -61,6 +66,19 @@ export default function ContentManagementPage() {
         </div>
       </div>
 
+      {/* Search + Age */}
+      <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-3">
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Cari judul konten..." className="w-full h-10 pl-10 pr-4 bg-transparent outline-none text-sm text-slate-700 font-medium" />
+        </div>
+        <select value={ageFilter} onChange={e => { setAgeFilter(e.target.value); setPage(1); }} className="h-10 px-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 bg-white">
+          <option value="">Semua Usia</option>
+          {AGE_OPTIONS.filter(a => a).map(a => <option key={a} value={a}>{a} Tahun</option>)}
+        </select>
+      </div>
+
+      {/* Status Filter */}
       <div className="flex gap-2 flex-wrap">
         {["", "DRAFT", "REVIEW", "REVISION", "PUBLISHED", "ARCHIVED"].map(s => (
           <button key={s} onClick={() => { setFilter(s); setPage(1); }} className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${filter === s ? "bg-emerald-600 text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}>
@@ -83,7 +101,7 @@ export default function ContentManagementPage() {
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusColors[item.status]}`}>{statusLabels[item.status]}</span>
                     <span className="text-[10px] font-bold text-slate-400 uppercase">{item.type}</span>
-                    <span className="text-[10px] font-bold text-slate-400">{item.ageGroup} thn</span>
+                    {(item.ageGroups || []).map((a: string) => <span key={a} className="text-[10px] font-bold px-2 py-0.5 bg-sky-50 text-sky-600 rounded">{a} thn</span>)}
                   </div>
                   <h3 className="font-bold text-slate-800">{item.title}</h3>
                   <p className="text-xs text-slate-500 mt-1">

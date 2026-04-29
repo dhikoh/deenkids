@@ -24,13 +24,15 @@ export class ContentController {
   @ApiQuery({ name: 'sort', required: false, description: 'newest, most_read, most_liked, top_rated, popular' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'type', required: false })
+  @ApiQuery({ name: 'search', required: false })
   async getList(
     @Query('age') age?: string,
     @Query('sort') sort?: string,
     @Query('page') page?: number,
     @Query('type') type?: string,
+    @Query('search') search?: string,
   ) {
-    return this.contentService.getList({ age, sort, page, type });
+    return this.contentService.getList({ age, sort, page, type, search });
   }
 
   @Get('tags')
@@ -66,13 +68,13 @@ export class ContentController {
       ],
     };
     if (type) where.type = type;
-    if (age) where.ageGroup = age;
+    if (age) where.ageGroups = { has: age };
 
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({
         where, take, skip,
         orderBy: { publishedAt: 'desc' },
-        select: { id: true, title: true, slug: true, description: true, type: true, ageGroup: true, viewCount: true, likeCount: true, avgRating: true, publishedAt: true },
+        select: { id: true, title: true, slug: true, description: true, type: true, ageGroups: true, viewCount: true, likeCount: true, avgRating: true, publishedAt: true },
       }),
       this.prisma.contentItem.count({ where }),
     ]);

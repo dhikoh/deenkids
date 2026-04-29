@@ -55,17 +55,24 @@ export class NotificationService {
     }
   }
 
-  async getNotifications(userId: string, page = 1, limit = 20) {
+  async getNotifications(userId: string, page = 1, limit = 20, search?: string) {
     const skip = (page - 1) * limit;
+    const where: any = { userId };
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { message: { contains: search, mode: 'insensitive' } },
+      ];
+    }
     const [data, total] = await Promise.all([
       this.prisma.internalNotification.findMany({
-        where: { userId },
+        where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
         include: { actor: { select: { name: true } } },
       }),
-      this.prisma.internalNotification.count({ where: { userId } }),
+      this.prisma.internalNotification.count({ where }),
     ]);
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }

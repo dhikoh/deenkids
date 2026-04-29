@@ -102,7 +102,7 @@ model ContentItem {
   authorId          String
   author            User              @relation(fields: [authorId], references: [id])
   displayAuthorName String?           // SuperAdmin alias — if set, shown instead of author.name
-  ageGroup          String            // e.g., "3-5"
+  ageGroups         String[]          // e.g., ["3-5", "5-7"]
   metaTitle         String?
   metaDesc          String?
   viewCount         Int               @default(0)

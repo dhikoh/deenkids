@@ -5,19 +5,26 @@ import { useEffect, useState } from "react";
 import { MessageCircle, Search, ThumbsUp, Star, Eye, ArrowRight } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 
+const AGE_OPTIONS = ["", "3-5", "5-7", "7-10", "10-13"];
+
 export default function QnaPage() {
   const [items, setItems] = useState<any[]>([]);
   const [sort, setSort] = useState("newest");
+  const [search, setSearch] = useState("");
+  const [ageFilter, setAgeFilter] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_BASE_URL}/content/list?sort=${sort}&limit=20`)
+    const params = new URLSearchParams({ sort, limit: "20", type: "QNA" });
+    if (search) params.append("search", search);
+    if (ageFilter) params.append("age", ageFilter);
+    fetch(`${API_BASE_URL}/content/list?${params}`)
       .then((res) => res.json())
       .then((json) => setItems(json.data || []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  }, [sort]);
+  }, [sort, search, ageFilter]);
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 pt-28">
@@ -31,12 +38,17 @@ export default function QnaPage() {
         </p>
       </div>
 
-      {/* Sort Bar */}
+      {/* Sort / Search / Age Bar */}
       <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-2 mb-8">
         <div className="relative flex-grow flex items-center">
           <Search className="absolute left-3 h-5 w-5 text-slate-400" />
-          <input type="text" placeholder="Cari pertanyaan..." className="w-full h-10 pl-10 pr-4 bg-transparent outline-none text-slate-700 text-sm font-medium" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari pertanyaan..." className="w-full h-10 pl-10 pr-4 bg-transparent outline-none text-slate-700 text-sm font-medium" />
         </div>
+        <div className="h-px md:w-px md:h-10 bg-slate-200"></div>
+        <select value={ageFilter} onChange={e => setAgeFilter(e.target.value)} className="h-10 px-4 bg-transparent outline-none text-slate-600 text-sm font-bold cursor-pointer border-none rounded-xl hover:bg-slate-50 transition-colors">
+          <option value="">Semua Usia</option>
+          {AGE_OPTIONS.filter(a => a).map(a => <option key={a} value={a}>{a} Tahun</option>)}
+        </select>
         <div className="h-px md:w-px md:h-10 bg-slate-200"></div>
         <select
           value={sort}
@@ -72,9 +84,9 @@ export default function QnaPage() {
               key={item.id}
               className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full"
             >
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <span className="text-[10px] font-bold px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md uppercase tracking-wider">{item.type}</span>
-                <span className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">{item.ageGroup}</span>
+                {(item.ageGroups || []).map((a: string) => <span key={a} className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">{a} thn</span>)}
                 {item.avgRating > 0 && (
                   <div className="ml-auto flex items-center gap-1 text-amber-500 text-xs font-bold">
                     <Star className="h-3 w-3 fill-amber-500" /> {item.avgRating.toFixed(1)}

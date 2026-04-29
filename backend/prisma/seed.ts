@@ -222,7 +222,7 @@ async function main() {
     create: {
       title: qna1Title, slug: slugify(qna1Title, { lower: true }),
       type: ContentType.QNA, status: ContentStatus.PUBLISHED,
-      nodeId: topicMahaMelihat.id, authorId: editor.id, ageGroup: '5-7',
+      nodeId: topicMahaMelihat.id, authorId: editor.id, ageGroups: ['5-7'],
       viewCount: 245, likeCount: 78, avgRating: 4.9, ratingCount: 32, publishedAt: new Date(),
       description: 'Menjelaskan sifat Al-Bashiir kepada anak dengan analogi sederhana.',
       qnaDetail: {
@@ -259,7 +259,7 @@ async function main() {
     create: {
       title: qna2Title, slug: slugify(qna2Title, { lower: true }),
       type: ContentType.QNA, status: ContentStatus.PUBLISHED,
-      nodeId: topicAllahDiAtas.id, authorId: editor.id, ageGroup: '5-7',
+      nodeId: topicAllahDiAtas.id, authorId: editor.id, ageGroups: ['5-7'],
       viewCount: 189, likeCount: 62, avgRating: 4.8, ratingCount: 25, publishedAt: new Date(),
       description: 'Menjelaskan bahwa Allah berada di atas Arsy, sesuai pemahaman Sahabat.',
       qnaDetail: {
@@ -295,7 +295,7 @@ async function main() {
     create: {
       title: qna3Title, slug: slugify(qna3Title, { lower: true }),
       type: ContentType.QNA, status: ContentStatus.PUBLISHED,
-      nodeId: modShalat.id, authorId: editor.id, ageGroup: '5-7',
+      nodeId: modShalat.id, authorId: editor.id, ageGroups: ['5-7'],
       viewCount: 312, likeCount: 95, avgRating: 4.9, ratingCount: 41, publishedAt: new Date(),
       description: 'Menjelaskan hikmah shalat dengan bahasa yang mudah dipahami anak.',
       qnaDetail: {
@@ -331,7 +331,7 @@ async function main() {
     create: {
       title: art1Title, slug: slugify(art1Title, { lower: true }),
       type: ContentType.ARTICLE, status: ContentStatus.PUBLISHED,
-      nodeId: modAdabMakan.id, authorId: admin.id, ageGroup: '3-5',
+      nodeId: modAdabMakan.id, authorId: admin.id, ageGroups: ['3-5'],
       viewCount: 156, likeCount: 43, avgRating: 4.7, ratingCount: 18, publishedAt: new Date(),
       description: 'Tata cara makan sesuai Sunnah yang diajarkan untuk anak usia dini.',
       articleDetail: {
@@ -358,7 +358,7 @@ async function main() {
     create: {
       title: art2Title, slug: slugify(art2Title, { lower: true }),
       type: ContentType.ARTICLE, status: ContentStatus.REVIEW,
-      nodeId: categoryNodes['Kisah Nabi & Sahabat'].id, authorId: editor.id, ageGroup: '7-10',
+      nodeId: categoryNodes['Kisah Nabi & Sahabat'].id, authorId: editor.id, ageGroups: ['7-10'],
       description: 'Kisah keberanian Nabi Ibrahim alaihissalam menghancurkan berhala kaumnya.',
       articleDetail: {
         create: {
@@ -382,7 +382,7 @@ async function main() {
     create: {
       title: qna4Title, slug: slugify(qna4Title, { lower: true }),
       type: ContentType.QNA, status: ContentStatus.PUBLISHED,
-      nodeId: modRukunIman.id, authorId: editor.id, ageGroup: '7-10',
+      nodeId: modRukunIman.id, authorId: editor.id, ageGroups: ['7-10'],
       viewCount: 134, likeCount: 55, avgRating: 4.8, ratingCount: 20, publishedAt: new Date(),
       description: 'Penjelasan tentang syirik dengan bahasa yang mudah dipahami anak usia 7-10 tahun.',
       qnaDetail: {
@@ -419,7 +419,7 @@ async function main() {
     create: {
       title: qna5Title, slug: slugify(qna5Title, { lower: true }),
       type: ContentType.QNA, status: ContentStatus.PUBLISHED,
-      nodeId: topicMahaMelihat.id, authorId: admin.id, ageGroup: '3-5',
+      nodeId: topicMahaMelihat.id, authorId: admin.id, ageGroups: ['3-5'],
       viewCount: 198, likeCount: 72, avgRating: 4.9, ratingCount: 28, publishedAt: new Date(),
       description: 'Mengenalkan konsep Allah sebagai Pencipta kepada anak balita dengan bahasa sederhana.',
       qnaDetail: {
@@ -454,7 +454,7 @@ async function main() {
     create: {
       title: qna6Title, slug: slugify(qna6Title, { lower: true }),
       type: ContentType.QNA, status: ContentStatus.PUBLISHED,
-      nodeId: modWudhu.id, authorId: editor.id, ageGroup: '5-7',
+      nodeId: modWudhu.id, authorId: editor.id, ageGroups: ['5-7'],
       viewCount: 267, likeCount: 88, avgRating: 4.9, ratingCount: 35, publishedAt: new Date(),
       description: 'Langkah-langkah wudhu sesuai Sunnah untuk anak-anak.',
       qnaDetail: {
@@ -491,7 +491,7 @@ async function main() {
     create: {
       title: art3Title, slug: slugify(art3Title, { lower: true }),
       type: ContentType.ARTICLE, status: ContentStatus.PUBLISHED,
-      nodeId: categoryNodes['Doa & Dzikir Anak'].id, authorId: admin.id, ageGroup: '3-5',
+      nodeId: categoryNodes['Doa & Dzikir Anak'].id, authorId: admin.id, ageGroups: ['3-5'],
       viewCount: 210, likeCount: 67, avgRating: 4.8, ratingCount: 22, publishedAt: new Date(),
       description: 'Kumpulan doa harian yang mudah dihafal untuk anak balita.',
       articleDetail: {
@@ -520,7 +520,7 @@ async function main() {
     create: {
       title: art4Title, slug: slugify(art4Title, { lower: true }),
       type: ContentType.ARTICLE, status: ContentStatus.PUBLISHED,
-      nodeId: modShalat.id, authorId: editor.id, ageGroup: '5-7',
+      nodeId: modShalat.id, authorId: editor.id, ageGroups: ['5-7'],
       viewCount: 175, likeCount: 58, avgRating: 4.7, ratingCount: 19, publishedAt: new Date(),
       description: 'Penjelasan lima rukun Islam dengan bahasa anak-anak.',
       articleDetail: {
@@ -553,7 +553,7 @@ async function main() {
     create: {
       title: art5Title, slug: slugify(art5Title, { lower: true }),
       type: ContentType.ARTICLE, status: ContentStatus.PUBLISHED,
-      nodeId: categoryNodes['Kisah Nabi & Sahabat'].id, authorId: admin.id, ageGroup: '7-10',
+      nodeId: categoryNodes['Kisah Nabi & Sahabat'].id, authorId: admin.id, ageGroups: ['7-10'],
       viewCount: 145, likeCount: 51, avgRating: 4.8, ratingCount: 17, publishedAt: new Date(),
       description: 'Kisah keteguhan Nabi Nuh alaihissalam dalam berdakwah selama 950 tahun.',
       articleDetail: {

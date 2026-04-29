@@ -46,7 +46,7 @@ function EditorContent() {
   const [contentType, setContentType] = useState<ContentTypeOption>("QNA");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [ageGroup, setAgeGroup] = useState("3-5");
+  const [ageGroups, setAgeGroups] = useState<string[]>(["3-5"]);
   const [nodeId, setNodeId] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -79,7 +79,7 @@ function EditorContent() {
             const c = res.data;
             if (c) {
               setTitle(c.title || ""); setDescription(c.description || "");
-              setAgeGroup(c.ageGroup || "3-5"); setNodeId(c.nodeId || "");
+              setAgeGroups(c.ageGroups || c.ageGroup ? [c.ageGroup] : ["3-5"]); setNodeId(c.nodeId || "");
               setDisplayAuthorName(c.displayAuthorName || "");
               setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
               const cType = c.nodeId ? "PEMBELAJARAN" : c.type === "QNA" ? "QNA" : "ARTICLE";
@@ -167,7 +167,7 @@ function EditorContent() {
     try {
       const apiType = contentType === "PEMBELAJARAN" ? "ARTICLE" : contentType;
       const payload: any = {
-        title, description, type: apiType, ageGroup, useAiChecker: useAi, tags,
+        title, description, type: apiType, ageGroups, useAiChecker: useAi, tags,
         nodeId: contentType === "PEMBELAJARAN" ? nodeId : (nodeId || undefined),
         displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
         articleDetail: { blocks: blocks.map(b => ({ type: b.type, ...b.data })) },
@@ -327,12 +327,25 @@ function EditorContent() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Kelompok Usia</label>
-                  <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500">
-                    <option value="3-5">3-5 Tahun</option>
-                    <option value="5-7">5-7 Tahun</option>
-                    <option value="7-10">7-10 Tahun</option>
-                  </select>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Kelompok Usia <span className="text-xs text-slate-400">(bisa lebih dari satu)</span></label>
+                  <div className="flex flex-wrap gap-2">
+                    {["3-5", "5-7", "7-10", "10-13", "Semua Usia"].map(age => {
+                      const checked = age === "Semua Usia" ? ageGroups.includes("Semua Usia") : ageGroups.includes(age);
+                      return (
+                        <label key={age} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all text-sm font-bold ${checked ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                          <input type="checkbox" checked={checked} onChange={() => {
+                            if (age === "Semua Usia") {
+                              setAgeGroups(checked ? [] : ["Semua Usia"]);
+                            } else {
+                              const without = ageGroups.filter(a => a !== "Semua Usia");
+                              setAgeGroups(checked ? without.filter(a => a !== age) : [...without, age]);
+                            }
+                          }} className="w-4 h-4 text-emerald-600 rounded" />
+                          {age === "Semua Usia" ? age : `${age} Tahun`}
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
               {/* SuperAdmin: Author Disguise */}

@@ -27,12 +27,16 @@ export class EditorController {
   @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'age', required: false })
   async getMyContents(
     @Req() req: any,
     @Query('status') status?: string,
     @Query('page') page?: string,
+    @Query('search') search?: string,
+    @Query('age') age?: string,
   ) {
-    return this.editorService.getMyContents(req.user.id, status, page ? parseInt(page) : 1);
+    return this.editorService.getMyContents(req.user.id, status, page ? parseInt(page) : 1, search, age);
   }
 
   @Get('content/:id')

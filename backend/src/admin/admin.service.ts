@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RewardService } from '../reward/reward.service';
+import { NotificationService } from '../notification/notification.service';
 import { ReviewAction } from '@prisma/client';
 import slugify from 'slugify';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService, private rewardService: RewardService) {}
+  constructor(private prisma: PrismaService, private rewardService: RewardService, private notificationService: NotificationService) {}
 
   // ── Dashboard Stats ──
   async getDashboardStats(userId: string, userRole: string) {
@@ -134,6 +135,24 @@ export class AdminService {
       );
     }
 
+    // Notify author about review result
+    const notifMap: Record<string, { type: any; title: string; msg: string }> = {
+      APPROVED: { type: 'CONTENT_APPROVED', title: 'Konten Anda Dipublikasikan ✅', msg: `Konten "${content.title}" telah disetujui dan dipublikasikan.${notes ? ' Catatan: ' + notes : ''}` },
+      REJECTED: { type: 'CONTENT_REJECTED', title: 'Konten Ditolak ❌', msg: `Konten "${content.title}" ditolak. Alasan: ${notes || '-'}` },
+      REVISION_REQUESTED: { type: 'REVISION_NEEDED', title: 'Revisi Diminta ✏️', msg: `Konten "${content.title}" perlu direvisi. Catatan: ${notes || '-'}` },
+    };
+    const notif = notifMap[action];
+    if (notif) {
+      await this.notificationService.createNotification({
+        userId: content.authorId,
+        actorId: reviewerId,
+        type: notif.type,
+        title: notif.title,
+        message: notif.msg,
+        linkUrl: '/admin/my-contents',
+      });
+    }
+
     return { message: `Konten berhasil di-${action.toLowerCase().replace('_', ' ')}` };
   }
 
@@ -229,11 +248,13 @@ export class AdminService {
   }
 
   // ── All Contents ──
-  async getAllContents(status?: string, page: number = 1) {
+  async getAllContents(status?: string, page: number = 1, search?: string, age?: string) {
     const limit = 20;
     const skip = (page - 1) * limit;
     const where: any = {};
     if (status) where.status = status;
+    if (search) where.title = { contains: search, mode: 'insensitive' };
+    if (age && age !== 'Semua') where.ageGroups = { has: age };
 
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({

@@ -25,9 +25,9 @@ export class CreateContentDto {
   @IsString()
   nodeId: string;
 
-  @ApiProperty()
-  @IsString()
-  ageGroup: string;
+  @ApiProperty({ type: [String] })
+  @IsOptional()
+  ageGroups: string[];
 
   @ApiProperty()
   @IsOptional()

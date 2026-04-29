@@ -33,7 +33,7 @@ function ContentCard({ item, index }: { item: any; index: number }) {
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isQna ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-sky-50 text-sky-700 border border-sky-200"}`}>
             {isQna ? "Tanya Jawab" : "Artikel"}
           </span>
-          <span className="text-xs text-slate-400 font-medium">{item.ageGroup}</span>
+          <span className="text-xs text-slate-400 font-medium">{(item.ageGroups || []).join(', ')}</span>
         </div>
         <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-emerald-700 transition-colors line-clamp-2">{item.title}</h3>
         <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 mb-4">{item.description || "Konten edukasi Islam untuk anak."}</p>

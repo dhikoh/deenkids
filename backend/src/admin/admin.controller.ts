@@ -85,7 +85,7 @@ export class AdminController {
   @Get('contents')
   @Roles('ADMIN', 'SUPERADMIN')
   @ApiOperation({ summary: 'Get all contents for admin management' })
-  async getAllContents(@Query('status') status?: string, @Query('page') page?: string) {
-    return this.adminService.getAllContents(status, page ? parseInt(page) : 1);
+  async getAllContents(@Query('status') status?: string, @Query('page') page?: string, @Query('search') search?: string, @Query('age') age?: string) {
+    return this.adminService.getAllContents(status, page ? parseInt(page) : 1, search, age);
   }
 }

@@ -26,7 +26,7 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full">{content.type === 'QNA' ? 'Tanya Jawab' : 'Artikel'}</span>
-          <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-600 rounded-full">{content.ageGroup} tahun</span>
+          <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-600 rounded-full">{(content.ageGroups || []).join(', ')} tahun</span>
         </div>
         <h1 className="text-3xl font-extrabold text-slate-800 mb-3">{content.title}</h1>
         <div className="flex items-center gap-4 text-sm text-slate-500">

@@ -13,8 +13,8 @@ export class NotificationController {
 
   @Get()
   @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
-  async getNotifications(@Req() req: any, @Query('page') page?: string) {
-    return this.notificationService.getNotifications(req.user.id, page ? parseInt(page) : 1);
+  async getNotifications(@Req() req: any, @Query('page') page?: string, @Query('search') search?: string) {
+    return this.notificationService.getNotifications(req.user.id, page ? parseInt(page) : 1, 20, search);
   }
 
   @Get('unread-count')

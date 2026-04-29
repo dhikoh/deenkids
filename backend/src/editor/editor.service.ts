@@ -29,7 +29,7 @@ export class EditorService {
         description: dto.description,
         type: dto.type,
         status: forcedStatus,
-        ageGroup: dto.ageGroup,
+        ageGroups: dto.ageGroups || ['3-5'],
         nodeId: dto.nodeId || null,
         authorId,
         displayAuthorName: author?.role === 'SUPERADMIN' ? (dto as any).displayAuthorName || null : null,
@@ -95,11 +95,13 @@ export class EditorService {
     return { data: content, aiCheck: aiResult };
   }
 
-  async getMyContents(authorId: string, status?: string, page: number = 1) {
+  async getMyContents(authorId: string, status?: string, page: number = 1, search?: string, age?: string) {
     const limit = 20;
     const skip = (page - 1) * limit;
     const where: any = { authorId };
     if (status) where.status = status;
+    if (search) where.title = { contains: search, mode: 'insensitive' };
+    if (age && age !== 'Semua') where.ageGroups = { has: age };
 
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({
@@ -110,6 +112,7 @@ export class EditorService {
         include: {
           node: { select: { title: true, slug: true } },
           tags: { include: { tag: true } },
+          reviewHistory: { orderBy: { createdAt: 'desc' as const }, take: 1, include: { reviewer: { select: { name: true } } } },
           _count: { select: { views: true, likes: true, ratings: true } },
         },
       }),
@@ -164,7 +167,7 @@ export class EditorService {
         title: dto.title,
         description: dto.description,
         type: dto.type,
-        ageGroup: dto.ageGroup,
+        ageGroups: dto.ageGroups || [],
         nodeId: dto.nodeId || null,
         metaTitle: dto.metaTitle,
         metaDesc: dto.metaDesc,

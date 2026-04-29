@@ -155,12 +155,19 @@ export class AdminInboxController {
 
   @Get('feedback')
   @Roles('ADMIN', 'SUPERADMIN')
-  async getFeedback(@Query('page') page?: string) {
+  async getFeedback(@Query('page') page?: string, @Query('search') search?: string) {
     const limit = 20;
     const skip = ((parseInt(page || '1') || 1) - 1) * limit;
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { message: { contains: search, mode: 'insensitive' } },
+      ];
+    }
     const [data, total] = await Promise.all([
-      this.prisma.feedbackSubmission.findMany({ orderBy: { createdAt: 'desc' }, skip, take: limit }),
-      this.prisma.feedbackSubmission.count(),
+      this.prisma.feedbackSubmission.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limit }),
+      this.prisma.feedbackSubmission.count({ where }),
     ]);
     return { data, meta: { total, page: parseInt(page || '1'), limit, totalPages: Math.ceil(total / limit) } };
   }

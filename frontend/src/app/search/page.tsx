@@ -68,7 +68,7 @@ function SearchContent() {
                   <span className="flex items-center gap-1"><Eye size={12} /> {r.viewCount}</span>
                   <span className="flex items-center gap-1"><Heart size={12} /> {r.likeCount}</span>
                   <span className="flex items-center gap-1"><Star size={12} /> {r.avgRating?.toFixed(1)}</span>
-                  {r.ageGroup && <span className="bg-slate-100 px-2 py-0.5 rounded">{r.ageGroup} thn</span>}
+                  {r.ageGroups?.length > 0 && <span className="bg-slate-100 px-2 py-0.5 rounded">{r.ageGroups.join(', ')} thn</span>}
                 </div>
               </div>
             </div>

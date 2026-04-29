@@ -69,7 +69,7 @@ export default function ReviewPage() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="font-bold text-lg text-slate-800">{item.title}</h3>
-                <p className="text-sm text-slate-500">Oleh: <span className="font-medium text-slate-700">{item.author?.name || 'Unknown'}</span> • Tipe: {item.type} • Usia: {item.ageGroup}</p>
+                <p className="text-sm text-slate-500">Oleh: <span className="font-medium text-slate-700">{item.author?.name || 'Unknown'}</span> • Tipe: {item.type} • Usia: {(item.ageGroups || []).join(', ')}</p>
               </div>
               <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                 <AlertCircle size={14} /> Menunggu Review

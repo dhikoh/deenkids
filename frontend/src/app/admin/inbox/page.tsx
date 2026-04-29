@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from "@/lib/api";
-import { Bell, CheckCheck, Eye, ExternalLink } from "lucide-react";
+import { Bell, CheckCheck, Eye, ExternalLink, Search } from "lucide-react";
 import Link from "next/link";
 
 const typeColors: Record<string, string> = {
@@ -31,19 +31,20 @@ export default function InboxPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [meta, setMeta] = useState<any>({});
+  const [search, setSearch] = useState("");
 
   const load = async (page = 1) => {
     const token = Cookies.get("access_token");
     if (!token) return;
     try {
-      const res = await fetchNotifications(token, page);
+      const res = await fetchNotifications(token, page, search || undefined);
       setNotifications(res.data || []);
       setMeta(res.meta || {});
     } catch { toast.error("Gagal memuat notifikasi"); }
     finally { setIsLoading(false); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { setIsLoading(true); load(); }, [search]);
 
   const handleRead = async (id: string) => {
     const token = Cookies.get("access_token");
@@ -65,6 +66,14 @@ export default function InboxPage() {
       <div className="flex justify-between items-center">
         <div><h1 className="text-2xl font-bold text-slate-800">Inbox</h1><p className="text-slate-500">Pusat notifikasi dan pemberitahuan.</p></div>
         <button onClick={handleReadAll} className="text-sm bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-200"><CheckCheck size={16} /> Tandai Semua Dibaca</button>
+      </div>
+
+      {/* Search */}
+      <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari notifikasi..." className="w-full h-10 pl-10 pr-4 bg-transparent outline-none text-sm text-slate-700 font-medium" />
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100">

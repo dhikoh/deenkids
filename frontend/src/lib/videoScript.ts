@@ -36,7 +36,7 @@ export function generateVideoScript(content: any): string {
     }).filter(Boolean).join('\n\n')}`);
   }
 
-  const ageGroup = content.ageGroup || '3-10';
+  const ageGroup = (content.ageGroups || []).join(', ') || '3-10';
 
   return `=== PROMPT UNTUK AI VIDEO CREATOR ===
 

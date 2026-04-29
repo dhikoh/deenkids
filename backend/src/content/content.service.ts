@@ -80,10 +80,11 @@ export class ContentService {
     return sameNode;
   }
 
-  async getList(query: { age?: string; sort?: string; page?: any; limit?: any; type?: string }) {
+  async getList(query: { age?: string; sort?: string; page?: any; limit?: any; type?: string; search?: string }) {
     const age = query.age;
     const sort = query.sort || 'newest';
     const type = query.type;
+    const search = query.search;
     const page = Math.max(1, parseInt(query.page) || 1);
     const limit = Math.max(1, parseInt(query.limit) || 10);
     const skip = (page - 1) * limit;
@@ -113,10 +114,16 @@ export class ContentService {
 
     const where: any = { status: 'PUBLISHED' };
     if (age && age !== 'Semua') {
-      where.ageGroup = age;
+      where.ageGroups = { has: age };
     }
     if (type) {
       where.type = type;
+    }
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     const [data, total] = await Promise.all([
@@ -130,7 +137,7 @@ export class ContentService {
           title: true,
           slug: true,
           type: true,
-          ageGroup: true,
+          ageGroups: true,
           viewCount: true,
           likeCount: true,
           shareCount: true,

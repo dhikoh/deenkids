@@ -138,10 +138,12 @@ export async function createContent(data: any, token: string) {
   });
 }
 
-export async function fetchMyContents(token: string, status?: string, page?: number) {
+export async function fetchMyContents(token: string, status?: string, page?: number, search?: string, age?: string) {
   const params = new URLSearchParams();
   if (status) params.append('status', status);
   if (page) params.append('page', page.toString());
+  if (search) params.append('search', search);
+  if (age) params.append('age', age);
   return apiFetch(`${API_BASE_URL}/editor/my-contents?${params.toString()}`, {
     headers: authHeaders(token),
   });
@@ -278,8 +280,10 @@ export async function fetchDonationReport(token: string) {
 }
 
 // ── Admin Feedback Inbox ──
-export async function fetchFeedbackList(token: string, page = 1) {
-  return apiFetch(`${API_BASE_URL}/admin/feedback?page=${page}`, {
+export async function fetchFeedbackList(token: string, page = 1, search?: string) {
+  const params = new URLSearchParams({ page: page.toString() });
+  if (search) params.append('search', search);
+  return apiFetch(`${API_BASE_URL}/admin/feedback?${params}`, {
     headers: authHeaders(token),
   });
 }
@@ -292,8 +296,10 @@ export async function markFeedbackRead(id: string, token: string) {
 }
 
 // ── Notifications ──
-export async function fetchNotifications(token: string, page = 1) {
-  return apiFetch(`${API_BASE_URL}/admin/notifications?page=${page}`, {
+export async function fetchNotifications(token: string, page = 1, search?: string) {
+  const params = new URLSearchParams({ page: page.toString() });
+  if (search) params.append('search', search);
+  return apiFetch(`${API_BASE_URL}/admin/notifications?${params}`, {
     headers: authHeaders(token),
   });
 }

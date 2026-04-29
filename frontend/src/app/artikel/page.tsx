@@ -5,20 +5,26 @@ import { useEffect, useState } from "react";
 import { BookOpen, Search, ThumbsUp, Eye, Star, ArrowRight } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 
+const AGE_OPTIONS = ["", "3-5", "5-7", "7-10", "10-13"];
+
 export default function ArtikelPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [ageFilter, setAgeFilter] = useState("");
+  const [sort, setSort] = useState("newest");
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/content/list?sort=newest&limit=20`)
+    setLoading(true);
+    const params = new URLSearchParams({ sort, limit: "20", type: "ARTICLE" });
+    if (search) params.append("search", search);
+    if (ageFilter) params.append("age", ageFilter);
+    fetch(`${API_BASE_URL}/content/list?${params}`)
       .then((res) => res.json())
-      .then((json) => {
-        const articles = (json.data || []).filter((item: any) => item.type === 'ARTICLE');
-        setItems(articles);
-      })
+      .then((json) => setItems(json.data || []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [sort, search, ageFilter]);
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 pt-28">
@@ -30,6 +36,26 @@ export default function ArtikelPage() {
         <p className="text-slate-500 max-w-xl font-medium">
           Kumpulan artikel parenting Islami — sesuai Alquran dan Hadist.
         </p>
+      </div>
+
+      {/* Search + Filter Bar */}
+      <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-2 mb-8">
+        <div className="relative flex-grow flex items-center">
+          <Search className="absolute left-3 h-5 w-5 text-slate-400" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari artikel..." className="w-full h-10 pl-10 pr-4 bg-transparent outline-none text-slate-700 text-sm font-medium" />
+        </div>
+        <div className="h-px md:w-px md:h-10 bg-slate-200"></div>
+        <select value={ageFilter} onChange={e => setAgeFilter(e.target.value)} className="h-10 px-4 bg-transparent outline-none text-slate-600 text-sm font-bold cursor-pointer border-none rounded-xl hover:bg-slate-50 transition-colors">
+          <option value="">Semua Usia</option>
+          {AGE_OPTIONS.filter(a => a).map(a => <option key={a} value={a}>{a} Tahun</option>)}
+        </select>
+        <div className="h-px md:w-px md:h-10 bg-slate-200"></div>
+        <select value={sort} onChange={e => setSort(e.target.value)} className="h-10 px-4 bg-transparent outline-none text-slate-600 text-sm font-bold cursor-pointer border-none rounded-xl hover:bg-slate-50 transition-colors">
+          <option value="newest">Terbaru</option>
+          <option value="most_read">Paling Banyak Dibaca</option>
+          <option value="top_rated">Rating Tertinggi</option>
+          <option value="most_liked">Paling Disukai</option>
+        </select>
       </div>
 
       {loading && (
@@ -48,9 +74,9 @@ export default function ArtikelPage() {
         <div className="grid md:grid-cols-2 gap-6">
           {items.map((item: any) => (
             <Link href={`/qna/${item.slug}`} key={item.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <span className="text-[10px] font-bold px-2 py-1 bg-amber-50 text-amber-700 rounded-md uppercase tracking-wider">Artikel</span>
-                <span className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">{item.ageGroup}</span>
+                {(item.ageGroups || []).map((a: string) => <span key={a} className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">{a} thn</span>)}
                 {item.avgRating > 0 && (
                   <div className="ml-auto flex items-center gap-1 text-amber-500 text-xs font-bold"><Star className="h-3 w-3 fill-amber-500" /> {item.avgRating.toFixed(1)}</div>
                 )}
