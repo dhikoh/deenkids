@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock, Volume2, VolumeX, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
-import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle } from "@/lib/api";
+import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle, API_BASE_URL } from "@/lib/api";
 
 type ContentTypeOption = "PEMBELAJARAN" | "QNA" | "ARTICLE";
 type BlockType = "paragraph" | "quick_answer" | "dialog" | "dalil" | "analogy" | "tip" | "image" | "video";
@@ -98,8 +98,7 @@ function EditorContent() {
       const id = searchParams.get("id");
       if (id) {
         setEditId(id);
-        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-        fetch(`${API}/editor/content/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+        fetch(`${API_BASE_URL}/editor/content/${id}`, { headers: { Authorization: `Bearer ${token}` } })
           .then(r => r.json()).then(res => {
             const c = res.data;
             if (c) {
@@ -107,7 +106,7 @@ function EditorContent() {
               setAgeGroups(c.ageGroups || c.ageGroup ? [c.ageGroup] : ["3-5"]); setNodeId(c.nodeId || "");
               setDisplayAuthorName(c.displayAuthorName || "");
               setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
-              const cType = c.nodeId ? "PEMBELAJARAN" : c.type === "QNA" ? "QNA" : "ARTICLE";
+              const cType = c.type === "PEMBELAJARAN" ? "PEMBELAJARAN" : c.type === "QNA" ? "QNA" : "ARTICLE";
               setContentType(cType);
               // Load blocks from articleDetail or qnaDetail
               const loadedBlocks: EditorBlock[] = [];
@@ -216,8 +215,7 @@ function EditorContent() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-      const res = await fetch(`${API}/editor/upload`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
+      const res = await fetch(`${API_BASE_URL}/editor/upload`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
       if (!res.ok) throw new Error("Upload gagal");
       const result = await res.json();
       updateBlock(blockId, { url: result.url });
@@ -233,9 +231,8 @@ function EditorContent() {
     setIsSaving(true);
     const token = Cookies.get("access_token");
     try {
-      const apiType = contentType === "PEMBELAJARAN" ? "ARTICLE" : contentType;
       const payload: any = {
-        title, description, type: apiType, ageGroups, useAiChecker: useAi, enableAudio, tags,
+        title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, tags,
         nodeId: contentType === "PEMBELAJARAN" ? nodeId : (nodeId || undefined),
         displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
         articleDetail: { blocks: blocks.map(b => ({ type: b.type, ...b.data })) },
@@ -256,8 +253,7 @@ function EditorContent() {
         };
       }
       if (editId) {
-        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-        await fetch(`${API}/editor/content/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) }).then(r => { if (!r.ok) throw new Error("Gagal update"); return r.json(); });
+        await fetch(`${API_BASE_URL}/editor/content/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) }).then(r => { if (!r.ok) throw new Error("Gagal update"); return r.json(); });
         toast.success("Konten berhasil diperbarui!");
       } else {
         const res = await createContent(payload, token || "");
@@ -282,9 +278,8 @@ function EditorContent() {
   const confirmSubmitReview = async () => {
     if (!editId) { toast.error("Simpan konten terlebih dahulu"); return; }
     const token = Cookies.get("access_token");
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
     try {
-      await fetch(`${API}/editor/content/${editId}/submit`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).then(r => { if (!r.ok) throw new Error(); return r.json(); });
+      await fetch(`${API_BASE_URL}/editor/content/${editId}/submit`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).then(r => { if (!r.ok) throw new Error(); return r.json(); });
       toast.success("Konten diajukan untuk review!");
       setShowTerms(false);
     } catch { toast.error("Gagal mengajukan review"); }

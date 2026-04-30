@@ -6,6 +6,7 @@ import { ChevronLeft, Eye, Send } from "lucide-react";
 import ContentRenderer from "@/components/ContentRenderer";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
+import { API_BASE_URL } from "@/lib/api";
 
 const PREVIEW_KEY = "adably_preview_data";
 
@@ -37,9 +38,8 @@ export default function PreviewPage() {
     }
     setIsSubmitting(true);
     const token = Cookies.get("access_token");
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
     try {
-      const r = await fetch(`${API}/editor/content/${content.editId}/submit`, {
+      const r = await fetch(`${API_BASE_URL}/editor/content/${content.editId}/submit`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -66,7 +66,7 @@ export default function PreviewPage() {
   const previewContent = {
     title: content.title,
     description: content.description,
-    type: content.contentType === "PEMBELAJARAN" ? "ARTICLE" : content.contentType,
+    type: content.contentType,
     ageGroups: content.ageGroups,
     authorName: content.displayAuthorName || "Anda",
     tags: content.tags,

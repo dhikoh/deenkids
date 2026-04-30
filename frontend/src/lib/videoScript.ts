@@ -60,7 +60,7 @@ ATURAN WAJIB:
 === KONTEN SUMBER ===
 
 Judul: ${content.title}
-Tipe: ${content.type === 'QNA' ? 'Tanya Jawab' : 'Artikel/Pembelajaran'}
+Tipe: ${content.type === 'QNA' ? 'Tanya Jawab' : content.type === 'PEMBELAJARAN' ? 'Pembelajaran' : 'Artikel'}
 Usia Target: ${ageGroup} tahun
 ${content.node?.title ? `Kategori: ${content.node.title}` : ''}
 

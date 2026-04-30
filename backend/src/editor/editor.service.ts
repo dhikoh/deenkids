@@ -52,7 +52,7 @@ export class EditorService {
           tipsBlocks: dto.qnaDetail.tipsBlocks || [],
         },
       });
-    } else if (dto.type === 'ARTICLE' && dto.articleDetail) {
+    } else if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN') && dto.articleDetail) {
       await this.prisma.articleDetail.create({
         data: {
           contentId: content.id,
@@ -212,7 +212,7 @@ export class EditorService {
     }
 
     // Update Article Detail
-    if (dto.type === 'ARTICLE' && dto.articleDetail) {
+    if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN') && dto.articleDetail) {
       await this.prisma.articleDetail.upsert({
         where: { contentId },
         update: {

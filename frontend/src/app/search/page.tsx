@@ -9,7 +9,7 @@ const TYPE_OPTIONS = [
   { value: "", label: "Semua Tipe" },
   { value: "QNA", label: "Tanya Jawab" },
   { value: "PEMBELAJARAN", label: "Pembelajaran" },
-  { value: "ARTIKEL", label: "Artikel" },
+  { value: "ARTICLE", label: "Artikel" },
 ];
 
 const AGE_OPTIONS = [
@@ -36,14 +36,7 @@ function SearchContent() {
     setLoading(true);
     try {
       const p = new URLSearchParams({ q: sq });
-      // Map UI type to backend params
-      if (type === "QNA") {
-        p.set("type", "QNA");
-      } else if (type === "PEMBELAJARAN") {
-        p.set("category", "pembelajaran");
-      } else if (type === "ARTIKEL") {
-        p.set("category", "artikel");
-      }
+      if (type) p.set("type", type);
       if (age) p.set("age", age);
       const r = await fetch(`${API_BASE_URL}/content/search?${p}`);
       const data = await r.json();
@@ -56,7 +49,7 @@ function SearchContent() {
 
   const getTypeInfo = (r: any) => {
     if (r.type === "QNA") return { icon: <HelpCircle size={16} />, label: "Tanya Jawab", bg: "bg-amber-100 text-amber-600" };
-    if (r.nodeId) return { icon: <GraduationCap size={16} />, label: "Pembelajaran", bg: "bg-emerald-100 text-emerald-600" };
+    if (r.type === "PEMBELAJARAN") return { icon: <GraduationCap size={16} />, label: "Pembelajaran", bg: "bg-emerald-100 text-emerald-600" };
     return { icon: <BookOpen size={16} />, label: "Artikel", bg: "bg-sky-100 text-sky-600" };
   };
 

@@ -86,7 +86,7 @@ enum ContentStatus {
 enum ContentType {
   QNA
   ARTICLE
-  MEDIA
+  PEMBELAJARAN
 }
 
 model ContentItem {
