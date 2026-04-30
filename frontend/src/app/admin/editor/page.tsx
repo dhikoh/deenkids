@@ -103,7 +103,7 @@ function EditorContent() {
             const c = res.data;
             if (c) {
               setTitle(c.title || ""); setDescription(c.description || "");
-              setAgeGroups(c.ageGroups || c.ageGroup ? [c.ageGroup] : ["3-5"]); setNodeId(c.nodeId || "");
+              setAgeGroups(c.ageGroups && c.ageGroups.length > 0 ? c.ageGroups : ["3-5"]); setNodeId(c.nodeId || "");
               setDisplayAuthorName(c.displayAuthorName || "");
               setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
               const cType = c.type === "PEMBELAJARAN" ? "PEMBELAJARAN" : c.type === "QNA" ? "QNA" : "ARTICLE";
@@ -227,6 +227,7 @@ function EditorContent() {
 
   const handleSave = async () => {
     if (!title) return toast.error("Judul wajib diisi");
+    if (!ageGroups || ageGroups.length === 0) return toast.error("Kelompok usia wajib dipilih minimal satu");
     if (contentType === "PEMBELAJARAN" && !nodeId) return toast.error("Kategori pembelajaran wajib dipilih");
     setIsSaving(true);
     const token = Cookies.get("access_token");

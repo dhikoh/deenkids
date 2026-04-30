@@ -257,15 +257,16 @@ export class AdminService {
 
     return { message: `Konten "${content.title}" dipindahkan ke "${node.title}"` };
   }
-
   // ── All Contents ──
   async getAllContents(status?: string, page: number = 1, search?: string, age?: string) {
     const limit = 20;
     const skip = (page - 1) * limit;
     const where: any = {};
+    const conditions: any[] = [];
     if (status) where.status = status;
-    if (search) where.title = { contains: search, mode: 'insensitive' };
-    if (age && age !== 'Semua') where.OR = [{ ageGroups: { has: age } }, { ageGroups: { has: 'Semua Usia' } }];
+    if (search) conditions.push({ title: { contains: search, mode: 'insensitive' } });
+    if (age && age !== 'Semua') conditions.push({ ageGroups: { has: age } });
+    if (conditions.length > 0) where.AND = conditions;
 
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({

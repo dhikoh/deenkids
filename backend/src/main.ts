@@ -24,10 +24,24 @@ async function bootstrap() {
 
   // CORS — must be configured BEFORE helmet
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  logger.log(`CORS allowed origins: ${frontendUrl}`);
+  const rawOrigins = frontendUrl.split(',').map((u: string) => u.trim()).filter(Boolean);
+  const origins = new Set<string>();
+  for (const url of rawOrigins) {
+    origins.add(url);
+    // Auto-add www/non-www variant
+    if (url.includes('://www.')) {
+      origins.add(url.replace('://www.', '://'));
+    } else if (url.includes('://') && !url.includes('localhost')) {
+      origins.add(url.replace('://', '://www.'));
+    }
+  }
+  // Always allow localhost for development
+  origins.add('http://localhost:3000');
+  const allowedOrigins = [...origins];
+  logger.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
 
   app.enableCors({
-    origin: frontendUrl.split(',').map((u: string) => u.trim()),
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],

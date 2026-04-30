@@ -114,7 +114,7 @@ export class ContentService {
     const where: any = { status: 'PUBLISHED' };
     const conditions: any[] = [];
     if (age && age !== 'Semua') {
-      conditions.push({ OR: [{ ageGroups: { has: age } }, { ageGroups: { has: 'Semua Usia' } }] });
+      conditions.push({ ageGroups: { has: age } });
     }
     if (search) {
       conditions.push({ OR: [{ title: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }] });

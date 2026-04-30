@@ -70,7 +70,7 @@ export class ContentController {
     }
     if (type) where.type = type;
     if (age) {
-      conditions.push({ OR: [{ ageGroups: { has: age } }, { ageGroups: { has: 'Semua Usia' } }] });
+      conditions.push({ ageGroups: { has: age } });
     }
     if (conditions.length > 0) where.AND = conditions;
 

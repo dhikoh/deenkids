@@ -11,7 +11,7 @@ export default function StructurePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: "", type: "CATEGORY", parentId: "", description: "", ageGroups: ["3-5", "5-7", "7-10"], order: 0 });
+  const [form, setForm] = useState({ title: "", type: "CATEGORY", parentId: "", description: "", ageGroups: ["3-5", "5-7", "7-10", "10-13"], order: 0 });
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const load = async () => {
@@ -42,7 +42,7 @@ export default function StructurePage() {
         toast.success("Node ditambahkan");
       }
       setShowForm(false); setEditingId(null);
-      setForm({ title: "", type: "CATEGORY", parentId: "", description: "", ageGroups: ["3-5", "5-7", "7-10"], order: 0 });
+      setForm({ title: "", type: "CATEGORY", parentId: "", description: "", ageGroups: ["3-5", "5-7", "7-10", "10-13"], order: 0 });
       load();
     } catch (e: any) { toast.error(e.message); }
   };
@@ -78,7 +78,7 @@ export default function StructurePage() {
           <span className="text-xs text-slate-400 ml-2">({node.contentCount || 0} konten)</span>
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => { setForm({ title: "", type: node.type === "CATEGORY" ? "MODULE" : "TOPIC", parentId: node.id, description: "", ageGroups: ["3-5", "5-7", "7-10"], order: 0 }); setEditingId(null); setShowForm(true); }} className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100" title="Tambah sub-node"><Plus size={14} /></button>
+          <button onClick={() => { setForm({ title: "", type: node.type === "CATEGORY" ? "MODULE" : "TOPIC", parentId: node.id, description: "", ageGroups: ["3-5", "5-7", "7-10", "10-13"], order: 0 }); setEditingId(null); setShowForm(true); }} className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100" title="Tambah sub-node"><Plus size={14} /></button>
           <button onClick={() => startEdit(node)} className="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100" title="Edit"><Edit2 size={14} /></button>
           <button onClick={() => handleDelete(node.id)} className="p-1.5 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100" title="Hapus"><Trash2 size={14} /></button>
         </div>
@@ -91,7 +91,7 @@ export default function StructurePage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div><h1 className="text-2xl font-bold text-slate-800">Kelola Struktur Pembelajaran</h1><p className="text-slate-500">Atur hierarki Kategori, Modul, dan Topik.</p></div>
-        <button onClick={() => { setForm({ title: "", type: "CATEGORY", parentId: "", description: "", ageGroups: ["3-5", "5-7", "7-10"], order: 0 }); setEditingId(null); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-2"><Plus size={18} /> Tambah Kategori</button>
+        <button onClick={() => { setForm({ title: "", type: "CATEGORY", parentId: "", description: "", ageGroups: ["3-5", "5-7", "7-10", "10-13"], order: 0 }); setEditingId(null); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm flex items-center gap-2"><Plus size={18} /> Tambah Kategori</button>
       </div>
 
       {showForm && (
