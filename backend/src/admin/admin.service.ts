@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaService } from '../prisma/prisma.service';
 import { RewardService } from '../reward/reward.service';
 import { NotificationService } from '../notification/notification.service';
-import { ReviewAction, PointType } from '@prisma/client';
+import { ReviewAction, PointType, ContentStatus } from '@prisma/client';
 import slugify from 'slugify';
 
 @Injectable()
@@ -74,6 +74,7 @@ export class AdminService {
           author: { select: { name: true } },
           node: { select: { title: true } },
           tags: { include: { tag: true } },
+          aiCheckResults: { orderBy: { checkedAt: 'desc' as const }, take: 1 },
         },
         orderBy: { updatedAt: 'asc' },
         skip,
@@ -92,6 +93,14 @@ export class AdminService {
     });
 
     if (!content) throw new NotFoundException('Content not found');
+
+    // Status guard: hanya konten REVIEW yang bisa di-review
+    if (content.status !== 'REVIEW') {
+      throw new BadRequestException(
+        `Konten berstatus "${content.status}" tidak bisa direview. Hanya konten berstatus REVIEW yang dapat ditinjau.`,
+      );
+    }
+
     // Allow SUPERADMIN to review their own content
     const reviewer = await this.prisma.user.findUnique({ where: { id: reviewerId }, select: { role: true } });
     if (content.authorId === reviewerId && reviewer?.role !== 'SUPERADMIN') {
@@ -99,17 +108,17 @@ export class AdminService {
     }
 
     const aiCheck = content.aiCheckResults[0];
-    let newStatus = content.status;
-    if (action === 'APPROVED') newStatus = 'PUBLISHED';
-    else if (action === 'REJECTED') newStatus = 'DRAFT';
-    else if (action === 'REVISION_REQUESTED') newStatus = 'REVISION';
+    let newStatus: ContentStatus = content.status;
+    if (action === 'APPROVED') newStatus = ContentStatus.PUBLISHED;
+    else if (action === 'REJECTED') newStatus = ContentStatus.DRAFT;
+    else if (action === 'REVISION_REQUESTED') newStatus = ContentStatus.REVISION;
 
     await this.prisma.$transaction([
       this.prisma.contentItem.update({
         where: { id: contentId },
         data: {
           status: newStatus,
-          ...(newStatus === 'PUBLISHED' && { publishedAt: new Date() }),
+          ...(newStatus === ContentStatus.PUBLISHED && { publishedAt: new Date() }),
         },
       }),
       this.prisma.reviewHistory.create({
@@ -274,5 +283,42 @@ export class AdminService {
     ]);
 
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
+  // ── Unpublish / Re-review Published Content ──
+  async unpublishContent(contentId: string, reviewerId: string, notes?: string) {
+    const content = await this.prisma.contentItem.findUnique({ where: { id: contentId } });
+    if (!content) throw new NotFoundException('Konten tidak ditemukan');
+    if (content.status !== 'PUBLISHED') {
+      throw new BadRequestException(`Hanya konten PUBLISHED yang bisa di-unpublish. Status saat ini: "${content.status}"`);
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.contentItem.update({
+        where: { id: contentId },
+        data: { status: 'REVISION', publishedAt: null },
+      }),
+      this.prisma.reviewHistory.create({
+        data: {
+          contentId,
+          reviewerId,
+          action: ReviewAction.REVISION_REQUESTED,
+          notes: notes || 'Konten di-unpublish untuk revisi oleh Admin.',
+          aiAssisted: false,
+        },
+      }),
+    ]);
+
+    // Notify author
+    await this.notificationService.createNotification({
+      userId: content.authorId,
+      actorId: reviewerId,
+      type: 'REVISION_NEEDED',
+      title: 'Konten Di-unpublish untuk Revisi ✏️',
+      message: `Konten "${content.title}" telah ditarik dari publikasi dan perlu direvisi.${notes ? ' Catatan: ' + notes : ''}`,
+      linkUrl: '/admin/my-contents',
+    });
+
+    return { message: `Konten "${content.title}" berhasil di-unpublish dan dikembalikan ke REVISION.` };
   }
 }

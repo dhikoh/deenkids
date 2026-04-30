@@ -224,6 +224,14 @@ export async function processReview(id: string, action: 'approve' | 'reject' | '
   });
 }
 
+export async function unpublishContent(id: string, notes: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/review/${id}/unpublish`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ notes }),
+  });
+}
+
 export async function fetchStructure(token: string) {
   return apiFetch(`${API_BASE_URL}/admin/structure`, {
     headers: authHeaders(token),

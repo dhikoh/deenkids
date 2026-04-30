@@ -71,9 +71,20 @@ export default function ReviewPage() {
                 <h3 className="font-bold text-lg text-slate-800">{item.title}</h3>
                 <p className="text-sm text-slate-500">Oleh: <span className="font-medium text-slate-700">{item.author?.name || 'Unknown'}</span> • Tipe: {item.type} • Usia: {(item.ageGroups || []).join(', ')}</p>
               </div>
-              <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                <AlertCircle size={14} /> Menunggu Review
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                {item.aiCheckResults?.[0]?.score != null && (
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    item.aiCheckResults[0].score >= 80 ? 'bg-emerald-100 text-emerald-700' :
+                    item.aiCheckResults[0].score >= 60 ? 'bg-amber-100 text-amber-700' :
+                    'bg-rose-100 text-rose-700'
+                  }`}>
+                    AI: {item.aiCheckResults[0].score}/100
+                  </span>
+                )}
+                <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                  <AlertCircle size={14} /> Menunggu Review
+                </span>
+              </div>
             </div>
 
             {showNotesFor === item.id ? (

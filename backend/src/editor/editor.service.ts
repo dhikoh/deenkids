@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from '../prisma/prisma.service';
 import { AiCheckerService } from './ai-checker.service';
 import { RewardService } from '../reward/reward.service';
+import { NotificationService } from '../notification/notification.service';
 import { CreateContentDto, UpdateContentDto } from './dto/editor.dto';
 import slugify from 'slugify';
 
@@ -11,6 +12,7 @@ export class EditorService {
     private prisma: PrismaService,
     private aiChecker: AiCheckerService,
     private rewardService: RewardService,
+    private notificationService: NotificationService,
   ) {}
 
   async createContent(authorId: string, dto: CreateContentDto) {
@@ -175,9 +177,9 @@ export class EditorService {
     if (existing.authorId !== userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
       throw new ForbiddenException('Anda tidak memiliki akses ke konten ini');
     }
-    // Author cannot edit published content — only Admin/SuperAdmin can
-    if (existing.status === 'PUBLISHED' && existing.authorId === userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
-      throw new ForbiddenException('Konten yang sudah dipublikasikan hanya bisa diedit oleh Admin/SuperAdmin');
+    // Author cannot edit published or in-review content — only Admin/SuperAdmin can
+    if (['PUBLISHED', 'REVIEW'].includes(existing.status) && existing.authorId === userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
+      throw new ForbiddenException('Konten yang sedang direview atau sudah dipublikasikan hanya bisa diedit oleh Admin/SuperAdmin');
     }
 
     // Update main content
@@ -295,6 +297,22 @@ export class EditorService {
       where: { id: contentId },
       data: { status: 'REVIEW' },
     });
+
+    // Notify all ADMINs and SUPERADMINs about new review request
+    const admins = await this.prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'SUPERADMIN'] } },
+      select: { id: true },
+    });
+    for (const admin of admins) {
+      await this.notificationService.createNotification({
+        userId: admin.id,
+        actorId: userId,
+        type: 'REVIEW_REQUEST',
+        title: 'Konten Baru Menunggu Review 📝',
+        message: `Konten "${content.title}" telah diajukan untuk ditinjau.`,
+        linkUrl: '/admin/review',
+      });
+    }
 
     return { message: 'Konten berhasil diajukan untuk review' };
   }

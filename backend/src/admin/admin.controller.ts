@@ -45,6 +45,13 @@ export class AdminController {
     return this.adminService.reviewContent(id, req.user.id, ReviewAction.REVISION_REQUESTED, body.notes);
   }
 
+  @Post('review/:id/unpublish')
+  @Roles('ADMIN', 'SUPERADMIN')
+  @ApiOperation({ summary: 'Unpublish content — pull back to REVISION for re-review' })
+  async unpublishContent(@Param('id') id: string, @Req() req: any, @Body() body: { notes?: string }) {
+    return this.adminService.unpublishContent(id, req.user.id, body.notes);
+  }
+
   // ── Content Node Structure (Kurikulum) ──
   @Get('structure')
   @Roles('ADMIN', 'SUPERADMIN')

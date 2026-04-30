@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { FileText, Trash2, Edit2, Film, Search } from "lucide-react";
+import { FileText, Trash2, Edit2, Film, Search, RotateCcw, X } from "lucide-react";
 import { copyVideoScript } from "@/lib/videoScript";
-import { fetchAllContents, deleteContent, fetchContentForEdit } from "@/lib/api";
+import { fetchAllContents, deleteContent, fetchContentForEdit, unpublishContent } from "@/lib/api";
 
 const AGE_OPTIONS = ["", "3-5", "5-7", "7-10", "10-13"];
 const statusColors: Record<string, string> = { DRAFT: "bg-slate-100 text-slate-600", REVIEW: "bg-amber-100 text-amber-700", REVISION: "bg-rose-100 text-rose-700", PUBLISHED: "bg-emerald-100 text-emerald-700", ARCHIVED: "bg-slate-200 text-slate-500" };
@@ -20,6 +20,8 @@ export default function ContentManagementPage() {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<any>({});
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [unpublishTarget, setUnpublishTarget] = useState<any | null>(null);
+  const [unpublishNotes, setUnpublishNotes] = useState("");
 
   const load = async () => {
     const token = Cookies.get("access_token"); if (!token) return;
@@ -46,6 +48,16 @@ export default function ContentManagementPage() {
       const res = await fetchContentForEdit(token, id);
       const ok = copyVideoScript(res.data);
       if (ok) toast.success("Script video berhasil disalin ke clipboard!"); else toast.error("Gagal menyalin");
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleUnpublish = async () => {
+    if (!unpublishTarget) return;
+    const token = Cookies.get("access_token");
+    try {
+      await unpublishContent(unpublishTarget.id, unpublishNotes, token || "");
+      toast.success("Konten berhasil di-unpublish");
+      setUnpublishTarget(null); setUnpublishNotes(""); load();
     } catch (e: any) { toast.error(e.message); }
   };
 
@@ -109,6 +121,11 @@ export default function ContentManagementPage() {
                   <button onClick={() => handleExportScript(item.id)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100" title="Export Script Video">
                     <Film size={16} />
                   </button>
+                  {item.status === "PUBLISHED" && (
+                    <button onClick={() => setUnpublishTarget(item)} className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100" title="Unpublish — Tarik untuk revisi">
+                      <RotateCcw size={16} />
+                    </button>
+                  )}
                   {confirmDeleteId === item.id ? (
                     <div className="flex gap-1">
                       <button onClick={() => handleDelete(item.id)} className="px-2 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded">Ya, Hapus</button>
@@ -132,6 +149,32 @@ export default function ContentManagementPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Unpublish Modal */}
+      {unpublishTarget && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setUnpublishTarget(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white flex items-center justify-between rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <RotateCcw size={22} />
+                <h3 className="font-extrabold">Unpublish Konten</h3>
+              </div>
+              <button onClick={() => setUnpublishTarget(null)} className="text-white/70 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-700">Konten <span className="font-bold">"{unpublishTarget.title}"</span> akan ditarik dari publikasi dan dikembalikan ke status <span className="font-bold text-amber-600">REVISION</span>.</p>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Catatan untuk penulis (opsional)</label>
+                <textarea value={unpublishNotes} onChange={e => setUnpublishNotes(e.target.value)} placeholder="Alasan unpublish atau instruksi revisi..." className="w-full border-slate-300 rounded-lg p-3 text-sm min-h-[80px] focus:ring-amber-500 focus:border-amber-500" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-4 border-t border-slate-100">
+              <button onClick={() => setUnpublishTarget(null)} className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+              <button onClick={handleUnpublish} className="px-4 py-2 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl">Unpublish & Revisi</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

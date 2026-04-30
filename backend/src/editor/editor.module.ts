@@ -4,9 +4,10 @@ import { EditorService } from './editor.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AiCheckerService } from './ai-checker.service';
 import { RewardModule } from '../reward/reward.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [PrismaModule, RewardModule],
+  imports: [PrismaModule, RewardModule, NotificationModule],
   controllers: [EditorController],
   providers: [EditorService, AiCheckerService],
   exports: [EditorService],

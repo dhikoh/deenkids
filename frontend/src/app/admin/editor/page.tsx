@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock, Volume2, VolumeX, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
-import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle, API_BASE_URL } from "@/lib/api";
+import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle, submitContentForReview, apiFetch, authHeaders, API_BASE_URL } from "@/lib/api";
 
 type ContentTypeOption = "PEMBELAJARAN" | "QNA" | "ARTICLE";
 type BlockType = "paragraph" | "quick_answer" | "dialog" | "dalil" | "analogy" | "tip" | "image" | "video";
@@ -253,14 +253,17 @@ function EditorContent() {
         };
       }
       if (editId) {
-        await fetch(`${API_BASE_URL}/editor/content/${editId}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) }).then(r => { if (!r.ok) throw new Error("Gagal update"); return r.json(); });
+        await apiFetch(`${API_BASE_URL}/editor/content/${editId}`, { method: "PUT", headers: authHeaders(token || ""), body: JSON.stringify(payload) });
         toast.success("Konten berhasil diperbarui!");
       } else {
         const res = await createContent(payload, token || "");
         toast.success("Draft berhasil disimpan!");
-        if (res?.data?.id) setEditId(res.data.id);
         localStorage.removeItem(AUTO_SAVE_KEY);
-        setTitle(""); setDescription(""); setBlocks([]); setTags([]);
+        // Redirect ke edit mode untuk konten yang baru dibuat
+        if (res?.data?.id) {
+          window.location.href = `/admin/editor?id=${res.data.id}`;
+          return;
+        }
       }
       localStorage.removeItem(AUTO_SAVE_KEY);
     } catch (error: any) {
@@ -279,10 +282,12 @@ function EditorContent() {
     if (!editId) { toast.error("Simpan konten terlebih dahulu"); return; }
     const token = Cookies.get("access_token");
     try {
-      await fetch(`${API_BASE_URL}/editor/content/${editId}/submit`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).then(r => { if (!r.ok) throw new Error(); return r.json(); });
+      await submitContentForReview(editId, token || "");
       toast.success("Konten diajukan untuk review!");
       setShowTerms(false);
-    } catch { toast.error("Gagal mengajukan review"); }
+      // Redirect ke halaman konten saya
+      window.location.href = '/admin/my-contents';
+    } catch (e: any) { toast.error(e.message || "Gagal mengajukan review"); }
   };
 
   const renderBlockEditor = (block: EditorBlock, index: number) => {
