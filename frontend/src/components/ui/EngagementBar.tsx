@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Heart, Bookmark, Share2, Star } from "lucide-react";
 import toast from "react-hot-toast";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import { API_BASE_URL } from "@/lib/api";
 
 function getUserHash(): string {
   if (typeof window === "undefined") return "ssr";
@@ -37,7 +37,7 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
   // Record view on mount
   useEffect(() => {
     const userHash = getUserHash();
-    fetch(`${API}/engagement/view`, {
+    fetch(`${API_BASE_URL}/engagement/view`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contentId, userHash }),
@@ -50,7 +50,7 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
     setIsLiked(newLiked);
     setLikes(newLiked ? likes + 1 : likes - 1);
     try {
-      await fetch(`${API}/engagement/like`, {
+      await fetch(`${API_BASE_URL}/engagement/like`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contentId, userHash }),
@@ -68,7 +68,7 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
     setIsBookmarked(newBookmarked);
     setBookmarks(newBookmarked ? bookmarks + 1 : bookmarks - 1);
     try {
-      await fetch(`${API}/engagement/bookmark`, {
+      await fetch(`${API_BASE_URL}/engagement/bookmark`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contentId, userHash }),
@@ -85,7 +85,7 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
     setRating(star);
     setHasRated(true);
     try {
-      const res = await fetch(`${API}/engagement/rating`, {
+      const res = await fetch(`${API_BASE_URL}/engagement/rating`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contentId, userHash, rating: star }),
@@ -108,7 +108,7 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
         toast.success("Link berhasil disalin!");
       }
       setShares(shares + 1);
-      fetch(`${API}/engagement/share`, {
+      fetch(`${API_BASE_URL}/engagement/share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contentId }),

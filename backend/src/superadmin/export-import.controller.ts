@@ -30,7 +30,7 @@ export class ExportImportController {
       this.prisma.contentNode.findMany(),
       this.prisma.contentTag.findMany(),
       this.prisma.contentItem.findMany({
-        include: { qnaDetail: true, articleDetail: true, mediaDetail: true, tags: true },
+        include: { qnaDetail: true, articleDetail: true, tags: true },
       }),
       this.prisma.contentItemTag.findMany(),
       this.prisma.authorStat.findMany(),
@@ -113,7 +113,7 @@ export class ExportImportController {
       // Remap authorId by email
       const author = await this.prisma.user.findFirst({ where: { role: { in: ['AUTHOR', 'ADMIN', 'SUPERADMIN'] } } });
       if (!author) continue;
-      const { qnaDetail, articleDetail, mediaDetail, tags, ...itemData } = c;
+      const { qnaDetail, articleDetail, tags, ...itemData } = c;
       const cleanData = { ...itemData, id: undefined, authorId: author.id };
       await this.prisma.contentItem.upsert({
         where: { slug: c.slug },

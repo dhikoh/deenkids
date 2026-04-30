@@ -4,7 +4,7 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { Send, Image, Plus, MessageSquare } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import { API_BASE_URL } from "@/lib/api";
 const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
 const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
 
@@ -32,22 +32,22 @@ export default function MessagesPage() {
 
   const loadConvos = async () => {
     const token = Cookies.get("access_token"); if (!token) return;
-    try { const r = await apiFetch(`${API}/admin/messages/conversations`, { headers: authH(token) }); setConvos(r.data || []); } catch {}
+    try { const r = await apiFetch(`${API_BASE_URL}/admin/messages/conversations`, { headers: authH(token) }); setConvos(r.data || []); } catch {}
   };
 
   const loadMessages = async (id: string) => {
     const token = Cookies.get("access_token"); if (!token) return;
     try {
-      const r = await apiFetch(`${API}/admin/messages/${id}`, { headers: authH(token) });
+      const r = await apiFetch(`${API_BASE_URL}/admin/messages/${id}`, { headers: authH(token) });
       setMessages(r.data || []);
-      await fetch(`${API}/admin/messages/${id}/read`, { method: "PUT", headers: authH(token) });
+      await fetch(`${API_BASE_URL}/admin/messages/${id}/read`, { method: "PUT", headers: authH(token) });
       loadConvos();
     } catch {}
   };
 
   const loadUsers = async () => {
     const token = Cookies.get("access_token"); if (!token) return;
-    try { const r = await apiFetch(`${API}/admin/messages/users`, { headers: authH(token) }); setUsers(r.data || []); setShowNewChat(true); } catch {}
+    try { const r = await apiFetch(`${API_BASE_URL}/admin/messages/users`, { headers: authH(token) }); setUsers(r.data || []); setShowNewChat(true); } catch {}
   };
 
   const sendMessage = async (receiverId?: string) => {
@@ -58,7 +58,7 @@ export default function MessagesPage() {
       const fd = new FormData();
       fd.append("receiverId", targetId);
       fd.append("text", text);
-      const r = await fetch(`${API}/admin/messages/send`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const r = await fetch(`${API_BASE_URL}/admin/messages/send`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
       const res = await r.json();
       if (!r.ok) throw new Error(res.message);
       setText("");
@@ -77,7 +77,7 @@ export default function MessagesPage() {
     fd.append("receiverId", targetId);
     fd.append("attachment", file);
     try {
-      const r = await fetch(`${API}/admin/messages/send`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const r = await fetch(`${API_BASE_URL}/admin/messages/send`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
       if (!r.ok) { const e = await r.json(); throw new Error(e.message); }
       loadMessages(activeConvo!);
     } catch (e: any) { toast.error(e.message); }
@@ -143,7 +143,7 @@ export default function MessagesPage() {
               {messages.map(m => (
                 <div key={m.id} className={`flex ${m.senderId === myId ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[70%] p-3 rounded-2xl ${m.senderId === myId ? "bg-emerald-600 text-white rounded-br-sm" : "bg-slate-100 text-slate-800 rounded-bl-sm"}`}>
-                    {m.attachmentUrl && <img src={`${API.replace("/api", "")}${m.attachmentUrl}`} alt="attachment" className="rounded-xl mb-2 max-w-full max-h-60 object-cover" />}
+                    {m.attachmentUrl && <img src={`${API_BASE_URL.replace("/api", "")}${m.attachmentUrl}`} alt="attachment" className="rounded-xl mb-2 max-w-full max-h-60 object-cover" />}
                     {m.text && <p className="text-sm">{m.text}</p>}
                     <p className={`text-[10px] mt-1 ${m.senderId === myId ? "text-white/60" : "text-slate-400"}`}>{new Date(m.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</p>
                   </div>

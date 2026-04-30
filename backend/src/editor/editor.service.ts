@@ -135,7 +135,6 @@ export class EditorService {
         node: true,
         qnaDetail: true,
         articleDetail: true,
-        mediaDetail: true,
         tags: { include: { tag: true } },
         reviewHistory: {
           orderBy: { createdAt: 'desc' },

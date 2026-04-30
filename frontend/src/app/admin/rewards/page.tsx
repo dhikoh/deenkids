@@ -4,7 +4,7 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { Trophy, ArrowUpRight, ArrowDownLeft, Clock, Wallet } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import { API_BASE_URL } from "@/lib/api";
 const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
 const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
 
@@ -19,8 +19,8 @@ export default function RewardsPage() {
     const token = Cookies.get("access_token"); if (!token) return;
     try {
       const [b, l] = await Promise.all([
-        apiFetch(`${API}/admin/points/balance`, { headers: authH(token) }),
-        apiFetch(`${API}/admin/points/ledger`, { headers: authH(token) }),
+        apiFetch(`${API_BASE_URL}/admin/points/balance`, { headers: authH(token) }),
+        apiFetch(`${API_BASE_URL}/admin/points/ledger`, { headers: authH(token) }),
       ]);
       setBalance(b); setLedger(l.data || []);
     } catch { toast.error("Gagal memuat data reward"); }
@@ -31,7 +31,7 @@ export default function RewardsPage() {
   const handleWithdraw = async () => {
     const token = Cookies.get("access_token"); if (!token) return;
     try {
-      const res = await apiFetch(`${API}/admin/points/withdraw`, { method: "POST", headers: authH(token), body: JSON.stringify({ pointsAmount: parseInt(withdrawAmount) }) });
+      const res = await apiFetch(`${API_BASE_URL}/admin/points/withdraw`, { method: "POST", headers: authH(token), body: JSON.stringify({ pointsAmount: parseInt(withdrawAmount) }) });
       toast.success(res.message); setShowForm(false); setWithdrawAmount(""); load();
     } catch (e: any) { toast.error(e.message); }
   };

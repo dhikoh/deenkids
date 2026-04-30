@@ -82,7 +82,7 @@ export class PublicFormController {
       data: {
         name: body.name,
         email: body.email,
-        type: body.type,
+        type: (body.type?.toUpperCase() || 'SARAN') as any,
         message: body.message,
       },
     });

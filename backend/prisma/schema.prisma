@@ -115,7 +115,6 @@ model ContentItem {
   updatedAt         DateTime          @updatedAt
   qnaDetail         QnaDetail?
   articleDetail     ArticleDetail?
-  mediaDetail       MediaDetail?
   tags              ContentItemTag[]
   likes             ContentLike[]
   bookmarks         ContentBookmark[]
@@ -126,6 +125,10 @@ model ContentItem {
   relatedFrom       RelatedContent[]  @relation("SourceContent")
   relatedTo         RelatedContent[]  @relation("TargetContent")
   enableAudio       Boolean           @default(false)
+
+  @@index([authorId, status])
+  @@index([status, type])
+  @@index([publishedAt])
 }
 
 model QnaDetail {
@@ -148,14 +151,7 @@ model ArticleDetail {
   blocks    Json // article content blocks
 }
 
-model MediaDetail {
-  id        String      @id @default(uuid())
-  contentId String      @unique
-  content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
-  mediaUrl  String
-  duration  Int?
-  mediaType String // e.g., "video", "audio"
-}
+
 
 model ContentTag {
   id         String           @id @default(uuid())
@@ -347,43 +343,62 @@ model DonationSubmission {
   createdAt   DateTime  @default(now())
 }
 
+enum FeedbackType {
+  KRITIK
+  SARAN
+  PERTANYAAN
+}
+
 model FeedbackSubmission {
-  id        String   @id @default(uuid())
+  id        String       @id @default(uuid())
   name      String
   email     String?
-  type      String   // "kritik" | "saran" | "pertanyaan"
+  type      FeedbackType
   message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isRead    Boolean      @default(false)
+  createdAt DateTime     @default(now())
+}
+
+enum PointType {
+  EARNED
+  BONUS
+  WITHDRAWAL
 }
 
 model PointLedger {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount    Int
-  type      String   // EARNED | BONUS | WITHDRAWAL
+  type      PointType
   reason    String
   contentId String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([contentId, type])
 }
 
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISBURSED
+}
+
 model WithdrawalRequest {
-  id           String    @id @default(uuid())
+  id           String           @id @default(uuid())
   userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   pointsAmount Int
   rupiahAmount Int
   bankName     String
   bankAccount  String
   bankHolder   String
-  status       String    @default("PENDING")
+  status       WithdrawalStatus @default(PENDING)
   processedBy  String?
   processedAt  DateTime?
   notes        String?
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime         @default(now())
 }
 
 model Conversation {
@@ -409,9 +424,9 @@ model Message {
   attachmentUrl  String?
   attachmentType String?
   isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
 
   @@index([conversationId, isRead])
-  createdAt      DateTime     @default(now())
 }
 
 model SponsorBanner {

@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { Users, Shield, Edit2, Trash2, KeyRound, UserPlus, X, Eye, EyeOff, Copy, Lock } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import { API_BASE_URL } from "@/lib/api";
 const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
 const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
 
@@ -76,7 +76,7 @@ export default function UsersPage() {
     setSaving(true);
     const token = Cookies.get("access_token");
     try {
-      await apiFetch(`${API}/admin/users`, { method: "POST", headers: authH(token || ""), body: JSON.stringify({ name: formName, email: formEmail, phone: formPhone || undefined, role: formRole, password: formPassword }) });
+      await apiFetch(`${API_BASE_URL}/admin/users`, { method: "POST", headers: authH(token || ""), body: JSON.stringify({ name: formName, email: formEmail, phone: formPhone || undefined, role: formRole, password: formPassword }) });
       toast.success("User berhasil dibuat"); closeModal(); loadUsers();
     } catch (e: any) { toast.error(e.message); setSaving(false); }
   };
@@ -86,7 +86,7 @@ export default function UsersPage() {
     setSaving(true);
     const token = Cookies.get("access_token");
     try {
-      await apiFetch(`${API}/admin/users/${targetUser.id}`, { method: "PUT", headers: authH(token || ""), body: JSON.stringify({ name: formName, email: formEmail, phone: formPhone, role: formRole }) });
+      await apiFetch(`${API_BASE_URL}/admin/users/${targetUser.id}`, { method: "PUT", headers: authH(token || ""), body: JSON.stringify({ name: formName, email: formEmail, phone: formPhone, role: formRole }) });
       toast.success("User berhasil diperbarui"); closeModal(); loadUsers();
     } catch (e: any) { toast.error(e.message); setSaving(false); }
   };
@@ -96,7 +96,7 @@ export default function UsersPage() {
     setSaving(true);
     const token = Cookies.get("access_token");
     try {
-      const res = await apiFetch(`${API}/admin/users/${targetUser.id}/reset-password`, { method: "PUT", headers: authH(token || "") });
+      const res = await apiFetch(`${API_BASE_URL}/admin/users/${targetUser.id}/reset-password`, { method: "PUT", headers: authH(token || "") });
       setGeneratedPw(res.newPassword); toast.success("Password berhasil direset");
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
@@ -107,7 +107,7 @@ export default function UsersPage() {
     setSaving(true);
     const token = Cookies.get("access_token");
     try {
-      await apiFetch(`${API}/admin/users/${targetUser.id}/set-password`, { method: "PUT", headers: authH(token || ""), body: JSON.stringify({ password: formPassword }) });
+      await apiFetch(`${API_BASE_URL}/admin/users/${targetUser.id}/set-password`, { method: "PUT", headers: authH(token || ""), body: JSON.stringify({ password: formPassword }) });
       toast.success("Password berhasil diubah"); closeModal();
     } catch (e: any) { toast.error(e.message); setSaving(false); }
   };
@@ -117,7 +117,7 @@ export default function UsersPage() {
     setSaving(true);
     const token = Cookies.get("access_token");
     try {
-      await apiFetch(`${API}/admin/users/${targetUser.id}`, { method: "DELETE", headers: authH(token || "") });
+      await apiFetch(`${API_BASE_URL}/admin/users/${targetUser.id}`, { method: "DELETE", headers: authH(token || "") });
       toast.success("User berhasil dihapus"); closeModal(); loadUsers();
     } catch (e: any) { toast.error(e.message); setSaving(false); }
   };

@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { User, CreditCard, Lock, Globe, Save } from "lucide-react";
 import { changePassword } from "@/lib/api";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import { API_BASE_URL } from "@/lib/api";
 const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
 const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
 
@@ -19,7 +19,7 @@ export default function ProfilePage() {
   const load = async () => {
     const token = Cookies.get("access_token"); if (!token) return;
     try {
-      const r = await apiFetch(`${API}/admin/profile`, { headers: authH(token) });
+      const r = await apiFetch(`${API_BASE_URL}/admin/profile`, { headers: authH(token) });
       setProfile(r.data);
       setForm({ name: r.data.name || "", phone: r.data.phone || "", bio: r.data.bio || "", locale: r.data.locale || "id" });
       setBank({ bankName: r.data.bankName || "", bankAccount: r.data.bankAccount || "", bankHolder: r.data.bankHolder || "" });
@@ -30,11 +30,11 @@ export default function ProfilePage() {
 
   const saveProfile = async () => {
     const token = Cookies.get("access_token"); if (!token) return;
-    try { await apiFetch(`${API}/admin/profile`, { method: "PUT", headers: authH(token), body: JSON.stringify(form) }); toast.success("Profil disimpan"); localStorage.setItem("locale", form.locale); } catch (e: any) { toast.error(e.message); }
+    try { await apiFetch(`${API_BASE_URL}/admin/profile`, { method: "PUT", headers: authH(token), body: JSON.stringify(form) }); toast.success("Profil disimpan"); localStorage.setItem("locale", form.locale); } catch (e: any) { toast.error(e.message); }
   };
   const saveBank = async () => {
     const token = Cookies.get("access_token"); if (!token) return;
-    try { await apiFetch(`${API}/admin/profile/bank`, { method: "PUT", headers: authH(token), body: JSON.stringify(bank) }); toast.success("Data rekening disimpan"); } catch (e: any) { toast.error(e.message); }
+    try { await apiFetch(`${API_BASE_URL}/admin/profile/bank`, { method: "PUT", headers: authH(token), body: JSON.stringify(bank) }); toast.success("Data rekening disimpan"); } catch (e: any) { toast.error(e.message); }
   };
   const savePw = async () => {
     const token = Cookies.get("access_token"); if (!token) return;

@@ -39,7 +39,6 @@ export class ContentService {
         author: { select: { id: true, name: true } },
         qnaDetail: true,
         articleDetail: true,
-        mediaDetail: true,
         tags: { include: { tag: true } },
       },
     });

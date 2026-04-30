@@ -104,7 +104,7 @@ export default function MyContentsPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusColors[item.status]}`}>{statusLabels[item.status]}</span>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">{item.type}</span>
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${item.type === "QNA" ? "bg-amber-50 text-amber-600" : item.type === "PEMBELAJARAN" ? "bg-purple-50 text-purple-600" : "bg-sky-50 text-sky-600"}`}>{item.type === "QNA" ? "Tanya Jawab" : item.type === "PEMBELAJARAN" ? "Pembelajaran" : "Artikel"}</span>
                       {item.ageGroups?.map((a: string) => <span key={a} className="text-[10px] font-bold px-2 py-0.5 bg-sky-50 text-sky-600 rounded">{a} thn</span>)}
                     </div>
                     <h3 className="font-bold text-slate-800">{item.title}</h3>

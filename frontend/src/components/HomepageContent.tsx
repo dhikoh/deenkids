@@ -27,12 +27,15 @@ function EmptyState({ message }: { message: string }) {
 
 function ContentCard({ item, index }: { item: any; index: number }) {
   const isQna = item.type === "QNA";
+  const isPembelajaran = item.type === "PEMBELAJARAN";
+  const typeLabel = isQna ? "Tanya Jawab" : isPembelajaran ? "Pembelajaran" : "Artikel";
+  const typeStyle = isQna ? "bg-amber-50 text-amber-700 border border-amber-200" : isPembelajaran ? "bg-purple-50 text-purple-700 border border-purple-200" : "bg-sky-50 text-sky-700 border border-sky-200";
   return (
     <Link href={isQna ? `/qna/${item.slug}` : `/artikel/${item.slug}`} className="group">
       <div className="h-full bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-emerald-200 transition-all duration-300">
         <div className="flex items-center gap-2 mb-3">
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isQna ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-sky-50 text-sky-700 border border-sky-200"}`}>
-            {isQna ? "Tanya Jawab" : "Artikel"}
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${typeStyle}`}>
+            {typeLabel}
           </span>
           <span className="text-xs text-slate-400 font-medium">{(item.ageGroups || []).join(', ')}</span>
         </div>

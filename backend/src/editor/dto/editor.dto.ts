@@ -66,10 +66,6 @@ export class CreateContentDto {
   @IsOptional()
   articleDetail?: any;
 
-  @ApiProperty({ required: false })
-  @IsObject()
-  @IsOptional()
-  mediaDetail?: any;
 
   @ApiProperty({ type: [String], required: false })
   @IsArray()

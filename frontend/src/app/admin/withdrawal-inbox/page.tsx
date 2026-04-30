@@ -4,7 +4,7 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { CheckCircle, XCircle, Banknote, Clock } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import { API_BASE_URL } from "@/lib/api";
 const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
 const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
 
@@ -17,14 +17,14 @@ export default function WithdrawalInboxPage() {
 
   const load = async () => {
     const token = Cookies.get("access_token"); if (!token) return;
-    try { const r = await apiFetch(`${API}/superadmin/withdrawals`, { headers: authH(token) }); setData(r.data || []); }
+    try { const r = await apiFetch(`${API_BASE_URL}/superadmin/withdrawals`, { headers: authH(token) }); setData(r.data || []); }
     catch { toast.error("Gagal memuat"); } finally { setLoading(false); }
   };
   useEffect(() => { load(); }, []);
 
   const process = async (id: string, action: string, notes = "") => {
     const token = Cookies.get("access_token"); if (!token) return;
-    try { await apiFetch(`${API}/superadmin/withdrawals/${id}/process`, { method: "PUT", headers: authH(token), body: JSON.stringify({ action, notes }) }); toast.success(`Withdrawal ${action.toLowerCase()}`); load(); }
+    try { await apiFetch(`${API_BASE_URL}/superadmin/withdrawals/${id}/process`, { method: "PUT", headers: authH(token), body: JSON.stringify({ action, notes }) }); toast.success(`Withdrawal ${action.toLowerCase()}`); load(); }
     catch (e: any) { toast.error(e.message); }
   };
 
