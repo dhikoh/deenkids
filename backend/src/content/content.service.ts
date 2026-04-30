@@ -113,17 +113,16 @@ export class ContentService {
     }
 
     const where: any = { status: 'PUBLISHED' };
+    const conditions: any[] = [];
     if (age && age !== 'Semua') {
-      where.ageGroups = { has: age };
-    }
-    if (type) {
-      where.type = type;
+      conditions.push({ OR: [{ ageGroups: { has: age } }, { ageGroups: { has: 'Semua Usia' } }] });
     }
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
+      conditions.push({ OR: [{ title: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }] });
+    }
+    if (conditions.length > 0) where.AND = conditions;
+    if (type) {
+      where.type = type;
     }
 
     const [data, total] = await Promise.all([

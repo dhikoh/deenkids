@@ -438,15 +438,20 @@ function EditorContent() {
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Kelompok Usia <span className="text-xs text-slate-400">(bisa lebih dari satu)</span></label>
                   <div className="flex flex-wrap gap-2">
                     {["3-5", "5-7", "7-10", "10-13", "Semua Usia"].map(age => {
-                      const checked = age === "Semua Usia" ? ageGroups.includes("Semua Usia") : ageGroups.includes(age);
+                      const ALL_AGES = ["3-5", "5-7", "7-10", "10-13"];
+                      const isAllSelected = ALL_AGES.every(a => ageGroups.includes(a));
+                      const checked = age === "Semua Usia" ? isAllSelected : ageGroups.includes(age);
                       return (
                         <label key={age} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all text-sm font-bold ${checked ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
                           <input type="checkbox" checked={checked} onChange={() => {
                             if (age === "Semua Usia") {
-                              setAgeGroups(checked ? [] : ["Semua Usia"]);
+                              setAgeGroups(isAllSelected ? [] : [...ALL_AGES]);
                             } else {
-                              const without = ageGroups.filter(a => a !== "Semua Usia");
-                              setAgeGroups(checked ? without.filter(a => a !== age) : [...without, age]);
+                              if (ageGroups.includes(age)) {
+                                setAgeGroups(ageGroups.filter(a => a !== age));
+                              } else {
+                                setAgeGroups([...ageGroups, age]);
+                              }
                             }
                           }} className="w-4 h-4 text-emerald-600 rounded" />
                           {age === "Semua Usia" ? age : `${age} Tahun`}

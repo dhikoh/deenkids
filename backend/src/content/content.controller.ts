@@ -62,13 +62,17 @@ export class ContentController {
     const skip = ((page ? parseInt(page) : 1) - 1) * take;
     const where: any = {
       status: 'PUBLISHED',
-      OR: [
-        { title: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
-      ],
     };
+    // Search + age filter combined with AND
+    const conditions: any[] = [];
+    if (q) {
+      conditions.push({ OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] });
+    }
     if (type) where.type = type;
-    if (age) where.ageGroups = { has: age };
+    if (age) {
+      conditions.push({ OR: [{ ageGroups: { has: age } }, { ageGroups: { has: 'Semua Usia' } }] });
+    }
+    if (conditions.length > 0) where.AND = conditions;
 
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({
@@ -113,6 +117,13 @@ export class ContentController {
       type: type?.value || 'info',
       link: link?.value || '',
     };
+  }
+
+  @Get('ai-status')
+  @ApiOperation({ summary: 'Get global AI checker status (public, no auth)' })
+  async getAiStatus() {
+    const setting = await this.prisma.setting.findUnique({ where: { key: 'ai_checker_enabled' } });
+    return { aiEnabled: setting?.value === 'true' };
   }
 
   @Get(':slug')

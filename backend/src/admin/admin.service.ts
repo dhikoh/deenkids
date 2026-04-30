@@ -92,7 +92,9 @@ export class AdminService {
     });
 
     if (!content) throw new NotFoundException('Content not found');
-    if (content.authorId === reviewerId) {
+    // Allow SUPERADMIN to review their own content
+    const reviewer = await this.prisma.user.findUnique({ where: { id: reviewerId }, select: { role: true } });
+    if (content.authorId === reviewerId && reviewer?.role !== 'SUPERADMIN') {
       throw new ForbiddenException('Anda tidak bisa mereview konten sendiri');
     }
 

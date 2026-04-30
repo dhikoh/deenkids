@@ -329,7 +329,7 @@ export async function markAllNotificationsRead(token: string) {
 // ═══════════════════════════════════════
 
 export async function fetchAiToggle(token: string) {
-  return apiFetch(`${API_BASE_URL}/superadmin/settings/ai-toggle`, {
+  return apiFetch(`${API_BASE_URL}/content/ai-status`, {
     headers: authHeaders(token),
   });
 }

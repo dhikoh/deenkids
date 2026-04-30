@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsBoolean, IsObject, IsEnum, IsArray } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { ContentType, ContentStatus } from '@prisma/client';
 
 export class CreateContentDto {
@@ -78,5 +78,4 @@ export class CreateContentDto {
   tags?: string[];
 }
 
-export class UpdateContentDto extends CreateContentDto {}
-
+export class UpdateContentDto extends PartialType(CreateContentDto) {}
