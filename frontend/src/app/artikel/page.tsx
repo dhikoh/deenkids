@@ -73,7 +73,7 @@ export default function ArtikelPage() {
       {!loading && (
         <div className="grid md:grid-cols-2 gap-6">
           {items.map((item: any) => (
-            <Link href={`/qna/${item.slug}`} key={item.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+            <Link href={`/artikel/${item.slug}`} key={item.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <span className="text-[10px] font-bold px-2 py-1 bg-amber-50 text-amber-700 rounded-md uppercase tracking-wider">Artikel</span>
                 {(item.ageGroups || []).map((a: string) => <span key={a} className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">{a} thn</span>)}

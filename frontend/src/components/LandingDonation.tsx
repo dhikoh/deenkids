@@ -2,19 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { Gift, CreditCard, QrCode, ExternalLink, Upload, Send } from "lucide-react";
-import { fetchDonationSettings, fetchDonationTestimonials, submitPublicDonation } from "@/lib/api";
+import { fetchDonationSettings, submitPublicDonation } from "@/lib/api";
 import toast from "react-hot-toast";
 
 export default function LandingDonation() {
   const [settings, setSettings] = useState<any>(null);
-  const [testimonials, setTestimonials] = useState<any[]>([]);
   const [form, setForm] = useState({ name: "", amount: "", method: "bank", message: "" });
   const [proof, setProof] = useState<File | null>(null);
   const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     fetchDonationSettings().then(d => setSettings(d)).catch(() => {});
-    fetchDonationTestimonials().then(d => setTestimonials(d.data || [])).catch(() => {});
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

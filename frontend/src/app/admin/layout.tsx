@@ -5,9 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image } from "lucide-react";
 import Cookies from "js-cookie";
-import { fetchUnreadCount } from "@/lib/api";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -31,12 +29,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     let active = true;
     const poll = async () => {
       try {
-        const notifRes = await fetch(`${API}/admin/notifications/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
+        const notifRes = await fetch(`${API_BASE_URL}/admin/notifications/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
         if (notifRes.status === 401) { handleLogout(); return; }
         if (notifRes.ok) { const r = await notifRes.json(); if (active) setUnreadNotif(r.count || 0); }
       } catch {}
       try {
-        const msgRes = await fetch(`${API}/admin/messages/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
+        const msgRes = await fetch(`${API_BASE_URL}/admin/messages/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
         if (msgRes.status === 401) { handleLogout(); return; }
         if (msgRes.ok) { const r = await msgRes.json(); if (active) setUnreadMsg(r.count || 0); }
       } catch {}

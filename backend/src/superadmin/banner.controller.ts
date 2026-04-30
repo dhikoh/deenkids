@@ -29,7 +29,11 @@ export class BannerController {
   @ApiOperation({ summary: 'Create a new banner with image upload' })
   @UseInterceptors(FileInterceptor('image', {
     storage: diskStorage({
-      destination: '/app/uploads/banners',
+      destination: (_req, _file, cb) => {
+        const dir = join(process.cwd(), 'uploads', 'banners');
+        if (!require('fs').existsSync(dir)) require('fs').mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+      },
       filename: (_req, file, cb) => {
         const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, `banner-${unique}${extname(file.originalname)}`);

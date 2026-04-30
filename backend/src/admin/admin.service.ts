@@ -109,7 +109,7 @@ export class AdminService {
         where: { id: contentId },
         data: {
           status: newStatus,
-          publishedAt: newStatus === 'PUBLISHED' ? new Date() : null,
+          ...(newStatus === 'PUBLISHED' && { publishedAt: new Date() }),
         },
       }),
       this.prisma.reviewHistory.create({
@@ -256,7 +256,7 @@ export class AdminService {
     const where: any = {};
     if (status) where.status = status;
     if (search) where.title = { contains: search, mode: 'insensitive' };
-    if (age && age !== 'Semua') where.ageGroups = { has: age };
+    if (age && age !== 'Semua') where.OR = [{ ageGroups: { has: age } }, { ageGroups: { has: 'Semua Usia' } }];
 
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({

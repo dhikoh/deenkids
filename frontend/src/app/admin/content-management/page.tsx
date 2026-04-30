@@ -5,10 +5,7 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import { FileText, Trash2, Edit2, Film, Search } from "lucide-react";
 import { copyVideoScript } from "@/lib/videoScript";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
-const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
+import { fetchAllContents, deleteContent, fetchContentForEdit } from "@/lib/api";
 
 const AGE_OPTIONS = ["", "3-5", "5-7", "7-10", "10-13"];
 const statusColors: Record<string, string> = { DRAFT: "bg-slate-100 text-slate-600", REVIEW: "bg-amber-100 text-amber-700", REVISION: "bg-rose-100 text-rose-700", PUBLISHED: "bg-emerald-100 text-emerald-700", ARCHIVED: "bg-slate-200 text-slate-500" };
@@ -22,16 +19,12 @@ export default function ContentManagementPage() {
   const [ageFilter, setAgeFilter] = useState("");
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<any>({});
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const load = async () => {
     const token = Cookies.get("access_token"); if (!token) return;
     try {
-      const params = new URLSearchParams();
-      if (filter) params.append("status", filter);
-      if (search) params.append("search", search);
-      if (ageFilter) params.append("age", ageFilter);
-      params.append("page", page.toString());
-      const res = await apiFetch(`${API}/admin/contents?${params}`, { headers: authH(token) });
+      const res = await fetchAllContents(token, filter || undefined, page, search || undefined, ageFilter || undefined);
       setContents(res.data || []); setMeta(res.meta || {});
     } catch { toast.error("Gagal memuat konten"); }
     finally { setLoading(false); }
@@ -39,19 +32,18 @@ export default function ContentManagementPage() {
 
   useEffect(() => { setLoading(true); load(); }, [filter, page, search, ageFilter]);
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Hapus konten "${title}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+  const handleDelete = async (id: string) => {
     const token = Cookies.get("access_token");
     try {
-      await apiFetch(`${API}/editor/content/${id}`, { method: "DELETE", headers: authH(token || "") });
-      toast.success("Konten dihapus"); load();
+      await deleteContent(id, token || "");
+      toast.success("Konten dihapus"); setConfirmDeleteId(null); load();
     } catch (e: any) { toast.error(e.message); }
   };
 
   const handleExportScript = async (id: string) => {
     const token = Cookies.get("access_token"); if (!token) return;
     try {
-      const res = await apiFetch(`${API}/editor/content/${id}`, { headers: authH(token) });
+      const res = await fetchContentForEdit(token, id);
       const ok = copyVideoScript(res.data);
       if (ok) toast.success("Script video berhasil disalin ke clipboard!"); else toast.error("Gagal menyalin");
     } catch (e: any) { toast.error(e.message); }
@@ -117,9 +109,16 @@ export default function ContentManagementPage() {
                   <button onClick={() => handleExportScript(item.id)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100" title="Export Script Video">
                     <Film size={16} />
                   </button>
-                  <button onClick={() => handleDelete(item.id, item.title)} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100" title="Hapus">
-                    <Trash2 size={16} />
-                  </button>
+                  {confirmDeleteId === item.id ? (
+                    <div className="flex gap-1">
+                      <button onClick={() => handleDelete(item.id)} className="px-2 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded">Ya, Hapus</button>
+                      <button onClick={() => setConfirmDeleteId(null)} className="px-2 py-1 text-xs font-bold text-slate-400 hover:bg-slate-50 rounded">Batal</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmDeleteId(item.id)} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100" title="Hapus">
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

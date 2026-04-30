@@ -10,7 +10,6 @@ datasource db {
 enum Role {
   SUPERADMIN
   ADMIN
-  EDITOR
   AUTHOR
 }
 
@@ -122,7 +121,6 @@ model ContentItem {
   bookmarks         ContentBookmark[]
   ratings           ContentRating[]
   views             ContentView[]
-  versions          ContentVersion[]
   reviewHistory     ReviewHistory[]
   aiCheckResults    AiCheckResult[]
   relatedFrom       RelatedContent[]  @relation("SourceContent")
@@ -226,24 +224,10 @@ model ContentView {
   content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
   userHash  String
   duration  Int         @default(0)
-  createdAt DateTime    @default(now())
-}
+  viewedAt  DateTime    @default(now())
 
-model VideoView {
-  id         String   @id @default(uuid())
-  mediaUrl   String
-  userHash   String
-  watchTime  Int      @default(0)
-  isFinished Boolean  @default(false)
-  createdAt  DateTime @default(now())
-}
-
-model ContentVersion {
-  id        String      @id @default(uuid())
-  contentId String
-  content   ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
-  snapshot  Json
-  createdAt DateTime    @default(now())
+  @@index([contentId, userHash])
+  @@index([viewedAt])
 }
 
 enum ReviewAction {
@@ -304,6 +288,9 @@ model InternalNotification {
   linkUrl    String?
   isRead     Boolean          @default(false)
   createdAt  DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
 }
 
 model Setting {
@@ -343,6 +330,8 @@ model AuditLog {
   details    Json?
   ipAddress  String?
   createdAt  DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model DonationSubmission {
@@ -377,6 +366,8 @@ model PointLedger {
   reason    String
   contentId String?
   createdAt DateTime @default(now())
+
+  @@index([contentId, type])
 }
 
 model WithdrawalRequest {
@@ -418,6 +409,8 @@ model Message {
   attachmentUrl  String?
   attachmentType String?
   isRead         Boolean      @default(false)
+
+  @@index([conversationId, isRead])
   createdAt      DateTime     @default(now())
 }
 

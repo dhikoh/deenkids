@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Put, Delete, Body, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
 import { EditorService } from './editor.service';
 import { CreateContentDto, UpdateContentDto } from './dto/editor.dto';
 import { RolesGuard, JwtAuthGuard } from '../common/guards/roles.guard';
@@ -86,7 +86,11 @@ export class EditorController {
   @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
-      destination: '/app/uploads',
+      destination: (_req: any, _file: any, cb: any) => {
+        const dir = join(process.cwd(), 'uploads');
+        if (!require('fs').existsSync(dir)) require('fs').mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+      },
       filename: (_req, file, cb) => {
         const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, unique + extname(file.originalname));

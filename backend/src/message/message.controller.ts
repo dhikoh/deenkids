@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Put, Param, Query, Body, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
 import { MessageService } from './message.service';
 import { JwtAuthGuard } from '../common/guards/roles.guard';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
@@ -38,7 +40,20 @@ export class MessageController {
   @Post('send')
   @ApiOperation({ summary: 'Send a message (text or image)' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('attachment'))
+  @UseInterceptors(FileInterceptor('attachment', {
+    storage: diskStorage({
+      destination: (_req, _file, cb) => {
+        const dir = join(process.cwd(), 'uploads', 'messages');
+        if (!require('fs').existsSync(dir)) require('fs').mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+      },
+      filename: (_req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, `msg-${unique}${extname(file.originalname)}`);
+      },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+  }))
   async sendMessage(@Req() req: any, @Body() body: { receiverId: string; text?: string }, @UploadedFile() file?: any) {
     const attachmentUrl = file ? `/uploads/messages/${file.filename}` : undefined;
     const attachmentType = file ? file.mimetype : undefined;

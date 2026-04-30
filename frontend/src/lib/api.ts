@@ -1,7 +1,7 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 // ── Helper ──
-async function apiFetch(url: string, options: RequestInit = {}) {
+export async function apiFetch(url: string, options: RequestInit = {}) {
   const res = await fetch(url, { cache: 'no-store', ...options });
   if (!res.ok) {
     // Auto-redirect to login on 401 (expired token)
@@ -19,7 +19,7 @@ async function apiFetch(url: string, options: RequestInit = {}) {
   return res.json();
 }
 
-function authHeaders(token: string): HeadersInit {
+export function authHeaders(token: string): HeadersInit {
   return {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
@@ -57,9 +57,7 @@ export async function fetchDonationSettings() {
   return apiFetch(`${API_BASE_URL}/content/donation`);
 }
 
-export async function fetchDonationTestimonials() {
-  return apiFetch(`${API_BASE_URL}/content/donation/testimonials`);
-}
+
 
 export async function submitPublicDonation(formData: FormData) {
   const res = await fetch(`${API_BASE_URL}/content/donation/submit`, {
@@ -259,10 +257,12 @@ export async function assignContentToNode(contentId: string, nodeId: string, tok
   });
 }
 
-export async function fetchAllContents(token: string, status?: string, page?: number) {
+export async function fetchAllContents(token: string, status?: string, page?: number, search?: string, age?: string) {
   const params = new URLSearchParams();
   if (status) params.append('status', status);
   if (page) params.append('page', page.toString());
+  if (search) params.append('search', search);
+  if (age) params.append('age', age);
   return apiFetch(`${API_BASE_URL}/admin/contents?${params.toString()}`, {
     headers: authHeaders(token),
   });

@@ -169,8 +169,8 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
           <h2 className="text-xl font-bold text-slate-800 mb-4">📚 Konten Terkait</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {content.related.map((r: any) => (
-              <Link key={r.id} href={`/qna/${r.slug}`} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-emerald-200 transition-all group">
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded">{r.type}</span>
+              <Link key={r.id} href={r.type === 'QNA' ? `/qna/${r.slug}` : `/artikel/${r.slug}`} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-emerald-200 transition-all group">
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded">{r.type === 'QNA' ? 'Tanya Jawab' : 'Artikel'}</span>
                 <h3 className="font-bold text-slate-800 mt-2 group-hover:text-emerald-600 transition-colors line-clamp-2">{r.title}</h3>
               </Link>
             ))}

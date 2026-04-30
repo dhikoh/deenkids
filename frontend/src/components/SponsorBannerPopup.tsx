@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 const DISMISS_KEY = "adably_banner_dismiss";
 
 export default function SponsorBannerPopup() {
@@ -20,7 +20,7 @@ export default function SponsorBannerPopup() {
     }
 
     // Fetch active banners
-    fetch(`${API}/content/banners/active`)
+    fetch(`${API_BASE_URL}/content/banners/active`)
       .then(r => r.json())
       .then(data => {
         const banners = data.data || [];
@@ -44,7 +44,7 @@ export default function SponsorBannerPopup() {
   const handleClick = () => {
     if (!banner) return;
     // Track click
-    fetch(`${API}/content/banners/${banner.id}/click`, { method: "POST" }).catch(() => {});
+    fetch(`${API_BASE_URL}/content/banners/${banner.id}/click`, { method: "POST" }).catch(() => {});
     if (banner.linkUrl) {
       window.open(banner.linkUrl, "_blank", "noopener,noreferrer");
     }

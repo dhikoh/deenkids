@@ -3,10 +3,8 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { fetchBanners, toggleBanner, updateBanner, deleteBanner } from "@/lib/api";
+import { fetchBanners, toggleBanner, updateBanner, deleteBanner, API_BASE_URL } from "@/lib/api";
 import { Image, Plus, Trash2, ToggleLeft, ToggleRight, Edit3, ExternalLink, Eye, MousePointerClick, AlertTriangle, X, Save } from "lucide-react";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
 export default function BannersPage() {
   const [banners, setBanners] = useState<any[]>([]);
@@ -74,7 +72,7 @@ export default function BannersPage() {
       if (endDate) form.append("endDate", endDate);
       if (notes) form.append("notes", notes);
 
-      const res = await fetch(`${API}/superadmin/banners`, {
+      const res = await fetch(`${API_BASE_URL}/superadmin/banners`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: form,

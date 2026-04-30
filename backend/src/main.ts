@@ -12,9 +12,12 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Ensure uploads directory exists
-  const uploadsDir = join(process.cwd(), 'uploads', 'proofs');
-  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  // Ensure uploads directories exist
+  const uploadDirs = ['uploads/proofs', 'uploads/banners', 'uploads/messages'];
+  for (const dir of uploadDirs) {
+    const fullPath = join(process.cwd(), dir);
+    if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
+  }
 
   // Serve uploaded files statically
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });

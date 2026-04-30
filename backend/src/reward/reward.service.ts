@@ -154,37 +154,4 @@ export class RewardService {
     }
     return { message: 'Pengaturan reward diperbarui' };
   }
-
-  // Called by cron — check engagement milestones
-  async checkEngagementMilestones() {
-    const contents = await this.prisma.contentItem.findMany({
-      where: { status: 'PUBLISHED' },
-      select: { id: true, authorId: true, viewCount: true, likeCount: true, title: true },
-    });
-    const settings = await this.getRewardSettings();
-
-    for (const content of contents) {
-      // Check views milestones (every 500 views)
-      const viewMilestones = Math.floor(content.viewCount / 500);
-      if (viewMilestones > 0) {
-        const existingViewBonuses = await this.prisma.pointLedger.count({
-          where: { contentId: content.id, type: 'BONUS', reason: { startsWith: 'Bonus views' } },
-        });
-        if (viewMilestones > existingViewBonuses) {
-          await this.addPoints(content.authorId, settings.pointViewsMilestone, 'BONUS', `Bonus views milestone ${viewMilestones * 500} views: ${content.title}`, content.id);
-        }
-      }
-
-      // Check likes milestones (every 50 likes)
-      const likeMilestones = Math.floor(content.likeCount / 50);
-      if (likeMilestones > 0) {
-        const existingLikeBonuses = await this.prisma.pointLedger.count({
-          where: { contentId: content.id, type: 'BONUS', reason: { startsWith: 'Bonus likes' } },
-        });
-        if (likeMilestones > existingLikeBonuses) {
-          await this.addPoints(content.authorId, settings.pointLikesMilestone, 'BONUS', `Bonus likes milestone ${likeMilestones * 50} likes: ${content.title}`, content.id);
-        }
-      }
-    }
-  }
 }

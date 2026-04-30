@@ -189,4 +189,17 @@ export class CronService {
       }
     } catch {}
   }
+
+  // Weekly cleanup: prune old ContentView records (>90 days)
+  @Cron('0 4 * * 0') // Every Sunday at 4AM
+  async cleanupOldContentViews() {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+    const result = await this.prisma.contentView.deleteMany({
+      where: { viewedAt: { lt: cutoff } },
+    });
+    if (result.count > 0) {
+      this.logger.log(`🧹 Cleaned up ${result.count} content views older than 90 days`);
+    }
+  }
 }

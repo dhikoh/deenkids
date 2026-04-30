@@ -1,14 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchAiToggle, updateAiToggle } from "@/lib/api";
+import { fetchAiToggle, updateAiToggle, fetchRewardSettings, updateRewardSettings, fetchLeaderboard } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { Sparkles, Save, Trophy, Settings, Coins } from "lucide-react";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
-const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
 
 export default function SettingsPage() {
   const [aiEnabled, setAiEnabled] = useState(false);

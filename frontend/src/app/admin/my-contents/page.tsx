@@ -26,6 +26,7 @@ export default function MyContentsPage() {
   const [search, setSearch] = useState("");
   const [ageFilter, setAgeFilter] = useState("");
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const load = async () => {
     const token = Cookies.get("access_token");
@@ -40,11 +41,10 @@ export default function MyContentsPage() {
   useEffect(() => { setIsLoading(true); load(); }, [filter, search, ageFilter]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus konten ini?")) return;
     const token = Cookies.get("access_token");
     try {
       await deleteContent(id, token || "");
-      toast.success("Konten dihapus"); load();
+      toast.success("Konten dihapus"); setConfirmDeleteId(null); load();
     } catch (e: any) { toast.error(e.message); }
   };
 
@@ -123,7 +123,14 @@ export default function MyContentsPage() {
                       </>
                     )}
                     {item.status !== "PUBLISHED" && (
-                      <button onClick={() => handleDelete(item.id)} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100" title="Hapus"><Trash2 size={16} /></button>
+                      confirmDeleteId === item.id ? (
+                        <div className="flex gap-1">
+                          <button onClick={() => handleDelete(item.id)} className="px-2 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded">Ya, Hapus</button>
+                          <button onClick={() => setConfirmDeleteId(null)} className="px-2 py-1 text-xs font-bold text-slate-400 hover:bg-slate-50 rounded">Batal</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setConfirmDeleteId(item.id)} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100" title="Hapus"><Trash2 size={16} /></button>
+                      )
                     )}
                   </div>
                 </div>

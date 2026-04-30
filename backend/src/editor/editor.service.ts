@@ -227,8 +227,15 @@ export class EditorService {
       });
     }
 
-    // Update tags: clear old, add new
+    // Update tags: decrement old, clear, add new
     if (dto.tags) {
+      const oldTags = await this.prisma.contentItemTag.findMany({ where: { contentId }, select: { tagId: true } });
+      if (oldTags.length > 0) {
+        await this.prisma.contentTag.updateMany({
+          where: { id: { in: oldTags.map(t => t.tagId) } },
+          data: { usageCount: { decrement: 1 } },
+        });
+      }
       await this.prisma.contentItemTag.deleteMany({ where: { contentId } });
       for (const tagName of dto.tags) {
         const tag = await this.prisma.contentTag.upsert({

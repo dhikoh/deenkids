@@ -22,11 +22,11 @@ export class RolesGuard implements CanActivate {
 
     if (!user) return false;
 
-    // Role Hierarchy: SUPERADMIN > ADMIN > EDITOR
+    // Role Hierarchy: SUPERADMIN > ADMIN > AUTHOR
     const hierarchy: Record<string, number> = {
       SUPERADMIN: 3,
       ADMIN: 2,
-      EDITOR: 1,
+      AUTHOR: 1,
     };
 
     const userLevel = hierarchy[user.role] || 0;
