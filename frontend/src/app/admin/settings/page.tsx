@@ -37,8 +37,8 @@ export default function SettingsPage() {
       if (!token) return;
       const [aiData, rewardData, lbData] = await Promise.all([
         fetchAiToggle(token),
-        apiFetch(`${API}/superadmin/reward-settings`, { headers: authH(token) }),
-        apiFetch(`${API}/superadmin/points/leaderboard`, { headers: authH(token) }),
+        fetchRewardSettings(token),
+        fetchLeaderboard(token),
       ]);
       setAiEnabled(aiData.aiEnabled);
       setRewardSettings({
@@ -73,7 +73,7 @@ export default function SettingsPage() {
     setIsSavingReward(true);
     try {
       const token = Cookies.get("access_token"); if (!token) return;
-      await apiFetch(`${API}/superadmin/reward-settings`, { method: "PUT", headers: authH(token), body: JSON.stringify(rewardSettings) });
+      await updateRewardSettings(rewardSettings, token);
       toast.success("Pengaturan reward berhasil disimpan");
     } catch { toast.error("Gagal menyimpan pengaturan reward"); }
     finally { setIsSavingReward(false); }

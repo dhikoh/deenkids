@@ -527,3 +527,23 @@ export async function updateBanner(id: string, data: any, token: string) {
 export async function deleteBanner(id: string, token: string) {
   return apiFetch(`${API_BASE_URL}/superadmin/banners/${id}`, { method: 'DELETE', headers: authHeaders(token) });
 }
+
+// ═══════════════════════════════════════
+// REWARD SETTINGS & LEADERBOARD
+// ═══════════════════════════════════════
+
+export async function fetchRewardSettings(token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/reward-settings`, { headers: authHeaders(token) });
+}
+
+export async function updateRewardSettings(settings: Record<string, string>, token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/reward-settings`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(settings),
+  });
+}
+
+export async function fetchLeaderboard(token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/points/leaderboard`, { headers: authHeaders(token) });
+}

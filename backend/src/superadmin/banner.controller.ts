@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { RolesGuard, JwtAuthGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
