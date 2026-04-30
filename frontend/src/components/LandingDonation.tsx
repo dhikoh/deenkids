@@ -75,11 +75,11 @@ export default function LandingDonation() {
               </div>
             </div>
 
-            {testimonials.length > 0 && (
+            {(settings.testimonials || []).length > 0 && (
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <h3 className="font-bold text-slate-800 mb-4">Donatur Terverifikasi ❤️</h3>
                 <div className="space-y-2">
-                  {testimonials.slice(0, 5).map((t: any, i: number) => (
+                  {(settings.testimonials || []).slice(0, 5).map((t: any, i: number) => (
                     <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl text-sm">
                       <div>
                         <span className="font-bold text-slate-700">{t.name}</span>
