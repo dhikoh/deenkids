@@ -6,7 +6,7 @@ import { ChevronLeft, Eye, Send } from "lucide-react";
 import ContentRenderer from "@/components/ContentRenderer";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
-import { API_BASE_URL } from "@/lib/api";
+import { submitContentForReview } from "@/lib/api";
 
 const PREVIEW_KEY = "adably_preview_data";
 
@@ -39,16 +39,12 @@ export default function PreviewPage() {
     setIsSubmitting(true);
     const token = Cookies.get("access_token");
     try {
-      const r = await fetch(`${API_BASE_URL}/editor/content/${content.editId}/submit`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!r.ok) throw new Error();
+      await submitContentForReview(content.editId, token || "");
       toast.success("Konten berhasil diajukan untuk review!");
       localStorage.removeItem(PREVIEW_KEY);
       router.push("/admin/my-contents");
-    } catch {
-      toast.error("Gagal mengajukan review");
+    } catch (e: any) {
+      toast.error(e.message || "Gagal mengajukan review");
     } finally {
       setIsSubmitting(false);
     }

@@ -2,6 +2,7 @@
 
 import { Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCircle, User } from "lucide-react";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
+import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
 
 interface ContentRendererProps {
   content: any;
@@ -12,12 +13,21 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
   const qna = content.qnaDetail;
   const authorName = content.authorName || content.displayAuthorName || content.author?.name || 'Anonim';
 
+  // Build audio blocks for AudioPlayerWrapper
+  const audioBlocks = qna ? [
+    ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
+    ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
+    ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
+    ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
+    ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+  ] : (content.articleDetail?.blocks || []);
+
   return (
     <div className="max-w-3xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full">{content.type === 'QNA' ? 'Tanya Jawab' : 'Artikel'}</span>
+          <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full">{content.type === 'QNA' ? 'Tanya Jawab' : content.type === 'PEMBELAJARAN' ? 'Pembelajaran' : 'Artikel'}</span>
           <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-600 rounded-full">{(content.ageGroups || []).join(', ')} tahun</span>
           {isPreview && <span className="text-xs font-bold px-3 py-1 bg-amber-100 text-amber-700 rounded-full animate-pulse">PREVIEW</span>}
         </div>
@@ -34,6 +44,9 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
           )}
         </div>
       </div>
+
+      {/* Audio Player */}
+      <AudioPlayerWrapper blocks={audioBlocks} enableAudio={content.enableAudio} contentType={content.type} />
 
       {/* QNA Content */}
       {qna && (
@@ -113,6 +126,21 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
                 ))}
               </ul>
             </div>
+          )}
+
+          {/* Image & Video Blocks in QNA (from articleDetail if exists) */}
+          {content.articleDetail?.blocks && (
+            <>
+              {(content.articleDetail.blocks as any[]).filter((b: any) => b.type === 'image' || b.type === 'video').map((block: any, i: number) => {
+                if (block.type === 'image' && block.url) return <img key={`qna-media-${i}`} src={block.url} alt={block.caption || ''} className="rounded-2xl w-full border border-slate-200" />;
+                if (block.type === 'video' && block.url) {
+                  const ytMatch = block.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+                  if (ytMatch) return <div key={`qna-media-${i}`} className="aspect-video rounded-2xl overflow-hidden"><iframe src={`https://www.youtube.com/embed/${ytMatch[1]}`} className="w-full h-full" allowFullScreen /></div>;
+                  return <a key={`qna-media-${i}`} href={block.url} target="_blank" rel="noopener noreferrer" className="block bg-slate-100 rounded-xl p-4 text-emerald-600 font-bold hover:underline">🎬 {block.caption || block.url}</a>;
+                }
+                return null;
+              })}
+            </>
           )}
         </div>
       )}
