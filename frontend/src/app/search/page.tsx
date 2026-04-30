@@ -2,9 +2,8 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, BookOpen, HelpCircle, Eye, Heart, Star } from "lucide-react";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import { Search, BookOpen, HelpCircle, Eye, Heart, Star, Film } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 function SearchContent() {
   const params = useSearchParams();
@@ -22,7 +21,7 @@ function SearchContent() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ q: sq }); if (type) params.set("type", type); if (age) params.set("age", age);
-      const r = await fetch(`${API}/content/search?${params}`);
+      const r = await fetch(`${API_BASE_URL}/content/search?${params}`);
       const data = await r.json();
       setResults(data.data || []); setTotal(data.meta?.total || 0);
     } catch {} finally { setLoading(false); }
@@ -31,10 +30,11 @@ function SearchContent() {
   useEffect(() => { if (q) { setQuery(q); search(q); } }, [q]);
   useEffect(() => { if (query) search(); }, [type, age]);
 
-  const typeIcons: Record<string, any> = { QNA: <HelpCircle size={16} />, ARTICLE: <BookOpen size={16} /> };
+  const typeIcons: Record<string, any> = { QNA: <HelpCircle size={16} />, ARTICLE: <BookOpen size={16} />, MEDIA: <Film size={16} /> };
 
   const getContentUrl = (r: any) => {
     if (r.type === "QNA") return `/qna/${r.slug}`;
+    if (r.type === "MEDIA") return `/media/${r.slug}`;
     return `/artikel/${r.slug}`;
   };
 
@@ -51,7 +51,7 @@ function SearchContent() {
 
       <div className="flex gap-2 mb-6">
         <select value={type} onChange={e => setType(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Semua Tipe</option><option value="QNA">Tanya Jawab</option><option value="ARTICLE">Artikel</option>
+          <option value="">Semua Tipe</option><option value="QNA">Tanya Jawab</option><option value="ARTICLE">Artikel</option><option value="MEDIA">Media</option>
         </select>
         <select value={age} onChange={e => setAge(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
           <option value="">Semua Usia</option>
@@ -69,7 +69,7 @@ function SearchContent() {
         {results.map(r => (
           <Link key={r.id} href={getContentUrl(r)} className="block bg-white p-5 rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow-md transition-all group">
             <div className="flex items-start gap-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${r.type === "QNA" ? "bg-amber-100 text-amber-600" : "bg-sky-100 text-sky-600"}`}>{typeIcons[r.type] || <BookOpen size={16} />}</div>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${r.type === "QNA" ? "bg-amber-100 text-amber-600" : r.type === "MEDIA" ? "bg-violet-100 text-violet-600" : "bg-sky-100 text-sky-600"}`}>{typeIcons[r.type] || <BookOpen size={16} />}</div>
               <div className="flex-1">
                 <h3 className="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">{r.title}</h3>
                 {r.description && <p className="text-sm text-slate-500 mt-1 line-clamp-2">{r.description}</p>}
