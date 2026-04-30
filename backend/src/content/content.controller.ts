@@ -49,11 +49,13 @@ export class ContentController {
   @ApiOperation({ summary: 'Search content by query' })
   @ApiQuery({ name: 'q', required: true })
   @ApiQuery({ name: 'type', required: false })
+  @ApiQuery({ name: 'category', required: false, description: 'pembelajaran or artikel — filters ARTICLE by nodeId presence' })
   @ApiQuery({ name: 'age', required: false })
   @ApiQuery({ name: 'page', required: false })
   async search(
     @Query('q') q: string,
     @Query('type') type?: string,
+    @Query('category') category?: string,
     @Query('age') age?: string,
     @Query('page') page?: string,
   ) {
@@ -69,6 +71,13 @@ export class ContentController {
       conditions.push({ OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] });
     }
     if (type) where.type = type;
+    if (category === 'pembelajaran') {
+      where.type = 'ARTICLE';
+      where.nodeId = { not: null };
+    } else if (category === 'artikel') {
+      where.type = 'ARTICLE';
+      where.nodeId = null;
+    }
     if (age) {
       conditions.push({ OR: [{ ageGroups: { has: age } }, { ageGroups: { has: 'Semua Usia' } }] });
     }
@@ -78,7 +87,7 @@ export class ContentController {
       this.prisma.contentItem.findMany({
         where, take, skip,
         orderBy: { publishedAt: 'desc' },
-        select: { id: true, title: true, slug: true, description: true, type: true, ageGroups: true, viewCount: true, likeCount: true, avgRating: true, publishedAt: true },
+        select: { id: true, title: true, slug: true, description: true, type: true, nodeId: true, ageGroups: true, viewCount: true, likeCount: true, avgRating: true, publishedAt: true },
       }),
       this.prisma.contentItem.count({ where }),
     ]);

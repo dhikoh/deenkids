@@ -2,8 +2,23 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, BookOpen, HelpCircle, Eye, Heart, Star, Film } from "lucide-react";
+import { Search, BookOpen, HelpCircle, Eye, Heart, Star, GraduationCap } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
+
+const TYPE_OPTIONS = [
+  { value: "", label: "Semua Tipe" },
+  { value: "QNA", label: "Tanya Jawab" },
+  { value: "PEMBELAJARAN", label: "Pembelajaran" },
+  { value: "ARTIKEL", label: "Artikel" },
+];
+
+const AGE_OPTIONS = [
+  { value: "", label: "Semua Usia" },
+  { value: "3-5", label: "Balita (3-5 thn)" },
+  { value: "5-7", label: "Anak (5-7 thn)" },
+  { value: "7-10", label: "Pramuka (7-10 thn)" },
+  { value: "10-13", label: "Pra-Remaja (10-13 thn)" },
+];
 
 function SearchContent() {
   const params = useSearchParams();
@@ -20,8 +35,17 @@ function SearchContent() {
     if (!sq || sq.length < 2) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({ q: sq }); if (type) params.set("type", type); if (age) params.set("age", age);
-      const r = await fetch(`${API_BASE_URL}/content/search?${params}`);
+      const p = new URLSearchParams({ q: sq });
+      // Map UI type to backend params
+      if (type === "QNA") {
+        p.set("type", "QNA");
+      } else if (type === "PEMBELAJARAN") {
+        p.set("category", "pembelajaran");
+      } else if (type === "ARTIKEL") {
+        p.set("category", "artikel");
+      }
+      if (age) p.set("age", age);
+      const r = await fetch(`${API_BASE_URL}/content/search?${p}`);
       const data = await r.json();
       setResults(data.data || []); setTotal(data.meta?.total || 0);
     } catch {} finally { setLoading(false); }
@@ -30,11 +54,14 @@ function SearchContent() {
   useEffect(() => { if (q) { setQuery(q); search(q); } }, [q]);
   useEffect(() => { if (query) search(); }, [type, age]);
 
-  const typeIcons: Record<string, any> = { QNA: <HelpCircle size={16} />, ARTICLE: <BookOpen size={16} />, MEDIA: <Film size={16} /> };
+  const getTypeInfo = (r: any) => {
+    if (r.type === "QNA") return { icon: <HelpCircle size={16} />, label: "Tanya Jawab", bg: "bg-amber-100 text-amber-600" };
+    if (r.nodeId) return { icon: <GraduationCap size={16} />, label: "Pembelajaran", bg: "bg-emerald-100 text-emerald-600" };
+    return { icon: <BookOpen size={16} />, label: "Artikel", bg: "bg-sky-100 text-sky-600" };
+  };
 
   const getContentUrl = (r: any) => {
     if (r.type === "QNA") return `/qna/${r.slug}`;
-    if (r.type === "MEDIA") return `/media/${r.slug}`;
     return `/artikel/${r.slug}`;
   };
 
@@ -51,14 +78,10 @@ function SearchContent() {
 
       <div className="flex gap-2 mb-6">
         <select value={type} onChange={e => setType(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Semua Tipe</option><option value="QNA">Tanya Jawab</option><option value="ARTICLE">Artikel</option><option value="MEDIA">Media</option>
+          {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <select value={age} onChange={e => setAge(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Semua Usia</option>
-          <option value="3-5">3-5 Tahun</option>
-          <option value="5-7">5-7 Tahun</option>
-          <option value="7-10">7-10 Tahun</option>
-          <option value="10-13">10-13 Tahun</option>
+          {AGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         {total > 0 && <span className="self-center text-sm text-slate-500 ml-auto">{total} hasil ditemukan</span>}
       </div>
@@ -66,12 +89,17 @@ function SearchContent() {
       {loading ? <div className="text-center py-10 text-slate-500">Mencari...</div> :
        results.length === 0 ? <div className="text-center py-20 text-slate-400"><Search size={48} className="mx-auto opacity-30 mb-4" /><p className="text-lg">{query ? "Tidak ditemukan." : "Ketik kata kunci untuk mulai mencari."}</p></div> :
        <div className="space-y-3">
-        {results.map(r => (
+        {results.map(r => {
+          const info = getTypeInfo(r);
+          return (
           <Link key={r.id} href={getContentUrl(r)} className="block bg-white p-5 rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow-md transition-all group">
             <div className="flex items-start gap-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${r.type === "QNA" ? "bg-amber-100 text-amber-600" : r.type === "MEDIA" ? "bg-violet-100 text-violet-600" : "bg-sky-100 text-sky-600"}`}>{typeIcons[r.type] || <BookOpen size={16} />}</div>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${info.bg}`}>{info.icon}</div>
               <div className="flex-1">
-                <h3 className="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">{r.title}</h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">{r.title}</h3>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${info.bg}`}>{info.label}</span>
+                </div>
                 {r.description && <p className="text-sm text-slate-500 mt-1 line-clamp-2">{r.description}</p>}
                 <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
                   <span className="flex items-center gap-1"><Eye size={12} /> {r.viewCount}</span>
@@ -82,7 +110,8 @@ function SearchContent() {
               </div>
             </div>
           </Link>
-        ))}
+          );
+        })}
        </div>}
     </div>
   );
