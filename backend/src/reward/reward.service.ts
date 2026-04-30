@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, PointType } from '@prisma/client';
 
 @Injectable()
 export class RewardService {
@@ -9,7 +9,7 @@ export class RewardService {
 
   constructor(private prisma: PrismaService, private notificationService: NotificationService) {}
 
-  async addPoints(userId: string, amount: number, type: string, reason: string, contentId?: string) {
+  async addPoints(userId: string, amount: number, type: PointType, reason: string, contentId?: string) {
     await this.prisma.$transaction([
       this.prisma.pointLedger.create({ data: { userId, amount, type, reason, contentId } }),
       this.prisma.user.update({ where: { id: userId }, data: { points: { increment: amount } } }),
