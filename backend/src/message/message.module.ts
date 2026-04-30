@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MessageService } from './message.service';
 import { MessageController } from './message.controller';
+import { MessageGateway } from './message.gateway';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AuthModule } from '../auth/auth.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -10,6 +12,7 @@ import { v4 as uuid } from 'uuid';
 @Module({
   imports: [
     PrismaModule,
+    AuthModule,
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/messages',
@@ -24,7 +27,8 @@ import { v4 as uuid } from 'uuid';
     }),
   ],
   controllers: [MessageController],
-  providers: [MessageService],
-  exports: [MessageService],
+  providers: [MessageService, MessageGateway],
+  exports: [MessageService, MessageGateway],
 })
 export class MessageModule {}
+

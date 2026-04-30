@@ -4,9 +4,8 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { Send, Image, Plus, MessageSquare } from "lucide-react";
 
-import { API_BASE_URL } from "@/lib/api";
-const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
-const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
+import { API_BASE_URL, apiFetch, authHeaders } from "@/lib/api";
+const authH = authHeaders;
 
 export default function MessagesPage() {
   const [convos, setConvos] = useState<any[]>([]);

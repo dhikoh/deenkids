@@ -1,12 +1,20 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query } from '@nestjs/common';
 import { EngagementService } from './engagement.service';
 import { ToggleEngagementDto, SubmitRatingDto } from './dto/engagement.dto';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Engagement')
+@Throttle({ default: { limit: 20, ttl: 60000 } })
 @Controller('engagement')
 export class EngagementController {
   constructor(private readonly engagementService: EngagementService) {}
+
+  @Get('status')
+  @ApiOperation({ summary: 'Get engagement status for a content/user pair' })
+  async getStatus(@Query('contentId') contentId: string, @Query('userHash') userHash: string) {
+    return this.engagementService.getStatus(contentId, userHash);
+  }
 
   @Post('like')
   @ApiOperation({ summary: 'Toggle Like for a content' })

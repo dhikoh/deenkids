@@ -7,9 +7,14 @@ import { fetchFeedbackList, markFeedbackRead } from "@/lib/api";
 import { MessageSquare, Eye, Mail, Search } from "lucide-react";
 
 const typeColors: Record<string, string> = {
-  kritik: "bg-rose-100 text-rose-700",
-  saran: "bg-emerald-100 text-emerald-700",
-  pertanyaan: "bg-sky-100 text-sky-700",
+  KRITIK: "bg-rose-100 text-rose-700",
+  SARAN: "bg-emerald-100 text-emerald-700",
+  PERTANYAAN: "bg-sky-100 text-sky-700",
+};
+const typeLabels: Record<string, string> = {
+  KRITIK: "Kritik",
+  SARAN: "Saran",
+  PERTANYAAN: "Pertanyaan",
 };
 
 export default function FeedbackPage() {
@@ -61,7 +66,7 @@ export default function FeedbackPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-bold text-slate-800">{f.name}</span>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded capitalize ${typeColors[f.type]}`}>{f.type}</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded ${typeColors[f.type] || 'bg-slate-100 text-slate-600'}`}>{typeLabels[f.type] || f.type}</span>
                 {!f.isRead && <span className="w-2 h-2 bg-emerald-500 rounded-full" />}
               </div>
               <p className="text-sm text-slate-700">{f.message}</p>

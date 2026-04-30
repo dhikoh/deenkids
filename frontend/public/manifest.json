@@ -1,0 +1,20 @@
+{
+  "name": "Adably — Platform Edukasi Anak Islami",
+  "short_name": "Adably",
+  "description": "Konten edukasi Islam berkualitas untuk anak-anak Indonesia",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "kids"],
+  "lang": "id"
+}

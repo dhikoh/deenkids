@@ -128,4 +128,26 @@ export class EngagementService {
     });
     return { success: true };
   }
+
+  async getStatus(contentId: string, userHash: string) {
+    const [liked, bookmarked, rating] = await Promise.all([
+      this.prisma.contentLike.findUnique({
+        where: { contentId_userHash: { contentId, userHash } },
+        select: { id: true },
+      }),
+      this.prisma.contentBookmark.findUnique({
+        where: { contentId_userHash: { contentId, userHash } },
+        select: { id: true },
+      }),
+      this.prisma.contentRating.findUnique({
+        where: { contentId_userHash: { contentId, userHash } },
+        select: { rating: true },
+      }),
+    ]);
+    return {
+      liked: !!liked,
+      bookmarked: !!bookmarked,
+      userRating: rating?.rating ?? null,
+    };
+  }
 }

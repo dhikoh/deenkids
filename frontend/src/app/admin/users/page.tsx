@@ -1,14 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchUsersList } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { Users, Shield, Edit2, Trash2, KeyRound, UserPlus, X, Eye, EyeOff, Copy, Lock } from "lucide-react";
-
-import { API_BASE_URL } from "@/lib/api";
-const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
-const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
+import { fetchUsersList, apiFetch, authHeaders, API_BASE_URL } from "@/lib/api";
+const authH = authHeaders;
 
 const roleColors: Record<string, string> = {
   SUPERADMIN: "bg-purple-100 text-purple-700 border-purple-200",

@@ -38,9 +38,24 @@ export class RewardService {
     return { data, meta: { page, totalPages: Math.ceil(total / take), total } };
   }
 
+  async getMyWithdrawals(userId: string, page = 1) {
+    const take = 10;
+    const skip = (page - 1) * take;
+    const [data, total] = await Promise.all([
+      this.prisma.withdrawalRequest.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+      }),
+      this.prisma.withdrawalRequest.count({ where: { userId } }),
+    ]);
+    return { data, meta: { page, totalPages: Math.ceil(total / take), total } };
+  }
+
   async getLeaderboard() {
     const users = await this.prisma.user.findMany({
-      where: { role: 'AUTHOR' },
+      where: { role: 'AUTHOR', points: { gt: 0 } },
       orderBy: { points: 'desc' },
       take: 50,
       select: { id: true, name: true, email: true, points: true, authorStats: { select: { totalPublished: true, totalViews: true } } },
@@ -62,6 +77,14 @@ export class RewardService {
       throw new Error(`Saldo tidak cukup. Saldo: ${user.points} poin`);
     }
 
+    // Anti-spam: block if there's already a PENDING withdrawal
+    const existingPending = await this.prisma.withdrawalRequest.findFirst({
+      where: { userId, status: 'PENDING' },
+    });
+    if (existingPending) {
+      throw new Error('Anda masih memiliki permintaan withdrawal yang sedang diproses. Tunggu hingga selesai sebelum mengajukan lagi.');
+    }
+
     const rupiahAmount = pointsAmount * settings.pointToRupiah;
 
     const request = await this.prisma.withdrawalRequest.create({
@@ -69,7 +92,7 @@ export class RewardService {
     });
 
     // Deduct points immediately
-    await this.addPoints(userId, -pointsAmount, 'WITHDRAWAL', `Withdrawal request #${request.id.slice(0, 8)}`);
+    await this.addPoints(userId, -pointsAmount, PointType.WITHDRAWAL, `Withdrawal request #${request.id.slice(0, 8)}`);
 
     // Notify superadmins
     await this.notificationService.notifySuperAdmins(
@@ -100,9 +123,21 @@ export class RewardService {
     const request = await this.prisma.withdrawalRequest.findUnique({ where: { id }, include: { user: true } });
     if (!request) throw new Error('Request tidak ditemukan');
 
+    // Strict state machine validation
+    const validTransitions: Record<string, string[]> = {
+      PENDING: ['APPROVED', 'REJECTED'],
+      APPROVED: ['DISBURSED'],
+      REJECTED: [],
+      DISBURSED: [],
+    };
+    const allowed = validTransitions[request.status] || [];
+    if (!allowed.includes(action)) {
+      throw new Error(`Tidak bisa mengubah status dari ${request.status} ke ${action}`);
+    }
+
     if (action === 'REJECTED' && request.status === 'PENDING') {
       // Refund points
-      await this.addPoints(request.userId, request.pointsAmount, 'EARNED', `Refund dari withdrawal ditolak #${id.slice(0, 8)}`);
+      await this.addPoints(request.userId, request.pointsAmount, PointType.EARNED, `Refund withdrawal ditolak #${id.slice(0, 8)}`);
     }
 
     await this.prisma.withdrawalRequest.update({

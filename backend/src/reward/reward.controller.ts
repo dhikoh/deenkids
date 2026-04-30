@@ -24,6 +24,12 @@ export class RewardController {
     return this.rewardService.getLedger(req.user.id, page ? parseInt(page) : 1);
   }
 
+  @Get('admin/points/withdrawals')
+  @ApiOperation({ summary: 'Get my withdrawal history' })
+  async getMyWithdrawals(@Req() req: any, @Query('page') page?: string) {
+    return this.rewardService.getMyWithdrawals(req.user.id, page ? parseInt(page) : 1);
+  }
+
   @Post('admin/points/withdraw')
   @Roles('AUTHOR')
   @ApiOperation({ summary: 'Request point withdrawal' })

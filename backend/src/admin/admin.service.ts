@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaService } from '../prisma/prisma.service';
 import { RewardService } from '../reward/reward.service';
 import { NotificationService } from '../notification/notification.service';
-import { ReviewAction } from '@prisma/client';
+import { ReviewAction, PointType } from '@prisma/client';
 import slugify from 'slugify';
 
 @Injectable()
@@ -131,7 +131,7 @@ export class AdminService {
       await this.rewardService.addPoints(
         content.authorId,
         settings.pointPerApproved,
-        'EARNED',
+        PointType.EARNED,
         `Konten dipublikasikan: ${content.title}`,
         contentId,
       );

@@ -34,8 +34,13 @@ export class SeedController {
 
   @Post('init')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Initialize first SuperAdmin (only works if no users exist)' })
+  @ApiOperation({ summary: 'Initialize first SuperAdmin (only works if no users exist and ALLOW_SEED_INIT=true)' })
   async initFirstAdmin() {
+    // Security: require explicit env flag to enable this endpoint
+    if (process.env.ALLOW_SEED_INIT !== 'true') {
+      return { message: 'Endpoint ini dinonaktifkan. Set ALLOW_SEED_INIT=true di environment untuk mengaktifkan.' };
+    }
+
     const userCount = await this.prisma.user.count();
     if (userCount > 0) {
       return { message: 'Users already exist. Init blocked.' };

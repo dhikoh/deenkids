@@ -28,6 +28,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     let active = true;
     const poll = async () => {
+      // Pause polling when tab is not visible
+      if (document.visibilityState === 'hidden') return;
+
       try {
         const notifRes = await fetch(`${API_BASE_URL}/admin/notifications/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
         if (notifRes.status === 401) { handleLogout(); return; }
@@ -39,9 +42,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (msgRes.ok) { const r = await msgRes.json(); if (active) setUnreadMsg(r.count || 0); }
       } catch {}
     };
+
+    // Poll on tab becoming visible again
+    const handleVisibility = () => { if (document.visibilityState === 'visible') poll(); };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     poll();
     const interval = setInterval(poll, 30000);
-    return () => { active = false; clearInterval(interval); };
+    return () => {
+      active = false;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const handleLogout = () => {

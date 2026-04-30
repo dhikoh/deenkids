@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { Heart, Bookmark, Share2, Star } from "lucide-react";
 import toast from "react-hot-toast";
-
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, fetchEngagementStatus } from "@/lib/api";
 
 function getUserHash(): string {
   if (typeof window === "undefined") return "ssr";
@@ -25,30 +24,55 @@ interface EngagementBarProps {
   initialViews?: number;
 }
 
-export function EngagementBar({ contentId, initialLikes, initialBookmarks, initialRating, initialShares = 0, initialViews = 0 }: EngagementBarProps) {
+export function EngagementBar({
+  contentId,
+  initialLikes,
+  initialBookmarks,
+  initialRating,
+  initialShares = 0,
+  initialViews = 0,
+}: EngagementBarProps) {
   const [likes, setLikes] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
   const [bookmarks, setBookmarks] = useState(initialBookmarks);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [rating, setRating] = useState(initialRating);
   const [hasRated, setHasRated] = useState(false);
+  const [userRating, setUserRating] = useState<number | null>(null);
   const [shares, setShares] = useState(initialShares);
+  const [statusLoaded, setStatusLoaded] = useState(false);
 
-  // Record view on mount
+  // Restore state from server on mount
   useEffect(() => {
     const userHash = getUserHash();
+
+    // Record view
     fetch(`${API_BASE_URL}/engagement/view`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contentId, userHash }),
     }).catch(() => {});
+
+    // Restore engagement state
+    fetchEngagementStatus(contentId, userHash)
+      .then(status => {
+        setIsLiked(status.liked ?? false);
+        setIsBookmarked(status.bookmarked ?? false);
+        if (status.userRating !== null) {
+          setHasRated(true);
+          setUserRating(status.userRating);
+          setRating(status.userRating);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setStatusLoaded(true));
   }, [contentId]);
 
   const handleLike = async () => {
     const userHash = getUserHash();
     const newLiked = !isLiked;
     setIsLiked(newLiked);
-    setLikes(newLiked ? likes + 1 : likes - 1);
+    setLikes(prev => newLiked ? prev + 1 : Math.max(0, prev - 1));
     try {
       await fetch(`${API_BASE_URL}/engagement/like`, {
         method: "POST",
@@ -56,9 +80,8 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
         body: JSON.stringify({ contentId, userHash }),
       });
     } catch {
-      // Revert on error
       setIsLiked(!newLiked);
-      setLikes(newLiked ? likes : likes + 1);
+      setLikes(prev => !newLiked ? prev + 1 : Math.max(0, prev - 1));
     }
   };
 
@@ -66,7 +89,7 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
     const userHash = getUserHash();
     const newBookmarked = !isBookmarked;
     setIsBookmarked(newBookmarked);
-    setBookmarks(newBookmarked ? bookmarks + 1 : bookmarks - 1);
+    setBookmarks(prev => newBookmarked ? prev + 1 : Math.max(0, prev - 1));
     try {
       await fetch(`${API_BASE_URL}/engagement/bookmark`, {
         method: "POST",
@@ -75,14 +98,14 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
       });
     } catch {
       setIsBookmarked(!newBookmarked);
-      setBookmarks(newBookmarked ? bookmarks : bookmarks + 1);
+      setBookmarks(prev => !newBookmarked ? prev + 1 : Math.max(0, prev - 1));
     }
   };
 
   const handleRate = async (star: number) => {
     if (hasRated) return;
     const userHash = getUserHash();
-    setRating(star);
+    setUserRating(star);
     setHasRated(true);
     try {
       const res = await fetch(`${API_BASE_URL}/engagement/rating`, {
@@ -92,7 +115,7 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
       });
       if (res.ok) {
         const data = await res.json();
-        setRating(data.avgRating || star);
+        setRating(data.avgRating ?? star);
       }
     } catch {}
   };
@@ -107,7 +130,7 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
         await navigator.clipboard.writeText(url);
         toast.success("Link berhasil disalin!");
       }
-      setShares(shares + 1);
+      setShares(prev => prev + 1);
       fetch(`${API_BASE_URL}/engagement/share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -116,56 +139,66 @@ export function EngagementBar({ contentId, initialLikes, initialBookmarks, initi
     } catch {}
   };
 
+  const displayRating = userRating ?? rating;
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm mt-8">
       {/* Rating System */}
       <div className="flex items-center gap-2">
-        <span className="text-sm font-bold text-slate-700">Rating ({rating.toFixed(1)})</span>
+        <span className="text-sm font-bold text-slate-700">
+          Rating ({rating.toFixed(1)})
+        </span>
         <div className="flex items-center gap-1">
           {[1, 2, 3, 4, 5].map((star) => (
-            <button 
+            <button
               key={star}
               onClick={() => handleRate(star)}
               disabled={hasRated}
+              title={hasRated ? `Anda memberi ${userRating} bintang` : `Beri ${star} bintang`}
               className={`p-1 transition-transform hover:scale-110 ${
-                hasRated && star <= rating 
-                  ? 'text-amber-500' 
-                  : 'text-slate-300 hover:text-amber-400'
+                star <= (userRating ?? 0)
+                  ? "text-amber-500"
+                  : hasRated
+                  ? "text-slate-200 cursor-default"
+                  : "text-slate-300 hover:text-amber-400"
               }`}
             >
-              <Star className={`h-6 w-6 ${hasRated && star <= rating ? 'fill-amber-500' : ''}`} />
+              <Star className={`h-6 w-6 ${star <= (userRating ?? 0) ? "fill-amber-500" : ""}`} />
             </button>
           ))}
         </div>
+        {hasRated && (
+          <span className="text-xs text-amber-600 font-semibold">✓ Sudah dinilai</span>
+        )}
       </div>
 
       {/* Action Buttons */}
       <div className="flex items-center gap-3">
-        <button 
+        <button
           onClick={handleLike}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-            isLiked 
-              ? 'bg-rose-100 text-rose-600 border border-rose-200' 
-              : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
+            isLiked
+              ? "bg-rose-100 text-rose-600 border border-rose-200"
+              : "bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100"
           }`}
         >
-          <Heart className={`h-4 w-4 ${isLiked ? 'fill-rose-600' : ''}`} />
+          <Heart className={`h-4 w-4 ${isLiked ? "fill-rose-600" : ""}`} />
           {likes}
         </button>
-        
-        <button 
+
+        <button
           onClick={handleBookmark}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-            isBookmarked 
-              ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
-              : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
+            isBookmarked
+              ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+              : "bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100"
           }`}
         >
-          <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-emerald-700' : ''}`} />
+          <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-emerald-700" : ""}`} />
           {bookmarks}
         </button>
 
-        <button 
+        <button
           onClick={handleShare}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-all"
         >

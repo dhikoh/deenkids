@@ -49,6 +49,10 @@ export async function fetchContentBySlug(slug: string) {
   return apiFetch(`${API_BASE_URL}/content/${slug}`);
 }
 
+export async function fetchEngagementStatus(contentId: string, userHash: string) {
+  return apiFetch(`${API_BASE_URL}/engagement/status?contentId=${contentId}&userHash=${encodeURIComponent(userHash)}`);
+}
+
 export async function fetchContentTags() {
   return apiFetch(`${API_BASE_URL}/content/tags`);
 }
@@ -460,6 +464,10 @@ export async function requestWithdrawal(pointsAmount: number, token: string) {
 
 export async function fetchLeaderboard(token: string) {
   return apiFetch(`${API_BASE_URL}/superadmin/points/leaderboard`, { headers: authHeaders(token) });
+}
+
+export async function fetchMyWithdrawals(token: string, page = 1) {
+  return apiFetch(`${API_BASE_URL}/admin/points/withdrawals?page=${page}`, { headers: authHeaders(token) });
 }
 
 export async function fetchWithdrawals(token: string, page = 1) {

@@ -14,8 +14,8 @@ import { SuperadminModule } from './superadmin/superadmin.module';
 import { NotificationModule } from './notification/notification.module';
 import { RewardModule } from './reward/reward.module';
 import { MessageModule } from './message/message.module';
+import { CronModule } from './common/cron/cron.module';
 import { SeedController } from './seed.controller';
-import { CronService } from './common/cron/cron.service';
 
 @Module({
   imports: [
@@ -39,6 +39,7 @@ import { CronService } from './common/cron/cron.service';
     NotificationModule,
     RewardModule,
     MessageModule,
+    CronModule,
   ],
   controllers: [SeedController],
   providers: [
@@ -46,7 +47,6 @@ import { CronService } from './common/cron/cron.service';
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
     },
-    CronService,
   ],
 })
 export class AppModule {}

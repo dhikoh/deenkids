@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiCheckerService } from './ai-checker.service';
+import { RewardService } from '../reward/reward.service';
 import { CreateContentDto, UpdateContentDto } from './dto/editor.dto';
 import slugify from 'slugify';
 
@@ -9,12 +10,28 @@ export class EditorService {
   constructor(
     private prisma: PrismaService,
     private aiChecker: AiCheckerService,
+    private rewardService: RewardService,
   ) {}
 
   async createContent(authorId: string, dto: CreateContentDto) {
-    const slug = slugify(dto.title, { lower: true, strict: true }) + '-' + Date.now().toString(36);
-
     const author = await this.prisma.user.findUnique({ where: { id: authorId }, select: { role: true } });
+
+    // Enforce daily submit limit (SUPERADMIN exempt)
+    if (author?.role === 'AUTHOR') {
+      const settings = await this.rewardService.getRewardSettings();
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todaySubmits = await this.prisma.contentItem.count({
+        where: { authorId, createdAt: { gte: todayStart } },
+      });
+      if (todaySubmits >= settings.maxSubmitPerDay) {
+        throw new BadRequestException(
+          `Batas submit harian sudah tercapai (${settings.maxSubmitPerDay} konten/hari). Coba lagi besok.`,
+        );
+      }
+    }
+
+    const slug = slugify(dto.title, { lower: true, strict: true }) + '-' + Date.now().toString(36);
     const forcedStatus = author?.role === 'SUPERADMIN' ? (dto.status || 'DRAFT') : 'DRAFT';
 
     let aiResult = null;

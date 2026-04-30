@@ -3,11 +3,8 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { User, CreditCard, Lock, Globe, Save } from "lucide-react";
-import { changePassword } from "@/lib/api";
-
-import { API_BASE_URL } from "@/lib/api";
-const authH = (t: string) => ({ "Content-Type": "application/json", Authorization: `Bearer ${t}` });
-const apiFetch = async (url: string, opts: RequestInit = {}) => { const r = await fetch(url, { cache: "no-store", ...opts }); if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || "Error"); } return r.json(); };
+import { changePassword, apiFetch, authHeaders, API_BASE_URL } from "@/lib/api";
+const authH = authHeaders;
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);

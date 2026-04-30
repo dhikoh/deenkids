@@ -76,7 +76,7 @@ export default function AdminDashboardPage() {
             <div className="w-12 h-12 rounded-full bg-sky-100 flex items-center justify-center text-sky-600">{isAUTHOR ? <AlertCircle size={24} /> : <Users size={24} />}</div>
             <div>
               <p className="text-sm font-medium text-slate-500">{isAUTHOR ? "Menunggu Review" : "Penulis Aktif"}</p>
-              <h3 className="text-2xl font-bold text-slate-800">{isAUTHOR ? (stats?.inReview || 0) : (stats?.totalAUTHORs || 0)}</h3>
+              <h3 className="text-2xl font-bold text-slate-800">{isAUTHOR ? (stats?.inReview || 0) : (stats?.totalEditors || 0)}</h3>
             </div>
           </div>
         </div>
