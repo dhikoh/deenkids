@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://adably.id"),
   openGraph: { title: "Adably", description: "Platform edukasi Islam untuk anak — sesuai Alquran dan Hadist.", url: "https://adably.id", siteName: "Adably", locale: "id_ID", type: "website" },
   twitter: { card: "summary_large_image", title: "Adably", description: "Platform edukasi Islam untuk anak — sesuai Alquran dan Hadist." },
+  icons: { icon: "/favicon.svg" },
   robots: { index: true, follow: true },
 };
 

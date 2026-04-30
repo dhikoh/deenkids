@@ -33,6 +33,11 @@ function SearchContent() {
 
   const typeIcons: Record<string, any> = { QNA: <HelpCircle size={16} />, ARTICLE: <BookOpen size={16} /> };
 
+  const getContentUrl = (r: any) => {
+    if (r.type === "QNA") return `/qna/${r.slug}`;
+    return `/artikel/${r.slug}`;
+  };
+
   return (
     <div className="container mx-auto px-4 py-10 max-w-3xl min-h-screen">
       <h1 className="text-3xl font-extrabold text-slate-800 mb-6">Cari Konten</h1>
@@ -49,7 +54,11 @@ function SearchContent() {
           <option value="">Semua Tipe</option><option value="QNA">Tanya Jawab</option><option value="ARTICLE">Artikel</option>
         </select>
         <select value={age} onChange={e => setAge(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Semua Usia</option><option value="3-5">Balita (3-5)</option><option value="5-7">Anak (5-7)</option><option value="7-10">Pramuka (7-10)</option>
+          <option value="">Semua Usia</option>
+          <option value="3-5">3-5 Tahun</option>
+          <option value="5-7">5-7 Tahun</option>
+          <option value="7-10">7-10 Tahun</option>
+          <option value="10-13">10-13 Tahun</option>
         </select>
         {total > 0 && <span className="self-center text-sm text-slate-500 ml-auto">{total} hasil ditemukan</span>}
       </div>
@@ -58,7 +67,7 @@ function SearchContent() {
        results.length === 0 ? <div className="text-center py-20 text-slate-400"><Search size={48} className="mx-auto opacity-30 mb-4" /><p className="text-lg">{query ? "Tidak ditemukan." : "Ketik kata kunci untuk mulai mencari."}</p></div> :
        <div className="space-y-3">
         {results.map(r => (
-          <Link key={r.id} href={`/konten/${r.slug}`} className="block bg-white p-5 rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow-md transition-all group">
+          <Link key={r.id} href={getContentUrl(r)} className="block bg-white p-5 rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow-md transition-all group">
             <div className="flex items-start gap-3">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${r.type === "QNA" ? "bg-amber-100 text-amber-600" : "bg-sky-100 text-sky-600"}`}>{typeIcons[r.type] || <BookOpen size={16} />}</div>
               <div className="flex-1">

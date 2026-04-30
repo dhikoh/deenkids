@@ -3,6 +3,7 @@ import { fetchContentTree } from "@/lib/api";
 import LandingFeedback from "@/components/LandingFeedback";
 import HeroSearchForm from "@/components/HeroSearchForm";
 import HomepageContent from "@/components/HomepageContent";
+import SponsorBannerPopup from "@/components/SponsorBannerPopup";
 
 export default async function Home() {
   let curriculumNodes: any[] = [];
@@ -44,6 +45,9 @@ export default async function Home() {
 
       {/* Feedback Section */}
       <LandingFeedback />
+
+      {/* Sponsor Banner Popup */}
+      <SponsorBannerPopup />
     </div>
   );
 }

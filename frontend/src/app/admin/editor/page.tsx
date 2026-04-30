@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock, Volume2, VolumeX } from "lucide-react";
+import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock, Volume2, VolumeX, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle } from "@/lib/api";
@@ -396,6 +396,13 @@ function EditorContent() {
             <input type="checkbox" checked={enableAudio} onChange={(e) => setEnableAudio(e.target.checked)} className="w-4 h-4 text-purple-600 rounded" />
             <span className="text-sm font-medium flex items-center gap-1">{enableAudio ? <Volume2 className="h-4 w-4 text-purple-500" /> : <VolumeX className="h-4 w-4 text-slate-400" />} Audio</span>
           </label>
+          <button onClick={() => {
+            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, displayAuthorName };
+            localStorage.setItem('adably_preview_data', JSON.stringify(previewData));
+            window.open('/admin/editor/preview', '_blank');
+          }} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2">
+            <Eye size={18} /> Preview
+          </button>
           <button onClick={handleSave} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-70">
             <Save size={18} /> {isSaving ? "Menyimpan..." : "Simpan Draft"}
           </button>

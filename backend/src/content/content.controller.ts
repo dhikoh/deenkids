@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query } from '@nestjs/common';
 import { ContentService } from './content.service';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
@@ -124,6 +124,43 @@ export class ContentController {
   async getAiStatus() {
     const setting = await this.prisma.setting.findUnique({ where: { key: 'ai_checker_enabled' } });
     return { aiEnabled: setting?.value === 'true' };
+  }
+
+  @Get('banners/active')
+  @ApiOperation({ summary: 'Get active sponsor banners for public display' })
+  async getActiveBanners() {
+    const now = new Date();
+    const banners = await this.prisma.sponsorBanner.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { startDate: null, endDate: null },
+          { startDate: { lte: now }, endDate: null },
+          { startDate: null, endDate: { gte: now } },
+          { startDate: { lte: now }, endDate: { gte: now } },
+        ],
+      },
+      orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+      select: { id: true, title: true, imageUrl: true, linkUrl: true },
+    });
+    // Increment impressions
+    if (banners.length > 0) {
+      await this.prisma.sponsorBanner.updateMany({
+        where: { id: { in: banners.map(b => b.id) } },
+        data: { impressions: { increment: 1 } },
+      });
+    }
+    return { data: banners };
+  }
+
+  @Post('banners/:id/click')
+  @ApiOperation({ summary: 'Track banner click' })
+  async trackBannerClick(@Param('id') id: string) {
+    await this.prisma.sponsorBanner.update({
+      where: { id },
+      data: { clicks: { increment: 1 } },
+    }).catch(() => {});
+    return { ok: true };
   }
 
   @Get(':slug')

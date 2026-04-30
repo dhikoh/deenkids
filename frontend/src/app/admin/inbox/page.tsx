@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from "@/lib/api";
-import { Bell, CheckCheck, Eye, ExternalLink, Search } from "lucide-react";
+import { fetchNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification, deleteAllReadNotifications } from "@/lib/api";
+import { Bell, CheckCheck, Eye, ExternalLink, Search, Trash2, AlertTriangle, Filter } from "lucide-react";
 import Link from "next/link";
 
 const typeColors: Record<string, string> = {
@@ -32,19 +32,23 @@ export default function InboxPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [meta, setMeta] = useState<any>({});
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
   const load = async (page = 1) => {
     const token = Cookies.get("access_token");
     if (!token) return;
     try {
-      const res = await fetchNotifications(token, page, search || undefined);
+      const filterParam = filter === "all" ? undefined : filter;
+      const res = await fetchNotifications(token, page, search || undefined, filterParam);
       setNotifications(res.data || []);
       setMeta(res.meta || {});
     } catch { toast.error("Gagal memuat notifikasi"); }
     finally { setIsLoading(false); }
   };
 
-  useEffect(() => { setIsLoading(true); load(); }, [search]);
+  useEffect(() => { setIsLoading(true); load(); }, [search, filter]);
 
   const handleRead = async (id: string) => {
     const token = Cookies.get("access_token");
@@ -61,21 +65,65 @@ export default function InboxPage() {
     toast.success("Semua notifikasi ditandai dibaca");
   };
 
+  const handleDelete = async (id: string) => {
+    const token = Cookies.get("access_token");
+    if (!token) return;
+    try {
+      await deleteNotification(id, token);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      toast.success("Notifikasi dihapus");
+    } catch { toast.error("Gagal menghapus"); }
+    setConfirmDelete(null);
+  };
+
+  const handleDeleteAllRead = async () => {
+    const token = Cookies.get("access_token");
+    if (!token) return;
+    try {
+      await deleteAllReadNotifications(token);
+      setNotifications(prev => prev.filter(n => !n.isRead));
+      toast.success("Notifikasi yang dibaca berhasil dihapus");
+    } catch { toast.error("Gagal menghapus"); }
+    setConfirmDeleteAll(false);
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const readCount = notifications.filter(n => n.isRead).length;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div><h1 className="text-2xl font-bold text-slate-800">Inbox</h1><p className="text-slate-500">Pusat notifikasi dan pemberitahuan.</p></div>
-        <button onClick={handleReadAll} className="text-sm bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-200"><CheckCheck size={16} /> Tandai Semua Dibaca</button>
-      </div>
-
-      {/* Search */}
-      <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari notifikasi..." className="w-full h-10 pl-10 pr-4 bg-transparent outline-none text-sm text-slate-700 font-medium" />
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Inbox</h1>
+          <p className="text-slate-500">Pusat notifikasi dan pemberitahuan. <span className="text-xs text-slate-400">(otomatis dibersihkan setiap 30 hari)</span></p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={handleReadAll} className="text-sm bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-200">
+            <CheckCheck size={16} /> Tandai Semua Dibaca
+          </button>
+          <button onClick={() => setConfirmDeleteAll(true)} disabled={readCount === 0} className="text-sm bg-rose-100 text-rose-700 px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-rose-200 disabled:opacity-50 disabled:cursor-not-allowed">
+            <Trash2 size={16} /> Hapus Sudah Dibaca
+          </button>
         </div>
       </div>
 
+      {/* Search + Filter */}
+      <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari notifikasi..." className="w-full h-10 pl-10 pr-4 bg-transparent outline-none text-sm text-slate-700 font-medium" />
+        </div>
+        <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+          <Filter size={14} className="text-slate-400" />
+          {(["all", "unread", "read"] as const).map(f => (
+            <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === f ? "bg-emerald-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+              {f === "all" ? "Semua" : f === "unread" ? `Belum Dibaca ${unreadCount > 0 ? `(${unreadCount})` : ""}` : "Sudah Dibaca"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Notification List */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100">
         {isLoading ? <div className="p-8 text-center text-slate-500">Memuat...</div> :
          notifications.length === 0 ? <div className="p-8 text-center text-slate-500">Belum ada notifikasi.</div> :
@@ -96,15 +144,42 @@ export default function InboxPage() {
             <div className="flex gap-1 flex-shrink-0">
               {!n.isRead && <button onClick={() => handleRead(n.id)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg" title="Tandai dibaca"><Eye size={16} /></button>}
               {n.linkUrl && <Link href={n.linkUrl} className="p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg" title="Lihat"><ExternalLink size={16} /></Link>}
+              {confirmDelete === n.id ? (
+                <div className="flex gap-1">
+                  <button onClick={() => handleDelete(n.id)} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold">Ya</button>
+                  <button onClick={() => setConfirmDelete(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-lg text-xs font-bold">Batal</button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmDelete(n.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg" title="Hapus"><Trash2 size={16} /></button>
+              )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
       {meta.totalPages > 1 && (
         <div className="flex justify-center gap-2">
           {Array.from({ length: meta.totalPages }, (_, i) => (
             <button key={i} onClick={() => load(i + 1)} className={`px-3 py-1 rounded-lg text-sm font-bold ${meta.page === i + 1 ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{i + 1}</button>
           ))}
+        </div>
+      )}
+
+      {/* Confirm Delete All Modal */}
+      {confirmDeleteAll && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setConfirmDeleteAll(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center"><AlertTriangle className="text-rose-600" size={20} /></div>
+              <h3 className="font-bold text-slate-800">Hapus Notifikasi Dibaca?</h3>
+            </div>
+            <p className="text-sm text-slate-500 mb-6">Semua notifikasi yang sudah ditandai dibaca akan dihapus permanen.</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setConfirmDeleteAll(false)} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200">Batal</button>
+              <button onClick={handleDeleteAllRead} className="px-4 py-2 text-sm font-bold text-white bg-rose-600 rounded-xl hover:bg-rose-700">Hapus Semua</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

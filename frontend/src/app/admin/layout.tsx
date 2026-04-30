@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2 } from "lucide-react";
+import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image } from "lucide-react";
 import Cookies from "js-cookie";
 import { fetchUnreadCount } from "@/lib/api";
 
@@ -77,6 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       { name: "Kritik & Saran", icon: <MessageSquare size={20} />, href: "/admin/feedback", show: isSuperAdmin },
       { name: "Withdrawal", icon: <Wallet size={20} />, href: "/admin/withdrawal-inbox", show: isSuperAdmin },
       { name: "Donasi Settings", icon: <Gift size={20} />, href: "/admin/donation", show: isSuperAdmin },
+      { name: "Banner & Iklan", icon: <Image size={20} />, href: "/admin/banners", show: isSuperAdmin },
       { name: "Pengaturan", icon: <Settings size={20} />, href: "/admin/settings", show: isSuperAdmin },
       { name: "Backup & Export", icon: <Database size={20} />, href: "/admin/settings#backup", show: isSuperAdmin },
     ]},

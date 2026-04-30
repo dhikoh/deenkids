@@ -4,6 +4,15 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 async function apiFetch(url: string, options: RequestInit = {}) {
   const res = await fetch(url, { cache: 'no-store', ...options });
   if (!res.ok) {
+    // Auto-redirect to login on 401 (expired token)
+    if (res.status === 401 && typeof window !== 'undefined') {
+      const Cookies = (await import('js-cookie')).default;
+      Cookies.remove('access_token');
+      Cookies.remove('refresh_token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      throw new Error('Sesi habis, silakan login kembali');
+    }
     const error = await res.json().catch(() => ({ message: 'Request failed' }));
     throw new Error(error.message || `HTTP ${res.status}`);
   }
@@ -296,9 +305,10 @@ export async function markFeedbackRead(id: string, token: string) {
 }
 
 // ── Notifications ──
-export async function fetchNotifications(token: string, page = 1, search?: string) {
+export async function fetchNotifications(token: string, page = 1, search?: string, filter?: string) {
   const params = new URLSearchParams({ page: page.toString() });
   if (search) params.append('search', search);
+  if (filter) params.append('filter', filter);
   return apiFetch(`${API_BASE_URL}/admin/notifications?${params}`, {
     headers: authHeaders(token),
   });
@@ -484,4 +494,36 @@ export async function fetchAuditLogs(token: string, page = 1, action?: string) {
   const params = new URLSearchParams({ page: String(page) });
   if (action) params.set('action', action);
   return apiFetch(`${API_BASE_URL}/superadmin/audit-log?${params}`, { headers: authHeaders(token) });
+}
+
+// ═══════════════════════════════════════
+// NOTIFICATION - DELETE
+// ═══════════════════════════════════════
+
+export async function deleteNotification(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/notifications/${id}`, { method: 'DELETE', headers: authHeaders(token) });
+}
+
+export async function deleteAllReadNotifications(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/notifications/read/all`, { method: 'DELETE', headers: authHeaders(token) });
+}
+
+// ═══════════════════════════════════════
+// SPONSOR BANNERS
+// ═══════════════════════════════════════
+
+export async function fetchBanners(token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/banners`, { headers: authHeaders(token) });
+}
+
+export async function toggleBanner(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/banners/${id}/toggle`, { method: 'PUT', headers: authHeaders(token) });
+}
+
+export async function updateBanner(id: string, data: any, token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/banners/${id}`, { method: 'PUT', headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export async function deleteBanner(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/banners/${id}`, { method: 'DELETE', headers: authHeaders(token) });
 }
