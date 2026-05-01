@@ -453,3 +453,18 @@ model SponsorBanner {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
+
+model ErrorReport {
+  id          String   @id @default(uuid())
+  fingerprint String   @unique // hash of message+source — prevents duplicates
+  message     String
+  stack       String?
+  source      String?  // URL where error occurred
+  userAgent   String?
+  userId      String?
+  occurrences Int      @default(1)
+  isResolved  Boolean  @default(false)
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

@@ -12,6 +12,9 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Trust reverse proxy (Coolify/Traefik) — reads real IP from X-Forwarded-For
+  app.set('trust proxy', true);
+
   // Ensure uploads directories exist
   const uploadDirs = ['uploads/proofs', 'uploads/banners', 'uploads/messages'];
   for (const dir of uploadDirs) {

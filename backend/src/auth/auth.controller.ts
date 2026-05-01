@@ -12,7 +12,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  @Throttle({ default: { limit: 5, ttl: 900000 } }) // 5 attempts per 15 minutes
+  @Throttle({ default: { limit: 10, ttl: 300000 } }) // 10 attempts per 5 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login user & set HttpOnly cookies' })
   @ApiResponse({ status: 200, description: 'Berhasil login' })

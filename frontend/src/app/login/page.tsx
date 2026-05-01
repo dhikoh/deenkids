@@ -16,25 +16,36 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return; // Prevent double-click
     setIsLoading(true);
     
     try {
       const data = await login({ email, password });
       
-      // Store token in cookie matching backend's cookie name
-      Cookies.set("access_token", data.accessToken, { expires: 1, path: "/" });
+      // Backend sets HttpOnly cookies via Set-Cookie header automatically.
+      // We also set a JS-accessible copy for client-side API calls.
+      if (data.accessToken) {
+        Cookies.set("access_token", data.accessToken, { expires: 1, path: "/" });
+      }
       
       // Store basic user info in localStorage for UI purposes
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && data.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
       }
       
       toast.success("Berhasil masuk!");
       
-      // Redirect to admin dashboard
-      router.push("/admin");
+      // Slight delay to ensure cookies are set before middleware checks
+      setTimeout(() => {
+        router.replace("/admin");
+      }, 150);
     } catch (error: any) {
-      toast.error(error.message || "Gagal masuk. Periksa email dan kata sandi Anda.");
+      const msg = error.message || "Gagal masuk";
+      if (msg.includes("429") || msg.includes("Too Many") || msg.includes("banyak")) {
+        toast.error("Terlalu banyak percobaan login. Tunggu 15 menit.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setIsLoading(false);
     }

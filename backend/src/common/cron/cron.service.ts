@@ -213,4 +213,20 @@ export class CronService {
       this.logger.log(`🧹 Cleaned up ${result.count} content views older than 90 days`);
     }
   }
+
+  // Cleanup resolved error reports older than 30 days
+  @Cron('0 5 * * 0') // Every Sunday at 5AM
+  async cleanupOldErrorReports() {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const result = await this.prisma.errorReport.deleteMany({
+      where: {
+        isResolved: true,
+        lastSeenAt: { lt: cutoff },
+      },
+    });
+    if (result.count > 0) {
+      this.logger.log(`🧹 Cleaned up ${result.count} resolved error reports older than 30 days`);
+    }
+  }
 }

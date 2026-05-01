@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image } from "lucide-react";
+import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image, AlertTriangle } from "lucide-react";
 import Cookies from "js-cookie";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -13,6 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [user, setUser] = useState<{name: string, role: string, email: string, id?: string} | null>(null);
   const [unreadNotif, setUnreadNotif] = useState(0);
   const [unreadMsg, setUnreadMsg] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -40,6 +41,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const msgRes = await fetch(`${API_BASE_URL}/admin/messages/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
         if (msgRes.status === 401) { handleLogout(); return; }
         if (msgRes.ok) { const r = await msgRes.json(); if (active) setUnreadMsg(r.count || 0); }
+      } catch {}
+      // Error report count (SuperAdmin only)
+      try {
+        const errRes = await fetch(`${API_BASE_URL}/admin/error-reports/stats`, { headers: { Authorization: `Bearer ${token}` } });
+        if (errRes.ok) { const r = await errRes.json(); if (active) setErrorCount(r.unresolved || 0); }
       } catch {}
     };
 
@@ -88,6 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       { name: "Withdrawal", icon: <Wallet size={20} />, href: "/admin/withdrawal-inbox", show: isSuperAdmin },
       { name: "Donasi Settings", icon: <Gift size={20} />, href: "/admin/donation", show: isSuperAdmin },
       { name: "Banner & Iklan", icon: <Image size={20} />, href: "/admin/banners", show: isSuperAdmin },
+      { name: "Error Reports", icon: <AlertTriangle size={20} />, href: "/admin/error-reports", show: isSuperAdmin, badge: errorCount },
       { name: "Pengaturan", icon: <Settings size={20} />, href: "/admin/settings", show: isSuperAdmin },
       { name: "Backup & Export", icon: <Database size={20} />, href: "/admin/settings#backup", show: isSuperAdmin },
     ]},

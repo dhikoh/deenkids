@@ -56,6 +56,10 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
       redirectToLogin();
       throw new Error('Sesi habis, silakan login kembali');
     }
+    // Rate limit — friendly message
+    if (res.status === 429) {
+      throw new Error('Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.');
+    }
     const error = await res.json().catch(() => ({ message: 'Request failed' }));
     throw new Error(error.message || `HTTP ${res.status}`);
   }
@@ -585,4 +589,43 @@ export async function updateBanner(id: string, data: any, token: string) {
 
 export async function deleteBanner(id: string, token: string) {
   return apiFetch(`${API_BASE_URL}/superadmin/banners/${id}`, { method: 'DELETE', headers: authHeaders(token) });
+}
+
+// ═══════════════════════════════════════
+// ERROR REPORTING
+// ═══════════════════════════════════════
+
+export async function submitErrorReport(data: { message: string; stack?: string; source?: string; userAgent?: string; userId?: string }) {
+  try {
+    await fetch(`${API_BASE_URL}/error-report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  } catch {
+    // Silently fail — never let error reporting cause more errors
+  }
+}
+
+export async function fetchErrorReports(token: string, page = 1, resolved?: string, search?: string) {
+  const params = new URLSearchParams({ page: String(page) });
+  if (resolved !== undefined) params.set('resolved', resolved);
+  if (search) params.set('search', search);
+  return apiFetch(`${API_BASE_URL}/admin/error-reports?${params}`, { headers: authHeaders(token) });
+}
+
+export async function fetchErrorStats(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/error-reports/stats`, { headers: authHeaders(token) });
+}
+
+export async function resolveError(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/error-reports/${id}/resolve`, { method: 'PUT', headers: authHeaders(token) });
+}
+
+export async function reopenError(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/error-reports/${id}/reopen`, { method: 'PUT', headers: authHeaders(token) });
+}
+
+export async function resolveAllErrors(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/error-reports/resolve-all`, { method: 'PUT', headers: authHeaders(token) });
 }
