@@ -105,6 +105,7 @@ function EditorContent() {
               setTitle(c.title || ""); setDescription(c.description || "");
               setAgeGroups(c.ageGroups && c.ageGroups.length > 0 ? c.ageGroups : ["3-5"]); setNodeId(c.nodeId || "");
               setDisplayAuthorName(c.displayAuthorName || "");
+              setEnableAudio(c.enableAudio ?? false);
               setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
               const cType = c.type === "PEMBELAJARAN" ? "PEMBELAJARAN" : c.type === "QNA" ? "QNA" : "ARTICLE";
               setContentType(cType);
@@ -236,8 +237,10 @@ function EditorContent() {
         title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, tags,
         nodeId: contentType === "PEMBELAJARAN" ? nodeId : (nodeId || undefined),
         displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
-        articleDetail: { blocks: blocks.map(b => ({ type: b.type, ...b.data })) },
       };
+      if (contentType !== "QNA") {
+        payload.articleDetail = { blocks: blocks.map(b => ({ type: b.type, ...b.data })) };
+      }
       if (contentType === "QNA") {
         const quickAnswer = blocks.find(b => b.type === "quick_answer");
         const dialogs = blocks.filter(b => b.type === "dialog");
