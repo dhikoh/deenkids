@@ -73,6 +73,8 @@ model ContentNode {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   contents    ContentItem[]
+
+  @@index([parentId])
 }
 
 enum ContentStatus {
@@ -244,6 +246,8 @@ model ReviewHistory {
   manualScore Int?
   notes       String?
   createdAt   DateTime     @default(now())
+
+  @@index([contentId])
 }
 
 model AiCheckResult {
@@ -376,6 +380,7 @@ model PointLedger {
   contentId String?
   createdAt DateTime  @default(now())
 
+  @@index([userId, createdAt])
   @@index([contentId, type])
 }
 
@@ -400,6 +405,9 @@ model WithdrawalRequest {
   processedAt  DateTime?
   notes        String?
   createdAt    DateTime         @default(now())
+
+  @@index([userId, status])
+  @@index([createdAt])
 }
 
 model Conversation {

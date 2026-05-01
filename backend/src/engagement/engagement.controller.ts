@@ -42,7 +42,7 @@ export class EngagementController {
 
   @Post('share')
   @ApiOperation({ summary: 'Record Content Share' })
-  async recordShare(@Body() body: { contentId: string }) {
-    return this.engagementService.recordShare(body.contentId);
+  async recordShare(@Body() body: { contentId: string; userHash?: string }) {
+    return this.engagementService.recordShare(body.contentId, body.userHash);
   }
 }

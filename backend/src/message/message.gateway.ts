@@ -14,7 +14,17 @@ import { MessageService } from './message.service';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (() => {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const origins = new Set<string>();
+      for (const url of frontendUrl.split(',').map(u => u.trim()).filter(Boolean)) {
+        origins.add(url);
+        if (url.includes('://www.')) origins.add(url.replace('://www.', '://'));
+        else if (url.includes('://') && !url.includes('localhost')) origins.add(url.replace('://', '://www.'));
+      }
+      origins.add('http://localhost:3000');
+      return [...origins];
+    })(),
     credentials: true,
   },
   namespace: '/messages',

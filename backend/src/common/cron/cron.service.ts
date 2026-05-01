@@ -5,6 +5,7 @@ import { RewardService } from '../../reward/reward.service';
 import { PointType } from '@prisma/client';
 import * as fs from 'fs';
 import { join } from 'path';
+import { execFileSync } from 'child_process';
 
 @Injectable()
 export class CronService {
@@ -25,37 +26,34 @@ export class CronService {
 
   @Cron(CronExpression.EVERY_HOUR)
   async recalcAuthorStats() {
-    const authors = await this.prisma.user.findMany({
-      where: { role: { in: ['AUTHOR', 'ADMIN', 'SUPERADMIN'] } },
-      select: { id: true },
+    // Batch: get all author stats in one query using groupBy
+    const stats = await this.prisma.contentItem.groupBy({
+      by: ['authorId'],
+      where: { status: 'PUBLISHED' },
+      _count: true,
+      _sum: { viewCount: true, likeCount: true },
+      _avg: { avgRating: true },
     });
 
-    for (const author of authors) {
-      const stats = await this.prisma.contentItem.aggregate({
-        where: { authorId: author.id, status: 'PUBLISHED' },
-        _count: true,
-        _sum: { viewCount: true, likeCount: true },
-        _avg: { avgRating: true },
-      });
-
+    for (const s of stats) {
       await this.prisma.authorStat.upsert({
-        where: { authorId: author.id },
+        where: { authorId: s.authorId },
         update: {
-          totalPublished: stats._count || 0,
-          totalViews: stats._sum.viewCount || 0,
-          totalLikes: stats._sum.likeCount || 0,
-          avgContentRating: stats._avg.avgRating || 0,
+          totalPublished: s._count || 0,
+          totalViews: s._sum.viewCount || 0,
+          totalLikes: s._sum.likeCount || 0,
+          avgContentRating: s._avg.avgRating || 0,
         },
         create: {
-          authorId: author.id,
-          totalPublished: stats._count || 0,
-          totalViews: stats._sum.viewCount || 0,
-          totalLikes: stats._sum.likeCount || 0,
-          avgContentRating: stats._avg.avgRating || 0,
+          authorId: s.authorId,
+          totalPublished: s._count || 0,
+          totalViews: s._sum.viewCount || 0,
+          totalLikes: s._sum.likeCount || 0,
+          avgContentRating: s._avg.avgRating || 0,
         },
       });
     }
-    this.logger.log(`📊 Recalculated stats for ${authors.length} authors`);
+    this.logger.log(`📊 Recalculated stats for ${stats.length} authors`);
   }
 
   // Cleanup proof images older than 3 months (data stays in DB)
@@ -168,16 +166,22 @@ export class CronService {
   // Daily database backup
   @Cron('0 2 * * *') // Every day at 2AM
   async dailyDatabaseBackup() {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) {
+      this.logger.warn('⚠️ DATABASE_URL not set, skipping backup');
+      return;
+    }
+
     const dir = join(process.cwd(), 'backups');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
     const filename = `adably-backup-${new Date().toISOString().slice(0, 10)}.sql`;
     const filepath = join(dir, filename);
-    const dbUrl = process.env.DATABASE_URL || '';
 
     try {
-      const { execSync } = require('child_process');
-      execSync(`pg_dump "${dbUrl}" > "${filepath}"`, { timeout: 120000 });
+      // Use execFileSync with array args to prevent shell injection
+      const output = execFileSync('pg_dump', [dbUrl], { timeout: 120000 });
+      fs.writeFileSync(filepath, output);
       this.logger.log(`💾 Backup berhasil: ${filename}`);
     } catch (e: any) {
       this.logger.warn(`⚠️ Backup gagal: ${e.message}`);

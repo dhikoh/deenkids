@@ -14,7 +14,7 @@ export class ContentService {
 
     // 2. Filter by age if provided
     let filteredNodes = nodes;
-    if (age && age !== 'Semua') {
+    if (age) {
       filteredNodes = nodes.filter(node => node.ageGroups.includes(age));
     }
 
