@@ -1,6 +1,25 @@
 import { IsString, IsOptional, IsBoolean, IsObject, IsEnum, IsArray } from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { ContentType, ContentStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+
+/**
+ * Content detail types — typed interfaces for IDE hints & documentation.
+ * These are stored as Prisma Json fields, so they use InputJsonValue-compatible shapes.
+ */
+export interface QnaDetail {
+  question?: string;
+  answerQuick?: string;
+  dialogBlocks?: Prisma.InputJsonValue;
+  dalilBlocks?: Prisma.InputJsonValue;
+  analogyBlocks?: Prisma.InputJsonValue;
+  tipsBlocks?: Prisma.InputJsonValue;
+}
+
+export interface ArticleDetail {
+  coverUrl?: string;
+  blocks?: Prisma.InputJsonValue;
+}
 
 export class CreateContentDto {
   @ApiProperty()
@@ -55,16 +74,16 @@ export class CreateContentDto {
   @IsOptional()
   enableAudio?: boolean;
 
-  // Polymorphic Details based on type
-  @ApiProperty({ required: false })
+  // Polymorphic Details — typed interfaces, stored as Prisma Json
+  @ApiProperty({ required: false, description: 'QNA content: question, answerQuick, dialogBlocks, dalilBlocks, analogyBlocks, tipsBlocks' })
   @IsObject()
   @IsOptional()
-  qnaDetail?: any;
+  qnaDetail?: QnaDetail;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: 'Article/Pembelajaran content: coverUrl, blocks[]' })
   @IsObject()
   @IsOptional()
-  articleDetail?: any;
+  articleDetail?: ArticleDetail;
 
 
   @ApiProperty({ type: [String], required: false })

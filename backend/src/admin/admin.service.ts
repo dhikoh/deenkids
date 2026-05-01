@@ -271,7 +271,7 @@ export class AdminService {
     const conditions: any[] = [];
     if (status) where.status = status;
     if (search) conditions.push({ title: { contains: search, mode: 'insensitive' } });
-    if (age && age !== 'Semua') conditions.push({ ageGroups: { has: age } });
+    if (age) conditions.push({ ageGroups: { has: age } });
     if (conditions.length > 0) where.AND = conditions;
 
     const [data, total] = await Promise.all([

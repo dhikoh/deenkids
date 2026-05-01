@@ -36,6 +36,37 @@ export class AuthController {
     return { message: 'Login berhasil', user, accessToken };
   }
 
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Rotate refresh token & issue new access token' })
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const oldRefreshToken = req.cookies['refresh_token'];
+    if (!oldRefreshToken) {
+      res.clearCookie('access_token');
+      res.clearCookie('refresh_token');
+      return { message: 'No refresh token provided', error: true };
+    }
+
+    const { user, accessToken, refreshToken } = await this.authService.refreshTokens(oldRefreshToken);
+
+    // Set new cookies
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return { message: 'Token refreshed', user, accessToken };
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)

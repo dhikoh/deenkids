@@ -7,6 +7,10 @@ import { NotificationType, PointType } from '@prisma/client';
 export class RewardService {
   private readonly logger = new Logger(RewardService.name);
 
+  // In-memory settings cache with 5-minute TTL
+  private settingsCache: { data: any; expiry: number } | null = null;
+  private static readonly SETTINGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   constructor(private prisma: PrismaService, private notificationService: NotificationService) {}
 
   async addPoints(userId: string, amount: number, type: PointType, reason: string, contentId?: string) {
@@ -186,10 +190,15 @@ export class RewardService {
   }
 
   async getRewardSettings() {
+    // Return cached settings if still valid
+    if (this.settingsCache && Date.now() < this.settingsCache.expiry) {
+      return this.settingsCache.data;
+    }
+
     const keys = ['point_per_approved', 'point_views_milestone', 'point_likes_milestone', 'point_shares_milestone', 'point_rating_bonus', 'point_to_rupiah', 'min_withdrawal_points', 'max_submit_per_day'];
     const settings = await this.prisma.setting.findMany({ where: { key: { in: keys } } });
     const map = Object.fromEntries(settings.map(s => [s.key, s.value]));
-    return {
+    const result = {
       pointPerApproved: parseInt(map.point_per_approved || '10'),
       pointViewsMilestone: parseInt(map.point_views_milestone || '5'),
       pointLikesMilestone: parseInt(map.point_likes_milestone || '3'),
@@ -199,6 +208,10 @@ export class RewardService {
       minWithdrawalPoints: parseInt(map.min_withdrawal_points || '50'),
       maxSubmitPerDay: parseInt(map.max_submit_per_day || '5'),
     };
+
+    // Store in cache
+    this.settingsCache = { data: result, expiry: Date.now() + RewardService.SETTINGS_CACHE_TTL };
+    return result;
   }
 
   async updateRewardSettings(data: Record<string, string>) {
@@ -209,6 +222,8 @@ export class RewardService {
         create: { group: 'reward', key, value },
       });
     }
+    // Invalidate cache on settings update
+    this.settingsCache = null;
     return { message: 'Pengaturan reward diperbarui' };
   }
 
