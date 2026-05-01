@@ -6,6 +6,9 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package*.json ./
+
+# Force development to install devDependencies (@nestjs/cli, typescript, etc.)
+ENV NODE_ENV=development
 RUN npm ci
 
 COPY . .

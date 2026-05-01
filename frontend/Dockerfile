@@ -4,6 +4,9 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
+
+# Force development to install devDependencies (typescript, eslint, etc.)
+ENV NODE_ENV=development
 RUN npm ci --legacy-peer-deps
 
 COPY . .
