@@ -7,7 +7,7 @@
 API="https://api.adably.id/api"
 FRONTEND="https://adably.id"
 SUPERADMIN_EMAIL="superadmin@adably.id"
-SUPERADMIN_PASS="superadmin"
+SUPERADMIN_PASS="superadmin123"
 COOKIE_JAR="/tmp/adably_e2e_cookies.txt"
 PASS=0; FAIL=0; TOTAL=0
 
