@@ -38,8 +38,10 @@ async function bootstrap() {
       origins.add(url.replace('://', '://www.'));
     }
   }
-  // Always allow localhost for development
-  origins.add('http://localhost:3000');
+  // Only allow localhost in development
+  if (process.env.NODE_ENV !== 'production') {
+    origins.add('http://localhost:3000');
+  }
   const allowedOrigins = [...origins];
   logger.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
 

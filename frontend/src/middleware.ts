@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret && process.env.NODE_ENV === 'production') {
+  console.error('FATAL: JWT_SECRET environment variable is not set!');
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecret || 'dev-only-unsafe-secret');
 
 async function verifyToken(token: string): Promise<boolean> {
   try {
@@ -32,13 +36,17 @@ export async function middleware(request: NextRequest) {
       if (refreshToken) {
         try {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 3000); // 3s timeout
           const refreshRes = await fetch(`${apiUrl}/auth/refresh`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               Cookie: `refresh_token=${refreshToken}`,
             },
+            signal: controller.signal,
           });
+          clearTimeout(timeout);
 
           if (refreshRes.ok) {
             const data = await refreshRes.json();

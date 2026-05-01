@@ -24,7 +24,7 @@ export default function BannersPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const load = async () => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       const res = await fetchBanners(token);
@@ -36,7 +36,7 @@ export default function BannersPage() {
   useEffect(() => { load(); }, []);
 
   const handleToggle = async (id: string) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       const res = await toggleBanner(id, token);
@@ -46,7 +46,7 @@ export default function BannersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       await deleteBanner(id, token);
@@ -59,7 +59,7 @@ export default function BannersPage() {
   const handleCreate = async () => {
     if (!title || !imageFile) return toast.error("Judul dan gambar wajib diisi");
     setIsSaving(true);
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       const form = new FormData();
@@ -89,7 +89,7 @@ export default function BannersPage() {
   const handleUpdate = async () => {
     if (!editBanner) return;
     setIsSaving(true);
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       const res = await updateBanner(editBanner.id, {

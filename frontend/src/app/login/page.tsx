@@ -22,10 +22,10 @@ export default function LoginPage() {
     try {
       const data = await login({ email, password });
       
-      // Backend sets HttpOnly cookies via Set-Cookie header automatically.
-      // We also set a JS-accessible copy for client-side API calls.
+      // Backend sets HttpOnly access_token cookie via Set-Cookie header.
+      // We store a JS-accessible copy under '_at' for client-side API calls.
       if (data.accessToken) {
-        Cookies.set("access_token", data.accessToken, { expires: 1, path: "/" });
+        Cookies.set("_at", data.accessToken, { expires: 1, path: "/" });
       }
       
       // Store basic user info in localStorage for UI purposes
@@ -42,7 +42,7 @@ export default function LoginPage() {
     } catch (error: any) {
       const msg = error.message || "Gagal masuk";
       if (msg.includes("429") || msg.includes("Too Many") || msg.includes("banyak")) {
-        toast.error("Terlalu banyak percobaan login. Tunggu 15 menit.");
+        toast.error("Terlalu banyak percobaan login. Tunggu 5 menit.");
       } else {
         toast.error(msg);
       }

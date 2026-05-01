@@ -15,7 +15,7 @@ export default function DonationPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (token) {
       fetchDonationAdmin(token).then(d => {
         setEnabled(d.enabled); setTitle(d.title); setMessage(d.message); setMethods(d.methods || []);
@@ -25,7 +25,7 @@ export default function DonationPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await updateDonationAdmin({ enabled, title, message, methods }, token || "");
       toast.success("Pengaturan donasi disimpan");

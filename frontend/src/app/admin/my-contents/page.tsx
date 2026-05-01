@@ -29,7 +29,7 @@ export default function MyContentsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const load = async () => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       const res = await fetchMyContents(token, filter || undefined, undefined, search || undefined, ageFilter || undefined);
@@ -41,7 +41,7 @@ export default function MyContentsPage() {
   useEffect(() => { setIsLoading(true); load(); }, [filter, search, ageFilter]);
 
   const handleDelete = async (id: string) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await deleteContent(id, token || "");
       toast.success("Konten dihapus"); setConfirmDeleteId(null); load();
@@ -49,7 +49,7 @@ export default function MyContentsPage() {
   };
 
   const handleSubmit = async (id: string) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await submitContentForReview(id, token || "");
       toast.success("Konten diajukan untuk review"); load();

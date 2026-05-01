@@ -37,7 +37,7 @@ export default function InboxPage() {
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
   const load = async (page = 1) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       const filterParam = filter === "all" ? undefined : filter;
@@ -51,14 +51,14 @@ export default function InboxPage() {
   useEffect(() => { setIsLoading(true); load(); }, [search, filter]);
 
   const handleRead = async (id: string) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     await markNotificationRead(id, token);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
 
   const handleReadAll = async () => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     await markAllNotificationsRead(token);
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -66,7 +66,7 @@ export default function InboxPage() {
   };
 
   const handleDelete = async (id: string) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       await deleteNotification(id, token);
@@ -77,7 +77,7 @@ export default function InboxPage() {
   };
 
   const handleDeleteAllRead = async () => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       await deleteAllReadNotifications(token);

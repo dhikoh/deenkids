@@ -20,7 +20,7 @@ export default function ReviewPage() {
 
   const loadQueue = async () => {
     try {
-      const token = Cookies.get("access_token");
+      const token = Cookies.get("_at");
       if (!token) return;
       const response = await fetchReviewQueue(token);
       setQueue(response.data || []);
@@ -41,7 +41,7 @@ export default function ReviewPage() {
     if (!actionType) return;
     setProcessingId(id);
     try {
-      const token = Cookies.get("access_token");
+      const token = Cookies.get("_at");
       if (!token) return;
       await processReview(id, actionType, activeNotes, token);
       toast.success(`Konten berhasil di-${actionType}`);

@@ -37,7 +37,7 @@ export default function PreviewPage() {
       return;
     }
     setIsSubmitting(true);
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await submitContentForReview(content.editId, token || "");
       toast.success("Konten berhasil diajukan untuk review!");

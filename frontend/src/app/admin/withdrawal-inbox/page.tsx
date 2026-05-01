@@ -33,7 +33,7 @@ export default function WithdrawalInboxPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const load = async () => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try {
       const r = await apiFetch(`${API_BASE_URL}/superadmin/withdrawals`, { headers: authH(token) });
       setData(r.data || []);
@@ -43,7 +43,7 @@ export default function WithdrawalInboxPage() {
   useEffect(() => { load(); }, []);
 
   const process = async (id: string, action: string, notes = "") => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     setIsProcessing(true);
     try {
       await apiFetch(`${API_BASE_URL}/superadmin/withdrawals/${id}/process`, {

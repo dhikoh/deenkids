@@ -14,7 +14,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try {
       const r = await apiFetch(`${API_BASE_URL}/admin/profile`, { headers: authH(token) });
       setProfile(r.data);
@@ -26,15 +26,15 @@ export default function ProfilePage() {
   useEffect(() => { load(); }, []);
 
   const saveProfile = async () => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try { await apiFetch(`${API_BASE_URL}/admin/profile`, { method: "PUT", headers: authH(token), body: JSON.stringify(form) }); toast.success("Profil disimpan"); localStorage.setItem("locale", form.locale); } catch (e: any) { toast.error(e.message); }
   };
   const saveBank = async () => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try { await apiFetch(`${API_BASE_URL}/admin/profile/bank`, { method: "PUT", headers: authH(token), body: JSON.stringify(bank) }); toast.success("Data rekening disimpan"); } catch (e: any) { toast.error(e.message); }
   };
   const savePw = async () => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try { await changePassword(pw, token); toast.success("Password berhasil diubah"); setPw({ currentPassword: "", newPassword: "" }); } catch (e: any) { toast.error(e.message); }
   };
 

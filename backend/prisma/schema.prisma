@@ -467,4 +467,7 @@ model ErrorReport {
   lastSeenAt  DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([isResolved, lastSeenAt])
+  @@index([lastSeenAt])
 }

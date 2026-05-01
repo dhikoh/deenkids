@@ -33,7 +33,7 @@ export default function SettingsPage() {
 
   const loadSettings = async () => {
     try {
-      const token = Cookies.get("access_token");
+      const token = Cookies.get("_at");
       if (!token) return;
       const [aiData, rewardData, lbData] = await Promise.all([
         fetchAiToggle(token),
@@ -62,7 +62,7 @@ export default function SettingsPage() {
   const handleSaveAi = async () => {
     setIsSaving(true);
     try {
-      const token = Cookies.get("access_token"); if (!token) return;
+      const token = Cookies.get("_at"); if (!token) return;
       await updateAiToggle(aiEnabled, token);
       toast.success("Pengaturan AI berhasil disimpan");
     } catch { toast.error("Gagal menyimpan"); }
@@ -72,7 +72,7 @@ export default function SettingsPage() {
   const handleSaveReward = async () => {
     setIsSavingReward(true);
     try {
-      const token = Cookies.get("access_token"); if (!token) return;
+      const token = Cookies.get("_at"); if (!token) return;
       await updateRewardSettings(rewardSettings, token);
       toast.success("Pengaturan reward berhasil disimpan");
     } catch { toast.error("Gagal menyimpan pengaturan reward"); }

@@ -11,7 +11,7 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (token) {
       fetchDashboardStats(token)
         .then(setStats)

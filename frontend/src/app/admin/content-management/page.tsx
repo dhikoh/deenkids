@@ -24,7 +24,7 @@ export default function ContentManagementPage() {
   const [unpublishNotes, setUnpublishNotes] = useState("");
 
   const load = async () => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try {
       const res = await fetchAllContents(token, filter || undefined, page, search || undefined, ageFilter || undefined);
       setContents(res.data || []); setMeta(res.meta || {});
@@ -35,7 +35,7 @@ export default function ContentManagementPage() {
   useEffect(() => { setLoading(true); load(); }, [filter, page, search, ageFilter]);
 
   const handleDelete = async (id: string) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await deleteContent(id, token || "");
       toast.success("Konten dihapus"); setConfirmDeleteId(null); load();
@@ -43,7 +43,7 @@ export default function ContentManagementPage() {
   };
 
   const handleExportScript = async (id: string) => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try {
       const res = await fetchContentForEdit(token, id);
       const ok = copyVideoScript(res.data);
@@ -53,7 +53,7 @@ export default function ContentManagementPage() {
 
   const handleUnpublish = async () => {
     if (!unpublishTarget) return;
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await unpublishContent(unpublishTarget.id, unpublishNotes, token || "");
       toast.success("Konten berhasil di-unpublish");

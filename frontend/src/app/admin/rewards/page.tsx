@@ -29,7 +29,7 @@ export default function RewardsPage() {
   const [activeTab, setActiveTab] = useState<"ledger" | "withdrawals">("ledger");
 
   const load = async () => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try {
       const [b, l, w] = await Promise.all([
         apiFetch(`${API_BASE_URL}/admin/points/balance`, { headers: authH(token) }),
@@ -48,7 +48,7 @@ export default function RewardsPage() {
     if (!withdrawAmount || parseInt(withdrawAmount) <= 0) {
       toast.error("Masukkan jumlah poin yang valid"); return;
     }
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try {
       const res = await apiFetch(`${API_BASE_URL}/admin/points/withdraw`, {
         method: "POST", headers: authH(token),

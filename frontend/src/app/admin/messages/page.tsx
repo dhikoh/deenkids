@@ -30,12 +30,12 @@ export default function MessagesPage() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const loadConvos = async () => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try { const r = await apiFetch(`${API_BASE_URL}/admin/messages/conversations`, { headers: authH(token) }); setConvos(r.data || []); } catch {}
   };
 
   const loadMessages = async (id: string) => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try {
       const r = await apiFetch(`${API_BASE_URL}/admin/messages/${id}`, { headers: authH(token) });
       setMessages(r.data || []);
@@ -45,12 +45,12 @@ export default function MessagesPage() {
   };
 
   const loadUsers = async () => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     try { const r = await apiFetch(`${API_BASE_URL}/admin/messages/users`, { headers: authH(token) }); setUsers(r.data || []); setShowNewChat(true); } catch {}
   };
 
   const sendMessage = async (receiverId?: string) => {
-    const token = Cookies.get("access_token"); if (!token || !text.trim()) return;
+    const token = Cookies.get("_at"); if (!token || !text.trim()) return;
     const targetId = receiverId || convos.find(c => c.id === activeConvo)?.other?.id;
     if (!targetId) return;
     try {
@@ -69,7 +69,7 @@ export default function MessagesPage() {
   };
 
   const sendImage = async (file: File) => {
-    const token = Cookies.get("access_token"); if (!token) return;
+    const token = Cookies.get("_at"); if (!token) return;
     const targetId = convos.find(c => c.id === activeConvo)?.other?.id;
     if (!targetId) return;
     const fd = new FormData();

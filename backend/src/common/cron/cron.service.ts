@@ -92,10 +92,21 @@ export class CronService {
   // Award bonus points for engagement milestones
   @Cron(CronExpression.EVERY_HOUR)
   async checkEngagementMilestones() {
+    // Pre-filter: only fetch content that has reached at least one milestone threshold
     const contents = await this.prisma.contentItem.findMany({
-      where: { status: 'PUBLISHED' },
+      where: {
+        status: 'PUBLISHED',
+        OR: [
+          { viewCount: { gte: 500 } },
+          { likeCount: { gte: 50 } },
+          { shareCount: { gte: 100 } },
+          { avgRating: { gte: 4.5 }, ratingCount: { gte: 10 } },
+        ],
+      },
       select: { id: true, authorId: true, viewCount: true, likeCount: true, shareCount: true, avgRating: true, ratingCount: true, title: true },
     });
+
+    if (contents.length === 0) return;
 
     const settingRows = await this.prisma.setting.findMany({ where: { key: { in: ['point_views_milestone', 'point_likes_milestone', 'point_shares_milestone', 'point_rating_bonus'] } } });
     const settings = Object.fromEntries(settingRows.map(s => [s.key, s.value]));
@@ -104,62 +115,49 @@ export class CronService {
     const shareBonus = parseInt(settings.point_shares_milestone || '3');
     const ratingBonus = parseInt(settings.point_rating_bonus || '5');
 
+    // Batch-fetch all existing bonuses for these contents (eliminates N+1)
+    const contentIds = contents.map(c => c.id);
+    const existingBonuses = await this.prisma.pointLedger.groupBy({
+      by: ['contentId', 'reason'],
+      where: { contentId: { in: contentIds }, type: PointType.BONUS },
+      _count: { id: true },
+    });
+    // Build lookup: contentId -> { 'Bonus views': count, 'Bonus likes': count, ... }
+    const bonusMap = new Map<string, Map<string, number>>();
+    for (const b of existingBonuses) {
+      if (!b.contentId) continue;
+      if (!bonusMap.has(b.contentId)) bonusMap.set(b.contentId, new Map());
+      const prefix = b.reason.split(' ').slice(0, 2).join(' '); // "Bonus views", "Bonus likes", etc.
+      const current = bonusMap.get(b.contentId)!.get(prefix) || 0;
+      bonusMap.get(b.contentId)!.set(prefix, current + b._count.id);
+    }
+
+    const getBonusCount = (contentId: string, prefix: string) => bonusMap.get(contentId)?.get(prefix) || 0;
+
     let awarded = 0;
     for (const c of contents) {
       // Views milestone (every 500 views)
       const viewMilestones = Math.floor(c.viewCount / 500);
-      if (viewMilestones > 0) {
-        const existing = await this.prisma.pointLedger.count({
-          where: { contentId: c.id, type: PointType.BONUS, reason: { startsWith: 'Bonus views' } },
-        });
-        if (viewMilestones > existing) {
-          await this.rewardService.addPoints(
-            c.authorId, viewBonus, PointType.BONUS,
-            `Bonus views ${viewMilestones * 500}: ${c.title}`, c.id,
-          );
-          awarded++;
-        }
+      if (viewMilestones > getBonusCount(c.id, 'Bonus views')) {
+        await this.rewardService.addPoints(c.authorId, viewBonus, PointType.BONUS, `Bonus views ${viewMilestones * 500}: ${c.title}`, c.id);
+        awarded++;
       }
       // Likes milestone (every 50 likes)
       const likeMilestones = Math.floor(c.likeCount / 50);
-      if (likeMilestones > 0) {
-        const existing = await this.prisma.pointLedger.count({
-          where: { contentId: c.id, type: PointType.BONUS, reason: { startsWith: 'Bonus likes' } },
-        });
-        if (likeMilestones > existing) {
-          await this.rewardService.addPoints(
-            c.authorId, likeBonus, PointType.BONUS,
-            `Bonus likes ${likeMilestones * 50}: ${c.title}`, c.id,
-          );
-          awarded++;
-        }
+      if (likeMilestones > getBonusCount(c.id, 'Bonus likes')) {
+        await this.rewardService.addPoints(c.authorId, likeBonus, PointType.BONUS, `Bonus likes ${likeMilestones * 50}: ${c.title}`, c.id);
+        awarded++;
       }
       // Shares milestone (every 100 shares)
       const shareMilestones = Math.floor(c.shareCount / 100);
-      if (shareMilestones > 0) {
-        const existing = await this.prisma.pointLedger.count({
-          where: { contentId: c.id, type: PointType.BONUS, reason: { startsWith: 'Bonus shares' } },
-        });
-        if (shareMilestones > existing) {
-          await this.rewardService.addPoints(
-            c.authorId, shareBonus, PointType.BONUS,
-            `Bonus shares ${shareMilestones * 100}: ${c.title}`, c.id,
-          );
-          awarded++;
-        }
+      if (shareMilestones > getBonusCount(c.id, 'Bonus shares')) {
+        await this.rewardService.addPoints(c.authorId, shareBonus, PointType.BONUS, `Bonus shares ${shareMilestones * 100}: ${c.title}`, c.id);
+        awarded++;
       }
       // Rating bonus (avg >= 4.5 with min 10 ratings — one-time)
-      if (c.avgRating >= 4.5 && c.ratingCount >= 10) {
-        const existing = await this.prisma.pointLedger.count({
-          where: { contentId: c.id, type: PointType.BONUS, reason: { startsWith: 'Bonus rating' } },
-        });
-        if (existing === 0) {
-          await this.rewardService.addPoints(
-            c.authorId, ratingBonus, PointType.BONUS,
-            `Bonus rating ⭐${c.avgRating.toFixed(1)}: ${c.title}`, c.id,
-          );
-          awarded++;
-        }
+      if (c.avgRating >= 4.5 && c.ratingCount >= 10 && getBonusCount(c.id, 'Bonus rating') === 0) {
+        await this.rewardService.addPoints(c.authorId, ratingBonus, PointType.BONUS, `Bonus rating ⭐${c.avgRating.toFixed(1)}: ${c.title}`, c.id);
+        awarded++;
       }
     }
     if (awarded > 0) this.logger.log(`🏆 Awarded ${awarded} engagement bonuses`);

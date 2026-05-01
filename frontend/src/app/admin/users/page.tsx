@@ -41,7 +41,7 @@ export default function UsersPage() {
 
   const loadUsers = async () => {
     try {
-      const token = Cookies.get("access_token"); if (!token) return;
+      const token = Cookies.get("_at"); if (!token) return;
       const stored = localStorage.getItem("user");
       if (stored) setCallerRole(JSON.parse(stored).role || "");
       const data = await fetchUsersList(token);
@@ -73,7 +73,7 @@ export default function UsersPage() {
   const handleCreate = async () => {
     if (!formName || !formEmail || !formPassword) return toast.error("Semua field wajib diisi");
     setSaving(true);
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await apiFetch(`${API_BASE_URL}/admin/users`, { method: "POST", headers: authH(token || ""), body: JSON.stringify({ name: formName, email: formEmail, phone: formPhone || undefined, role: formRole, password: formPassword }) });
       toast.success("User berhasil dibuat"); closeModal(); loadUsers();
@@ -83,7 +83,7 @@ export default function UsersPage() {
   const handleEdit = async () => {
     if (!targetUser) return;
     setSaving(true);
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await apiFetch(`${API_BASE_URL}/admin/users/${targetUser.id}`, { method: "PUT", headers: authH(token || ""), body: JSON.stringify({ name: formName, email: formEmail, phone: formPhone, role: formRole }) });
       toast.success("User berhasil diperbarui"); closeModal(); loadUsers();
@@ -93,7 +93,7 @@ export default function UsersPage() {
   const handleReset = async () => {
     if (!targetUser) return;
     setSaving(true);
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       const res = await apiFetch(`${API_BASE_URL}/admin/users/${targetUser.id}/reset-password`, { method: "PUT", headers: authH(token || "") });
       setGeneratedPw(res.newPassword); toast.success("Password berhasil direset");
@@ -104,7 +104,7 @@ export default function UsersPage() {
   const handleSetPw = async () => {
     if (!targetUser || !formPassword) return toast.error("Password wajib diisi");
     setSaving(true);
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await apiFetch(`${API_BASE_URL}/admin/users/${targetUser.id}/set-password`, { method: "PUT", headers: authH(token || ""), body: JSON.stringify({ password: formPassword }) });
       toast.success("Password berhasil diubah"); closeModal();
@@ -114,7 +114,7 @@ export default function UsersPage() {
   const handleDelete = async () => {
     if (!targetUser) return;
     setSaving(true);
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await apiFetch(`${API_BASE_URL}/admin/users/${targetUser.id}`, { method: "DELETE", headers: authH(token || "") });
       toast.success("User berhasil dihapus"); closeModal(); loadUsers();
@@ -349,7 +349,7 @@ export default function UsersPage() {
                     if (!deductReason || deductReason.length < 5) return toast.error("Alasan wajib diisi (min. 5 karakter)");
                     setSaving(true);
                     try {
-                      const token = Cookies.get("access_token");
+                      const token = Cookies.get("_at");
                       const res = await apiFetch(`${API_BASE_URL}/superadmin/users/${targetUser.id}/deduct-points`, {
                         method: "POST", headers: authH(token || ""),
                         body: JSON.stringify({ amount: parseInt(deductAmount), reason: deductReason }),

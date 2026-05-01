@@ -15,7 +15,7 @@ export default function StructurePage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const load = async () => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try { const res = await fetchStructure(token); setTree(res.data || []); }
     catch { toast.error("Gagal memuat struktur"); }
@@ -31,7 +31,7 @@ export default function StructurePage() {
   };
 
   const handleSave = async () => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token || !form.title) return toast.error("Nama wajib diisi");
     try {
       if (editingId) {
@@ -49,7 +49,7 @@ export default function StructurePage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus node ini?")) return;
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try { await deleteStructureNode(id, token || ""); toast.success("Node dihapus"); load(); }
     catch (e: any) { toast.error(e.message); }
   };

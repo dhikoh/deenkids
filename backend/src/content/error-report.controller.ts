@@ -5,6 +5,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { createHash } from 'crypto';
+import { SubmitErrorReportDto } from './dto/error-report.dto';
 
 // ─── Public endpoint: receive error reports from frontend ───
 @ApiTags('Error Reporting')
@@ -16,17 +17,13 @@ export class ErrorReportPublicController {
   @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 reports per minute per IP
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submit frontend error report (public, rate-limited)' })
-  async submitErrorReport(@Body() body: { message: string; stack?: string; source?: string; userAgent?: string; userId?: string }) {
-    if (!body.message || body.message.length < 3) {
-      return { ok: false, message: 'Invalid error report' };
-    }
-
-    // Sanitize: limit field lengths to prevent abuse
-    const message = body.message.substring(0, 1000);
-    const stack = body.stack?.substring(0, 5000) || null;
-    const source = body.source?.substring(0, 500) || null;
-    const userAgent = body.userAgent?.substring(0, 500) || null;
-    const userId = body.userId?.substring(0, 100) || null;
+  async submitErrorReport(@Body() dto: SubmitErrorReportDto) {
+    // Fields are already validated by DTO + ValidationPipe
+    const message = dto.message.substring(0, 1000);
+    const stack = dto.stack || null;
+    const source = dto.source || null;
+    const userAgent = dto.userAgent || null;
+    const userId = dto.userId || null;
 
     // Create fingerprint from message + source to group identical errors
     const fingerprint = createHash('sha256')

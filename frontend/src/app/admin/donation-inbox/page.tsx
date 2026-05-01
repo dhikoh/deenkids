@@ -13,7 +13,7 @@ export default function DonationInboxPage() {
   const [tab, setTab] = useState<"list" | "report">("list");
 
   const load = async () => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       const [subs, rep] = await Promise.all([
@@ -29,7 +29,7 @@ export default function DonationInboxPage() {
   useEffect(() => { load(); }, []);
 
   const handleVerify = async (id: string) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       await verifyDonation(id, token);

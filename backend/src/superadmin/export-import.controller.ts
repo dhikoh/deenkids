@@ -1,13 +1,14 @@
-import { Controller, Get, Post, Res, UseGuards, UseInterceptors, UploadedFile, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Res, UseGuards, UseInterceptors, UploadedFile, Body, Query, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard, RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { execSync } from 'child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'fs';
+import { execFileSync } from 'child_process';
+import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import * as bcrypt from 'bcrypt';
 
 @ApiTags('Export, Import & Backup')
 @ApiBearerAuth()
@@ -71,7 +72,6 @@ export class ExportImportController {
       if (existing && mode === 'overwrite') {
         await this.prisma.user.update({ where: { email: u.email }, data: { name: u.name, role: u.role, phone: u.phone, bio: u.bio, bankName: u.bankName, bankAccount: u.bankAccount, bankHolder: u.bankHolder, points: u.points || 0 } });
       } else if (!existing) {
-        const bcrypt = require('bcrypt');
         const hash = await bcrypt.hash('adably123', 10);
         await this.prisma.user.create({ data: { ...u, passwordHash: hash, id: undefined } });
       }
@@ -137,7 +137,7 @@ export class ExportImportController {
     if (!existsSync(dir)) return { data: [] };
     const files = readdirSync(dir)
       .filter(f => f.endsWith('.sql'))
-      .map(f => ({ filename: f, size: readFileSync(join(dir, f)).length, created: f.replace('adably-backup-', '').replace('.sql', '') }))
+      .map(f => ({ filename: f, size: statSync(join(dir, f)).size, created: f.replace('adably-backup-', '').replace('.sql', '') }))
       .sort((a, b) => b.created.localeCompare(a.created));
     return { data: files };
   }
@@ -145,8 +145,12 @@ export class ExportImportController {
   @Get('backup/download/:filename')
   @ApiOperation({ summary: 'Download a backup file' })
   async downloadBackup(@Res() res: Response, @Query('filename') filename: string) {
+    // Validate filename to prevent path traversal attacks
+    if (!filename || !/^[\w\-\.]+\.sql$/.test(filename)) {
+      throw new BadRequestException('Nama file tidak valid');
+    }
     const filepath = join(process.cwd(), 'backups', filename);
-    if (!existsSync(filepath)) throw new Error('Backup tidak ditemukan');
+    if (!existsSync(filepath)) throw new BadRequestException('Backup tidak ditemukan');
     res.download(filepath);
   }
 
@@ -160,7 +164,9 @@ export class ExportImportController {
     const dbUrl = process.env.DATABASE_URL || '';
 
     try {
-      execSync(`pg_dump "${dbUrl}" > "${filepath}"`, { timeout: 60000 });
+      // Use execFileSync with array args to prevent shell injection
+      const output = execFileSync('pg_dump', [dbUrl], { timeout: 120000 });
+      writeFileSync(filepath, output);
       return { message: `Backup berhasil: ${filename}` };
     } catch (e: any) {
       return { message: `Backup gagal: ${e.message}. Gunakan Export JSON sebagai alternatif.` };

@@ -23,7 +23,7 @@ export default function FeedbackPage() {
   const [search, setSearch] = useState("");
 
   const load = async () => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       const res = await fetchFeedbackList(token, 1, search || undefined);
@@ -35,7 +35,7 @@ export default function FeedbackPage() {
   useEffect(() => { setIsLoading(true); load(); }, [search]);
 
   const handleRead = async (id: string) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     if (!token) return;
     try {
       await markFeedbackRead(id, token);

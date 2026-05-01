@@ -24,7 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    const token = Cookies.get('access_token');
+    const token = Cookies.get('_at');
     if (!token) return;
 
     let active = true;
@@ -63,7 +63,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   const handleLogout = () => {
-    Cookies.remove('access_token');
+    Cookies.remove('_at');
     localStorage.removeItem('user');
     router.push('/login');
   };

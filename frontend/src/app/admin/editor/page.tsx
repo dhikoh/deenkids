@@ -69,7 +69,7 @@ function EditorContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
     if (token) {
@@ -212,7 +212,7 @@ function EditorContent() {
   };
 
   const handleImageUpload = async (blockId: string, file: File) => {
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     const formData = new FormData();
     formData.append("file", file);
     try {
@@ -231,7 +231,7 @@ function EditorContent() {
     if (!ageGroups || ageGroups.length === 0) return toast.error("Kelompok usia wajib dipilih minimal satu");
     if (contentType === "PEMBELAJARAN" && !nodeId) return toast.error("Kategori pembelajaran wajib dipilih");
     setIsSaving(true);
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       const payload: any = {
         title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, tags,
@@ -284,7 +284,7 @@ function EditorContent() {
 
   const confirmSubmitReview = async () => {
     if (!editId) { toast.error("Simpan konten terlebih dahulu"); return; }
-    const token = Cookies.get("access_token");
+    const token = Cookies.get("_at");
     try {
       await submitContentForReview(editId, token || "");
       toast.success("Konten diajukan untuk review!");

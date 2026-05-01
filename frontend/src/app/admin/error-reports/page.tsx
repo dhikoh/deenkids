@@ -30,7 +30,7 @@ export default function ErrorReportsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const token = Cookies.get("access_token") || "";
+  const token = Cookies.get("_at") || "";
 
   const load = async () => {
     setLoading(true);

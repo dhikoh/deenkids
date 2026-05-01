@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType, PointType } from '@prisma/client';
@@ -77,15 +77,15 @@ export class RewardService {
   async requestWithdrawal(userId: string, pointsAmount: number) {
     const settings = await this.getRewardSettings();
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new Error('User tidak ditemukan');
+    if (!user) throw new NotFoundException('User tidak ditemukan');
     if (!user.bankName || !user.bankAccount || !user.bankHolder) {
-      throw new Error('Lengkapi data rekening bank di profil sebelum withdraw');
+      throw new BadRequestException('Lengkapi data rekening bank di profil sebelum withdraw');
     }
     if (pointsAmount < settings.minWithdrawalPoints) {
-      throw new Error(`Minimal withdrawal ${settings.minWithdrawalPoints} poin`);
+      throw new BadRequestException(`Minimal withdrawal ${settings.minWithdrawalPoints} poin`);
     }
     if (user.points < pointsAmount) {
-      throw new Error(`Saldo tidak cukup. Saldo: ${user.points} poin`);
+      throw new BadRequestException(`Saldo tidak cukup. Saldo: ${user.points} poin`);
     }
 
     // Anti-spam: block if there's already a PENDING or APPROVED withdrawal
@@ -93,7 +93,7 @@ export class RewardService {
       where: { userId, status: { in: ['PENDING', 'APPROVED'] } },
     });
     if (existingActive) {
-      throw new Error('Anda masih memiliki permintaan withdrawal yang sedang diproses. Tunggu hingga selesai sebelum mengajukan lagi.');
+      throw new BadRequestException('Anda masih memiliki permintaan withdrawal yang sedang diproses. Tunggu hingga selesai sebelum mengajukan lagi.');
     }
 
     const rupiahAmount = pointsAmount * settings.pointToRupiah;
@@ -106,7 +106,7 @@ export class RewardService {
         data: { points: { decrement: pointsAmount } },
       });
       if (updated.count === 0) {
-        throw new Error('Saldo tidak cukup atau sedang diproses request lain.');
+        throw new BadRequestException('Saldo tidak cukup atau sedang diproses request lain.');
       }
 
       const req = await tx.withdrawalRequest.create({
@@ -147,7 +147,7 @@ export class RewardService {
 
   async processWithdrawal(id: string, action: 'APPROVED' | 'REJECTED' | 'DISBURSED', adminId: string, notes?: string) {
     const request = await this.prisma.withdrawalRequest.findUnique({ where: { id }, include: { user: true } });
-    if (!request) throw new Error('Request tidak ditemukan');
+    if (!request) throw new NotFoundException('Request tidak ditemukan');
 
     // Strict state machine validation
     const validTransitions: Record<string, string[]> = {
@@ -158,7 +158,7 @@ export class RewardService {
     };
     const allowed = validTransitions[request.status] || [];
     if (!allowed.includes(action)) {
-      throw new Error(`Tidak bisa mengubah status dari ${request.status} ke ${action}`);
+      throw new BadRequestException(`Tidak bisa mengubah status dari ${request.status} ke ${action}`);
     }
 
     if (action === 'REJECTED' && request.status === 'PENDING') {
@@ -259,11 +259,11 @@ export class RewardService {
 
   // ── Admin manual penalty ──
   async adminDeductPoints(targetUserId: string, amount: number, reason: string, adminId: string) {
-    if (amount <= 0) throw new Error('Jumlah poin harus lebih dari 0');
-    if (!reason || reason.length < 5) throw new Error('Alasan wajib diisi (min. 5 karakter)');
+    if (amount <= 0) throw new BadRequestException('Jumlah poin harus lebih dari 0');
+    if (!reason || reason.length < 5) throw new BadRequestException('Alasan wajib diisi (min. 5 karakter)');
 
     const target = await this.prisma.user.findUnique({ where: { id: targetUserId } });
-    if (!target) throw new Error('User tidak ditemukan');
+    if (!target) throw new NotFoundException('User tidak ditemukan');
 
     await this.addPoints(
       targetUserId,

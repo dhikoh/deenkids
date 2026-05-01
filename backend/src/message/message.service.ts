@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -16,20 +16,27 @@ export class MessageService {
       },
     });
 
-    // Count unread per conversation
-    const result = await Promise.all(convos.map(async (c) => {
-      const unread = await this.prisma.message.count({
-        where: { conversationId: c.id, senderId: { not: userId }, isRead: false },
-      });
+    // Single query for all unread counts (eliminates N+1)
+    const convoIds = convos.map(c => c.id);
+    const unreadCounts = convoIds.length > 0
+      ? await this.prisma.message.groupBy({
+          by: ['conversationId'],
+          where: { conversationId: { in: convoIds }, senderId: { not: userId }, isRead: false },
+          _count: { id: true },
+        })
+      : [];
+    const unreadMap = new Map(unreadCounts.map(u => [u.conversationId, u._count.id]));
+
+    const result = convos.map(c => {
       const other = c.participantAId === userId ? c.participantB : c.participantA;
       return {
         id: c.id,
         other,
         lastMessage: c.messages[0] || null,
         lastMessageAt: c.lastMessageAt,
-        unreadCount: unread,
+        unreadCount: unreadMap.get(c.id) || 0,
       };
-    }));
+    });
 
     return { data: result };
   }
@@ -38,7 +45,7 @@ export class MessageService {
     // Verify participant
     const convo = await this.prisma.conversation.findUnique({ where: { id: conversationId } });
     if (!convo || (convo.participantAId !== userId && convo.participantBId !== userId)) {
-      throw new Error('Percakapan tidak ditemukan');
+      throw new NotFoundException('Percakapan tidak ditemukan');
     }
 
     const take = 50;
@@ -57,8 +64,8 @@ export class MessageService {
   }
 
   async sendMessage(senderId: string, receiverId: string, text?: string, attachmentUrl?: string, attachmentType?: string) {
-    if (!text && !attachmentUrl) throw new Error('Pesan atau lampiran wajib diisi');
-    if (senderId === receiverId) throw new Error('Tidak bisa mengirim pesan ke diri sendiri');
+    if (!text && !attachmentUrl) throw new BadRequestException('Pesan atau lampiran wajib diisi');
+    if (senderId === receiverId) throw new BadRequestException('Tidak bisa mengirim pesan ke diri sendiri');
 
     // Find or create conversation (always order IDs consistently)
     const [idA, idB] = [senderId, receiverId].sort();
