@@ -5,7 +5,9 @@ RUN addgroup -g 1001 -S appgroup && adduser -S appuser -u 1001 -G appgroup
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+
+# --include=dev forces devDependencies install even if Coolify injects NODE_ENV=production
+RUN npm install --include=dev --legacy-peer-deps
 
 COPY . .
 
