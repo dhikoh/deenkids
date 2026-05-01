@@ -1,16 +1,59 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
+// Prevent concurrent refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  // Deduplicate concurrent refresh calls
+  if (isRefreshing && refreshPromise) return refreshPromise;
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
+function redirectToLogin() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  }
+}
+
 // ── Helper ──
 export async function apiFetch(url: string, options: RequestInit = {}) {
-  const res = await fetch(url, { cache: 'no-store', ...options });
+  const res = await fetch(url, { cache: 'no-store', credentials: 'include', ...options });
   if (!res.ok) {
-    // Auto-redirect to login on 401 (expired token)
+    // On 401 (expired token), try silent refresh once before giving up
     if (res.status === 401 && typeof window !== 'undefined') {
-      const Cookies = (await import('js-cookie')).default;
-      Cookies.remove('access_token');
-      Cookies.remove('refresh_token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const refreshed = await tryRefreshToken();
+      if (refreshed) {
+        // Retry the original request with fresh token
+        const retryRes = await fetch(url, { cache: 'no-store', credentials: 'include', ...options });
+        if (retryRes.ok) return retryRes.json();
+        // Retry also failed — redirect to login
+        if (retryRes.status === 401) {
+          redirectToLogin();
+          throw new Error('Sesi habis, silakan login kembali');
+        }
+        const retryError = await retryRes.json().catch(() => ({ message: 'Request failed' }));
+        throw new Error(retryError.message || `HTTP ${retryRes.status}`);
+      }
+      // Refresh failed — redirect to login
+      redirectToLogin();
       throw new Error('Sesi habis, silakan login kembali');
     }
     const error = await res.json().catch(() => ({ message: 'Request failed' }));

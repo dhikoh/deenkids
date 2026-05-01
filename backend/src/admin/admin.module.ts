@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { ReviewService } from './review.service';
+import { StructureService } from './structure.service';
 import { AdminController } from './admin.controller';
 import { UserManagementController } from './user-management.controller';
 import { ProfileController } from './profile.controller';
@@ -10,6 +12,6 @@ import { NotificationModule } from '../notification/notification.module';
 @Module({
   imports: [PrismaModule, RewardModule, NotificationModule],
   controllers: [AdminController, UserManagementController, ProfileController],
-  providers: [AdminService],
+  providers: [AdminService, ReviewService, StructureService],
 })
 export class AdminModule {}

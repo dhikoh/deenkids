@@ -16,12 +16,14 @@ export class CronService {
     @Inject(forwardRef(() => RewardService)) private readonly rewardService: RewardService,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  @Cron(CronExpression.EVERY_HOUR)
   async cleanupExpiredTokens() {
     const result = await this.prisma.refreshToken.deleteMany({
       where: { expiresAt: { lt: new Date() } },
     });
-    this.logger.log(`🧹 Cleaned up ${result.count} expired refresh tokens`);
+    if (result.count > 0) {
+      this.logger.log(`🧹 Cleaned up ${result.count} expired refresh tokens`);
+    }
   }
 
   @Cron(CronExpression.EVERY_HOUR)

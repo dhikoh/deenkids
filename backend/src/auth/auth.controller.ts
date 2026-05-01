@@ -4,6 +4,7 @@ import { LoginDto } from './dto/auth.dto';
 import { Response, Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -11,6 +12,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 900000 } }) // 5 attempts per 15 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login user & set HttpOnly cookies' })
   @ApiResponse({ status: 200, description: 'Berhasil login' })

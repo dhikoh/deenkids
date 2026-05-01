@@ -1,11 +1,17 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/auth.dto';
+import { NotificationType } from '@prisma/client';
+
+/** Maximum concurrent sessions per user */
+const MAX_SESSIONS = 5;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -39,6 +45,36 @@ export class AuthService {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       },
     });
+
+    // ── Session limit enforcement ──
+    // Keep only the most recent MAX_SESSIONS tokens, delete older ones
+    const allTokens = await this.prisma.refreshToken.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    });
+
+    if (allTokens.length > MAX_SESSIONS) {
+      const tokensToDelete = allTokens.slice(MAX_SESSIONS).map(t => t.id);
+      await this.prisma.refreshToken.deleteMany({
+        where: { id: { in: tokensToDelete } },
+      });
+      this.logger.log(`🔒 Pruned ${tokensToDelete.length} old sessions for user ${user.id}`);
+    }
+
+    // ── Login notification (non-blocking) ──
+    // Notify user if they already had active sessions
+    if (allTokens.length > 1) {
+      this.prisma.internalNotification.create({
+        data: {
+          userId: user.id,
+          type: NotificationType.SYSTEM_ALERT,
+          title: 'Login Baru Terdeteksi 🔐',
+          message: `Akun Anda baru saja login dari perangkat baru. Jika ini bukan Anda, segera ubah password.`,
+          linkUrl: '/admin/profile',
+        },
+      }).catch(err => this.logger.warn(`Notification failed: ${err.message}`));
+    }
 
     return {
       user: {

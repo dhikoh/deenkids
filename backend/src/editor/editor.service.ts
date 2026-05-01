@@ -4,6 +4,7 @@ import { AiCheckerService } from './ai-checker.service';
 import { RewardService } from '../reward/reward.service';
 import { NotificationService } from '../notification/notification.service';
 import { CreateContentDto, UpdateContentDto } from './dto/editor.dto';
+import { sanitizeText, sanitizeJsonDeep } from '../common/utils/sanitize.util';
 import slugify from 'slugify';
 
 @Injectable()
@@ -43,40 +44,42 @@ export class EditorService {
 
     const content = await this.prisma.contentItem.create({
       data: {
-        title: dto.title,
+        title: sanitizeText(dto.title),
         slug,
-        description: dto.description,
+        description: dto.description ? sanitizeText(dto.description) : undefined,
         type: dto.type,
         status: forcedStatus,
         ageGroups: dto.ageGroups || ['3-5'],
         nodeId: dto.nodeId || null,
         authorId,
-        displayAuthorName: author?.role === 'SUPERADMIN' ? (dto as any).displayAuthorName || null : null,
+        displayAuthorName: author?.role === 'SUPERADMIN' ? sanitizeText((dto as any).displayAuthorName || '') || null : null,
         enableAudio: dto.enableAudio || false,
-        metaTitle: dto.metaTitle,
-        metaDesc: dto.metaDesc,
+        metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : undefined,
+        metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : undefined,
       },
     });
 
     // Create Detail based on Type
     if (dto.type === 'QNA' && dto.qnaDetail) {
+      const sanitized = sanitizeJsonDeep(dto.qnaDetail);
       await this.prisma.qnaDetail.create({
         data: {
           contentId: content.id,
-          question: dto.qnaDetail.question || dto.title,
-          answerQuick: dto.qnaDetail.answerQuick || '',
-          dialogBlocks: dto.qnaDetail.dialogBlocks || [],
-          dalilBlocks: dto.qnaDetail.dalilBlocks || [],
-          analogyBlocks: dto.qnaDetail.analogyBlocks || [],
-          tipsBlocks: dto.qnaDetail.tipsBlocks || [],
+          question: sanitized.question || sanitizeText(dto.title),
+          answerQuick: sanitized.answerQuick || '',
+          dialogBlocks: sanitized.dialogBlocks || [],
+          dalilBlocks: sanitized.dalilBlocks || [],
+          analogyBlocks: sanitized.analogyBlocks || [],
+          tipsBlocks: sanitized.tipsBlocks || [],
         },
       });
     } else if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN') && dto.articleDetail) {
+      const sanitized = sanitizeJsonDeep(dto.articleDetail);
       await this.prisma.articleDetail.create({
         data: {
           contentId: content.id,
-          coverUrl: dto.articleDetail.coverUrl,
-          blocks: dto.articleDetail.blocks || [],
+          coverUrl: sanitized.coverUrl,
+          blocks: sanitized.blocks || [],
         },
       });
     }
@@ -185,20 +188,20 @@ export class EditorService {
     // Update main content
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
     const updateData: any = {
-        title: dto.title,
-        description: dto.description,
+        title: dto.title ? sanitizeText(dto.title) : undefined,
+        description: dto.description ? sanitizeText(dto.description) : dto.description,
         type: dto.type,
         ageGroups: dto.ageGroups || [],
         nodeId: dto.nodeId || null,
         enableAudio: dto.enableAudio || false,
-        metaTitle: dto.metaTitle,
-        metaDesc: dto.metaDesc,
+        metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : dto.metaTitle,
+        metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : dto.metaDesc,
         // Reset to draft if was in revision
         status: existing.status === 'REVISION' ? 'DRAFT' : existing.status,
     };
     // Only SuperAdmin can set displayAuthorName
     if (user?.role === 'SUPERADMIN' && (dto as any).displayAuthorName !== undefined) {
-      updateData.displayAuthorName = (dto as any).displayAuthorName || null;
+      updateData.displayAuthorName = sanitizeText((dto as any).displayAuthorName || '') || null;
     }
     const updated = await this.prisma.contentItem.update({
       where: { id: contentId },
@@ -207,40 +210,42 @@ export class EditorService {
 
     // Update QnA Detail
     if (dto.type === 'QNA' && dto.qnaDetail) {
+      const sanitized = sanitizeJsonDeep(dto.qnaDetail);
       await this.prisma.qnaDetail.upsert({
         where: { contentId },
         update: {
-          question: dto.qnaDetail.question,
-          answerQuick: dto.qnaDetail.answerQuick,
-          dialogBlocks: dto.qnaDetail.dialogBlocks || [],
-          dalilBlocks: dto.qnaDetail.dalilBlocks || [],
-          analogyBlocks: dto.qnaDetail.analogyBlocks || [],
-          tipsBlocks: dto.qnaDetail.tipsBlocks || [],
+          question: sanitized.question,
+          answerQuick: sanitized.answerQuick,
+          dialogBlocks: sanitized.dialogBlocks || [],
+          dalilBlocks: sanitized.dalilBlocks || [],
+          analogyBlocks: sanitized.analogyBlocks || [],
+          tipsBlocks: sanitized.tipsBlocks || [],
         },
         create: {
           contentId,
-          question: dto.qnaDetail.question || dto.title,
-          answerQuick: dto.qnaDetail.answerQuick || '',
-          dialogBlocks: dto.qnaDetail.dialogBlocks || [],
-          dalilBlocks: dto.qnaDetail.dalilBlocks || [],
-          analogyBlocks: dto.qnaDetail.analogyBlocks || [],
-          tipsBlocks: dto.qnaDetail.tipsBlocks || [],
+          question: sanitized.question || sanitizeText(dto.title || ''),
+          answerQuick: sanitized.answerQuick || '',
+          dialogBlocks: sanitized.dialogBlocks || [],
+          dalilBlocks: sanitized.dalilBlocks || [],
+          analogyBlocks: sanitized.analogyBlocks || [],
+          tipsBlocks: sanitized.tipsBlocks || [],
         },
       });
     }
 
     // Update Article Detail
     if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN') && dto.articleDetail) {
+      const sanitized = sanitizeJsonDeep(dto.articleDetail);
       await this.prisma.articleDetail.upsert({
         where: { contentId },
         update: {
-          coverUrl: dto.articleDetail.coverUrl,
-          blocks: dto.articleDetail.blocks || [],
+          coverUrl: sanitized.coverUrl,
+          blocks: sanitized.blocks || [],
         },
         create: {
           contentId,
-          coverUrl: dto.articleDetail.coverUrl,
-          blocks: dto.articleDetail.blocks || [],
+          coverUrl: sanitized.coverUrl,
+          blocks: sanitized.blocks || [],
         },
       });
     }
