@@ -46,7 +46,7 @@ B=$(curl -s -w "\n%{http_code}" "$API/superadmin/withdrawals?page=1" -H "Authori
 
 # Deduct points (test with author user)
 if [ -n "$AID" ]; then
-  B=$(curl -s -w "\n%{http_code}" -X POST "$API/superadmin/users/$AID/deduct-points" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"amount\":0,\"reason\":\"E2E test deduct\"}"); H=$(echo "$B"|tail -1); chk2 "Deduct points" "$H" "200" "201"
+  B=$(curl -s -w "\n%{http_code}" -X POST "$API/superadmin/users/$AID/deduct-points" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"amount\":1,\"reason\":\"E2E test deduct\"}"); H=$(echo "$B"|tail -1); chk2 "Deduct points" "$H" "200" "201"
 fi
 
 # ═══ SUPERADMIN SETTINGS ═══

@@ -21,9 +21,11 @@ echo -e "\n📦 HEALTH"
 B=$(curl -s -w "\n%{http_code}" "$API/health"); H=$(echo "$B"|tail -1); B=$(echo "$B"|sed '$d')
 chk "GET /health" "$H" "200"; has "Health DB connected" "$B" "connected"
 
-# ═══ AUTH ═══
+# ═══ AUTH (login count: 1=login, 2=re-login, 3=re-login-after-logout, 4=author = 4 total, under limit of 5) ═══
 echo -e "\n📦 AUTH"
 rm -f $CJ $CJ2
+
+# Login #1
 B=$(curl -s -c $CJ -w "\n%{http_code}" -X POST "$API/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"$SA_EMAIL\",\"password\":\"$SA_PASS\"}")
 H=$(echo "$B"|tail -1); B=$(echo "$B"|sed '$d'); chk "Login SuperAdmin" "$H" "200"
 SA=$(echo "$B"|grep -o '"accessToken":"[^"]*"'|cut -d'"' -f4); has "Login returns user" "$B" "user"
@@ -33,6 +35,7 @@ B=$(curl -s -b $CJ -c $CJ -w "\n%{http_code}" -X POST "$API/auth/refresh" -H "Co
 H=$(echo "$B"|tail -1); B=$(echo "$B"|sed '$d'); chk "Refresh token rotation" "$H" "200"
 NT=$(echo "$B"|grep -o '"accessToken":"[^"]*"'|cut -d'"' -f4); [ -n "$NT" ] && SA="$NT"
 
+# Login #2
 sleep 1
 B=$(curl -s -c $CJ -w "\n%{http_code}" -X POST "$API/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"$SA_EMAIL\",\"password\":\"$SA_PASS\"}")
 H=$(echo "$B"|tail -1); B=$(echo "$B"|sed '$d'); chk "Re-login multi-session" "$H" "200"
@@ -42,21 +45,17 @@ NT=$(echo "$B"|grep -o '"accessToken":"[^"]*"'|cut -d'"' -f4); [ -n "$NT" ] && S
 B=$(curl -s -b $CJ -w "\n%{http_code}" -X POST "$API/auth/logout" -H "Authorization: Bearer $SA")
 H=$(echo "$B"|tail -1); chk "Logout" "$H" "200"
 
-# Re-login after logout
+# Login #3
 B=$(curl -s -c $CJ -w "\n%{http_code}" -X POST "$API/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"$SA_EMAIL\",\"password\":\"$SA_PASS\"}")
 H=$(echo "$B"|tail -1); B=$(echo "$B"|sed '$d')
 SA=$(echo "$B"|grep -o '"accessToken":"[^"]*"'|cut -d'"' -f4); chk "Re-login after logout" "$H" "200"
 
-# Change password (change then revert)
+# Change password — use same access token to revert (no extra login needed)
 B=$(curl -s -w "\n%{http_code}" -X POST "$API/auth/change-password" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"currentPassword\":\"$SA_PASS\",\"newPassword\":\"TempPass999!\"}")
 H=$(echo "$B"|tail -1); chk "Change password" "$H" "200"
-# Revert
-B=$(curl -s -c $CJ -w "\n%{http_code}" -X POST "$API/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"$SA_EMAIL\",\"password\":\"TempPass999!\"}")
-SA=$(echo "$B"|sed '$d'|grep -o '"accessToken":"[^"]*"'|cut -d'"' -f4)
-curl -s -o /dev/null -X POST "$API/auth/change-password" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"currentPassword\":\"TempPass999!\",\"newPassword\":\"$SA_PASS\"}"
-B=$(curl -s -c $CJ -w "\n%{http_code}" -X POST "$API/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"$SA_EMAIL\",\"password\":\"$SA_PASS\"}")
-SA=$(echo "$B"|sed '$d'|grep -o '"accessToken":"[^"]*"'|cut -d'"' -f4)
-chk "Password reverted" "$(echo $B|tail -c 4)" "200"
+# Revert immediately with same token (access token still valid for 15min)
+B=$(curl -s -w "\n%{http_code}" -X POST "$API/auth/change-password" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"currentPassword\":\"TempPass999!\",\"newPassword\":\"$SA_PASS\"}")
+H=$(echo "$B"|tail -1); chk "Revert password" "$H" "200"
 
 # ═══ PUBLIC CONTENT ═══
 echo -e "\n📦 PUBLIC CONTENT"
@@ -64,7 +63,6 @@ for EP in "content/tree" "content/list" "content/tags" "content/search?q=test" "
   H=$(curl -s -o /dev/null -w "%{http_code}" "$API/$EP"); chk "GET /$EP" "$H" "200"
 done
 
-# Content detail (get first published slug)
 SLUG=$(curl -s "$API/content/list?limit=1"|grep -o '"slug":"[^"]*"'|head -1|cut -d'"' -f4)
 if [ -n "$SLUG" ]; then
   H=$(curl -s -o /dev/null -w "%{http_code}" "$API/content/$SLUG"); chk "GET /content/:slug detail" "$H" "200"
@@ -72,12 +70,11 @@ else
   f "GET /content/:slug" "no published content"
 fi
 
-# Public feedback
 B=$(curl -s -w "\n%{http_code}" -X POST "$API/content/feedback" -H "Content-Type: application/json" -d "{\"name\":\"E2E Tester\",\"type\":\"SARAN\",\"message\":\"Test feedback from E2E\"}")
 H=$(echo "$B"|tail -1); chk2 "POST /content/feedback" "$H" "200" "201"
 
-# Public settings
-H=$(curl -s -o /dev/null -w "%{http_code}" "$API/admin/settings/public"); chk "GET /admin/settings/public" "$H" "200"
+# Public settings (requires auth — inside AdminInboxController)
+H=$(curl -s -o /dev/null -w "%{http_code}" "$API/admin/settings/public" -H "Authorization: Bearer $SA"); chk "GET /admin/settings/public" "$H" "200"
 
 # ═══ USER MANAGEMENT ═══
 echo -e "\n📦 USER MANAGEMENT"
@@ -92,16 +89,13 @@ H=$(echo "$B"|tail -1); chk "List users" "$H" "200"
 if [ -n "$AID" ]; then
   B=$(curl -s -w "\n%{http_code}" -X PUT "$API/admin/users/$AID" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"name\":\"E2E Author Updated\"}")
   H=$(echo "$B"|tail -1); chk "Update user" "$H" "200"
-
   B=$(curl -s -w "\n%{http_code}" -X PUT "$API/admin/users/$AID/reset-password" -H "Authorization: Bearer $SA")
   H=$(echo "$B"|tail -1); chk "Reset password" "$H" "200"
-  NP=$(echo "$B"|sed '$d'|grep -o '"newPassword":"[^"]*"'|cut -d'"' -f4)
-
   B=$(curl -s -w "\n%{http_code}" -X PUT "$API/admin/users/$AID/set-password" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"password\":\"Test1234!\"}")
   H=$(echo "$B"|tail -1); chk "Set password" "$H" "200"
 fi
 
-# Login as Author
+# Login #4 (Author)
 B=$(curl -s -c $CJ2 -w "\n%{http_code}" -X POST "$API/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"$AE\",\"password\":\"Test1234!\"}")
 H=$(echo "$B"|tail -1); B=$(echo "$B"|sed '$d'); chk "Login Author" "$H" "200"
 AT=$(echo "$B"|grep -o '"accessToken":"[^"]*"'|cut -d'"' -f4)
@@ -110,10 +104,8 @@ AT=$(echo "$B"|grep -o '"accessToken":"[^"]*"'|cut -d'"' -f4)
 echo -e "\n📦 PROFILE"
 B=$(curl -s -w "\n%{http_code}" "$API/admin/profile" -H "Authorization: Bearer $AT")
 H=$(echo "$B"|tail -1); chk "GET profile" "$H" "200"
-
 B=$(curl -s -w "\n%{http_code}" -X PUT "$API/admin/profile" -H "Authorization: Bearer $AT" -H "Content-Type: application/json" -d "{\"name\":\"E2E Updated\",\"bio\":\"Test bio\"}")
 H=$(echo "$B"|tail -1); chk "PUT profile" "$H" "200"
-
 B=$(curl -s -w "\n%{http_code}" -X PUT "$API/admin/profile/bank" -H "Authorization: Bearer $AT" -H "Content-Type: application/json" -d "{\"bankName\":\"BCA\",\"bankAccount\":\"1234567890\",\"bankHolder\":\"E2E Test\"}")
 H=$(echo "$B"|tail -1); chk "PUT profile/bank" "$H" "200"
 
@@ -142,7 +134,6 @@ B=$(curl -s -w "\n%{http_code}" "$API/editor/tags" -H "Authorization: Bearer $AT
 echo -e "\n📦 ADMIN"
 B=$(curl -s -w "\n%{http_code}" "$API/admin/dashboard/stats" -H "Authorization: Bearer $AT"); H=$(echo "$B"|tail -1); B=$(echo "$B"|sed '$d')
 chk "Dashboard AUTHOR" "$H" "200"; has "Dashboard role" "$B" "role"
-
 B=$(curl -s -w "\n%{http_code}" "$API/admin/dashboard/stats" -H "Authorization: Bearer $SA"); H=$(echo "$B"|tail -1); chk "Dashboard SA" "$H" "200"
 B=$(curl -s -w "\n%{http_code}" "$API/admin/review?page=1" -H "Authorization: Bearer $SA"); H=$(echo "$B"|tail -1); chk "Review queue" "$H" "200"
 B=$(curl -s -w "\n%{http_code}" "$API/admin/contents?page=1" -H "Authorization: Bearer $SA"); H=$(echo "$B"|tail -1); chk "All contents" "$H" "200"
@@ -157,14 +148,12 @@ NID=$(echo "$B"|grep -o '"id":"[^"]*"'|head -1|cut -d'"' -f4)
   B=$(curl -s -w "\n%{http_code}" -X DELETE "$API/admin/structure/$NID" -H "Authorization: Bearer $SA"); H=$(echo "$B"|tail -1); chk "Delete node" "$H" "200"
 }
 
-# Review: approve, reject (re-submit first), revision
+# Review: approve, reject, revision, unpublish
 [ -n "$QID" ] && {
   B=$(curl -s -w "\n%{http_code}" -X POST "$API/admin/review/$QID/approve" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"notes\":\"ok\"}"); H=$(echo "$B"|tail -1); chk2 "Approve" "$H" "200" "201"
   B=$(curl -s -w "\n%{http_code}" -X POST "$API/admin/review/$QID/unpublish" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"notes\":\"test\"}"); H=$(echo "$B"|tail -1); chk2 "Unpublish" "$H" "200" "201"
-  # Re-submit for reject test
   curl -s -o /dev/null -X POST "$API/editor/content/$QID/submit" -H "Authorization: Bearer $AT"
   B=$(curl -s -w "\n%{http_code}" -X POST "$API/admin/review/$QID/reject" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"notes\":\"rejected\"}"); H=$(echo "$B"|tail -1); chk2 "Reject" "$H" "200" "201"
-  # Re-submit for revision test
   curl -s -o /dev/null -X POST "$API/editor/content/$QID/submit" -H "Authorization: Bearer $AT"
   B=$(curl -s -w "\n%{http_code}" -X POST "$API/admin/review/$QID/revision" -H "Authorization: Bearer $SA" -H "Content-Type: application/json" -d "{\"notes\":\"revise\"}"); H=$(echo "$B"|tail -1); chk2 "Revision" "$H" "200" "201"
 }
