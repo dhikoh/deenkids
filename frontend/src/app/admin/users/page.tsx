@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { Users, Shield, Edit2, Trash2, KeyRound, UserPlus, X, Eye, EyeOff, Copy, Lock } from "lucide-react";
+import { Users, Shield, Edit2, Trash2, KeyRound, UserPlus, X, Eye, EyeOff, Copy, Lock, MinusCircle } from "lucide-react";
 import { fetchUsersList, apiFetch, authHeaders, API_BASE_URL } from "@/lib/api";
 const authH = authHeaders;
 
@@ -18,7 +18,7 @@ const roleDesc: Record<string, string> = {
   SUPERADMIN: "Akses penuh seluruh sistem",
 };
 
-type ModalType = "create" | "edit" | "reset" | "setpw" | "delete" | null;
+type ModalType = "create" | "edit" | "reset" | "setpw" | "delete" | "deduct" | null;
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -36,6 +36,8 @@ export default function UsersPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [generatedPw, setGeneratedPw] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deductAmount, setDeductAmount] = useState("");
+  const [deductReason, setDeductReason] = useState("");
 
   const loadUsers = async () => {
     try {
@@ -178,6 +180,7 @@ export default function UsersPage() {
                         <button onClick={() => openEdit(u)} className="p-2 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100 transition-colors" title="Edit"><Edit2 size={15} /></button>
                         <button onClick={() => openReset(u)} className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors" title="Reset Password"><KeyRound size={15} /></button>
                         {callerRole === "SUPERADMIN" && <button onClick={() => openSetPw(u)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors" title="Set Password"><Lock size={15} /></button>}
+                        {callerRole === "SUPERADMIN" && u.role === "AUTHOR" && u.points > 0 && <button onClick={() => { setTargetUser(u); setDeductAmount(""); setDeductReason(""); setModal("deduct"); }} className="p-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors" title="Kurangi Poin"><MinusCircle size={15} /></button>}
                         <button onClick={() => openDelete(u)} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors" title="Hapus"><Trash2 size={15} /></button>
                       </div>
                     ) : (
@@ -316,6 +319,45 @@ export default function UsersPage() {
                 <div className="flex gap-2 p-4 border-t border-slate-100">
                   <button onClick={closeModal} className="flex-1 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">Batal</button>
                   <button onClick={handleDelete} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 disabled:opacity-50">{saving ? "Menghapus..." : "Hapus Permanen"}</button>
+                </div>
+              </>
+            )}
+
+            {/* DEDUCT POINTS */}
+            {modal === "deduct" && (
+              <>
+                <div className="bg-gradient-to-r from-orange-500 to-amber-600 p-5 text-white flex items-center gap-3">
+                  <MinusCircle size={22} />
+                  <h3 className="text-lg font-extrabold">Kurangi Poin</h3>
+                </div>
+                <div className="p-6 space-y-4">
+                  <p className="text-sm text-slate-600">Kurangi poin dari <span className="font-bold text-slate-800">{targetUser?.name}</span> (saldo: <span className="font-bold text-emerald-600">{targetUser?.points} poin</span>)</p>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Jumlah Poin</label>
+                    <input type="number" value={deductAmount} onChange={e => setDeductAmount(e.target.value)} min={1} max={targetUser?.points || 0} className="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none" placeholder="Masukkan jumlah poin" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Alasan <span className="text-xs text-slate-400">(min. 5 karakter)</span></label>
+                    <textarea value={deductReason} onChange={e => setDeductReason(e.target.value)} className="w-full border border-slate-300 rounded-xl p-2.5 min-h-[80px] focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none resize-none" placeholder="Alasan pengurangan poin..." />
+                  </div>
+                  <p className="text-xs text-amber-600 bg-amber-50 p-3 rounded-lg">⚠️ Author akan menerima notifikasi tentang pengurangan poin ini.</p>
+                </div>
+                <div className="flex gap-2 p-4 border-t border-slate-100">
+                  <button onClick={closeModal} className="flex-1 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">Batal</button>
+                  <button onClick={async () => {
+                    if (!deductAmount || parseInt(deductAmount) <= 0) return toast.error("Masukkan jumlah poin yang valid");
+                    if (!deductReason || deductReason.length < 5) return toast.error("Alasan wajib diisi (min. 5 karakter)");
+                    setSaving(true);
+                    try {
+                      const token = Cookies.get("access_token");
+                      const res = await apiFetch(`${API_BASE_URL}/superadmin/users/${targetUser.id}/deduct-points`, {
+                        method: "POST", headers: authH(token || ""),
+                        body: JSON.stringify({ amount: parseInt(deductAmount), reason: deductReason }),
+                      });
+                      toast.success(res.message); closeModal(); loadUsers();
+                    } catch (e: any) { toast.error(e.message); }
+                    finally { setSaving(false); }
+                  }} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-orange-600 text-white font-bold hover:bg-orange-700 disabled:opacity-50">{saving ? "Memproses..." : "Kurangi Poin"}</button>
                 </div>
               </>
             )}

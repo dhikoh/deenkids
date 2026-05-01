@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RewardService } from '../reward/reward.service';
 import { NotificationService } from '../notification/notification.service';
@@ -7,6 +7,7 @@ import slugify from 'slugify';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
   constructor(private prisma: PrismaService, private rewardService: RewardService, private notificationService: NotificationService) {}
 
   // ── Dashboard Stats ──
@@ -134,16 +135,21 @@ export class AdminService {
       }),
     ]);
 
-    // Award points to author when content is published
+    // Award points to author when content is published (prevent double reward)
     if (action === 'APPROVED') {
-      const settings = await this.rewardService.getRewardSettings();
-      await this.rewardService.addPoints(
-        content.authorId,
-        settings.pointPerApproved,
-        PointType.EARNED,
-        `Konten dipublikasikan: ${content.title}`,
-        contentId,
-      );
+      const alreadyRewarded = await this.rewardService.hasRewardedForContent(contentId);
+      if (!alreadyRewarded) {
+        const settings = await this.rewardService.getRewardSettings();
+        await this.rewardService.addPoints(
+          content.authorId,
+          settings.pointPerApproved,
+          PointType.EARNED,
+          `Konten dipublikasikan: ${content.title}`,
+          contentId,
+        );
+      } else {
+        this.logger.log(`Content ${contentId} already rewarded, skipping double reward`);
+      }
     }
 
     // Notify author about review result
@@ -310,13 +316,16 @@ export class AdminService {
       }),
     ]);
 
+    // Deduct points that were awarded when this content was published
+    await this.rewardService.deductPointsForContent(contentId, content.authorId, content.title);
+
     // Notify author
     await this.notificationService.createNotification({
       userId: content.authorId,
       actorId: reviewerId,
       type: 'REVISION_NEEDED',
       title: 'Konten Di-unpublish untuk Revisi ✏️',
-      message: `Konten "${content.title}" telah ditarik dari publikasi dan perlu direvisi.${notes ? ' Catatan: ' + notes : ''}`,
+      message: `Konten "${content.title}" telah ditarik dari publikasi dan perlu direvisi. Poin terkait telah disesuaikan.${notes ? ' Catatan: ' + notes : ''}`,
       linkUrl: '/admin/my-contents',
     });
 

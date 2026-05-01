@@ -10,11 +10,18 @@ export class RewardService {
   constructor(private prisma: PrismaService, private notificationService: NotificationService) {}
 
   async addPoints(userId: string, amount: number, type: PointType, reason: string, contentId?: string) {
-    await this.prisma.$transaction([
-      this.prisma.pointLedger.create({ data: { userId, amount, type, reason, contentId } }),
-      this.prisma.user.update({ where: { id: userId }, data: { points: { increment: amount } } }),
-    ]);
-    this.logger.log(`+${amount} poin untuk user ${userId}: ${reason}`);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.pointLedger.create({ data: { userId, amount, type, reason, contentId } });
+      if (amount < 0) {
+        // Prevent negative balance: clamp to 0
+        const user = await tx.user.findUnique({ where: { id: userId }, select: { points: true } });
+        const newBalance = Math.max(0, (user?.points || 0) + amount);
+        await tx.user.update({ where: { id: userId }, data: { points: newBalance } });
+      } else {
+        await tx.user.update({ where: { id: userId }, data: { points: { increment: amount } } });
+      }
+    });
+    this.logger.log(`${amount >= 0 ? '+' : ''}${amount} poin untuk user ${userId}: ${reason}`);
   }
 
   async getBalance(userId: string) {
@@ -77,31 +84,46 @@ export class RewardService {
       throw new Error(`Saldo tidak cukup. Saldo: ${user.points} poin`);
     }
 
-    // Anti-spam: block if there's already a PENDING withdrawal
-    const existingPending = await this.prisma.withdrawalRequest.findFirst({
-      where: { userId, status: 'PENDING' },
+    // Anti-spam: block if there's already a PENDING or APPROVED withdrawal
+    const existingActive = await this.prisma.withdrawalRequest.findFirst({
+      where: { userId, status: { in: ['PENDING', 'APPROVED'] } },
     });
-    if (existingPending) {
+    if (existingActive) {
       throw new Error('Anda masih memiliki permintaan withdrawal yang sedang diproses. Tunggu hingga selesai sebelum mengajukan lagi.');
     }
 
     const rupiahAmount = pointsAmount * settings.pointToRupiah;
 
-    const request = await this.prisma.withdrawalRequest.create({
-      data: { userId, pointsAmount, rupiahAmount, bankName: user.bankName, bankAccount: user.bankAccount, bankHolder: user.bankHolder },
+    // Atomic transaction: create request + deduct points in one go to prevent race condition
+    const request = await this.prisma.$transaction(async (tx) => {
+      // Race condition guard: conditional update ensures saldo is still sufficient
+      const updated = await tx.user.updateMany({
+        where: { id: userId, points: { gte: pointsAmount } },
+        data: { points: { decrement: pointsAmount } },
+      });
+      if (updated.count === 0) {
+        throw new Error('Saldo tidak cukup atau sedang diproses request lain.');
+      }
+
+      const req = await tx.withdrawalRequest.create({
+        data: { userId, pointsAmount, rupiahAmount, bankName: user.bankName, bankAccount: user.bankAccount, bankHolder: user.bankHolder },
+      });
+
+      await tx.pointLedger.create({
+        data: { userId, amount: -pointsAmount, type: PointType.WITHDRAWAL, reason: `Withdrawal request #${req.id.slice(0, 8)}` },
+      });
+
+      return req;
     });
 
-    // Deduct points immediately
-    await this.addPoints(userId, -pointsAmount, PointType.WITHDRAWAL, `Withdrawal request #${request.id.slice(0, 8)}`);
-
-    // Notify superadmins
+    // Notify superadmins (outside transaction — non-critical)
     await this.notificationService.notifySuperAdmins(
       userId,
       NotificationType.WITHDRAWAL_REQUESTED,
       'Permintaan Withdrawal Baru',
       `${user.name} meminta withdrawal ${pointsAmount} poin (Rp ${rupiahAmount.toLocaleString('id-ID')})`,
       '/admin/withdrawal-inbox',
-    );
+    ).catch((err) => this.logger.warn(`Notifikasi withdrawal gagal: ${err.message}`));
 
     return { data: request, message: 'Permintaan withdrawal berhasil dikirim' };
   }
@@ -188,5 +210,63 @@ export class RewardService {
       });
     }
     return { message: 'Pengaturan reward diperbarui' };
+  }
+
+  // ── Helper: Check if content has already been rewarded ──
+  async hasRewardedForContent(contentId: string): Promise<boolean> {
+    const existing = await this.prisma.pointLedger.findFirst({
+      where: { contentId, type: PointType.EARNED, amount: { gt: 0 } },
+    });
+    return !!existing;
+  }
+
+  // ── Deduct points when content is unpublished ──
+  async deductPointsForContent(contentId: string, authorId: string, contentTitle: string) {
+    // Find the original reward for this content
+    const reward = await this.prisma.pointLedger.findFirst({
+      where: { contentId, type: PointType.EARNED, amount: { gt: 0 } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!reward) {
+      this.logger.log(`No reward found for content ${contentId}, skipping deduction`);
+      return;
+    }
+    // Deduct the same amount that was originally awarded
+    await this.addPoints(
+      authorId,
+      -reward.amount,
+      PointType.DEDUCTION,
+      `Konten di-unpublish: ${contentTitle}`,
+      contentId,
+    );
+    this.logger.log(`Deducted ${reward.amount} poin from user ${authorId} for unpublished content: ${contentTitle}`);
+  }
+
+  // ── Admin manual penalty ──
+  async adminDeductPoints(targetUserId: string, amount: number, reason: string, adminId: string) {
+    if (amount <= 0) throw new Error('Jumlah poin harus lebih dari 0');
+    if (!reason || reason.length < 5) throw new Error('Alasan wajib diisi (min. 5 karakter)');
+
+    const target = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!target) throw new Error('User tidak ditemukan');
+
+    await this.addPoints(
+      targetUserId,
+      -amount,
+      PointType.DEDUCTION,
+      `Penalty oleh Admin: ${reason}`,
+    );
+
+    // Notify the user
+    await this.notificationService.createNotification({
+      userId: targetUserId,
+      actorId: adminId,
+      type: NotificationType.POINTS_EARNED,
+      title: 'Poin Dikurangi ⚠️',
+      message: `${amount} poin dikurangi. Alasan: ${reason}`,
+      linkUrl: '/admin/rewards',
+    });
+
+    return { message: `${amount} poin berhasil dikurangi dari ${target.name}` };
   }
 }

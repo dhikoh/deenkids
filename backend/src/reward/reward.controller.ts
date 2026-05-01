@@ -72,4 +72,11 @@ export class RewardController {
   async updateSettings(@Body() body: Record<string, string>) {
     return this.rewardService.updateRewardSettings(body);
   }
+
+  @Post('superadmin/users/:id/deduct-points')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Manually deduct points from a user (admin penalty)' })
+  async deductPoints(@Req() req: any, @Param('id') id: string, @Body() body: { amount: number; reason: string }) {
+    return this.rewardService.adminDeductPoints(id, body.amount, body.reason, req.user.id);
+  }
 }
