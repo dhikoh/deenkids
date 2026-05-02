@@ -26,6 +26,7 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/',
     });
 
     res.cookie('refresh_token', refreshToken, {
@@ -33,19 +34,22 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
     });
 
-    return { message: 'Login berhasil', user, accessToken };
+    // Return refreshToken in body for cross-origin setups (frontend on different subdomain)
+    return { message: 'Login berhasil', user, accessToken, refreshToken };
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Rotate refresh token & issue new access token' })
-  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const oldRefreshToken = req.cookies['refresh_token'];
+  async refresh(@Req() req: Request, @Body() body: { refreshToken?: string }, @Res({ passthrough: true }) res: Response) {
+    // Accept refresh token from body (cross-origin) or cookie (same-origin)
+    const oldRefreshToken = body?.refreshToken || req.cookies['refresh_token'];
     if (!oldRefreshToken) {
-      res.clearCookie('access_token');
-      res.clearCookie('refresh_token');
+      res.clearCookie('access_token', { path: '/' });
+      res.clearCookie('refresh_token', { path: '/' });
       return { message: 'No refresh token provided', error: true };
     }
 
@@ -57,6 +61,7 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 15 * 60 * 1000,
+      path: '/',
     });
 
     res.cookie('refresh_token', refreshToken, {
@@ -64,25 +69,28 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
     });
 
-    return { message: 'Token refreshed', user, accessToken };
+    // Return refreshToken in body for cross-origin setups
+    return { message: 'Token refreshed', user, accessToken, refreshToken };
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout user & clear cookies' })
-  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Body() body: { refreshToken?: string }, @Res({ passthrough: true }) res: Response) {
     const user = req.user as any;
-    const refreshToken = req.cookies['refresh_token'];
+    // Accept refresh token from body (cross-origin) or cookie (same-origin)
+    const refreshToken = body?.refreshToken || req.cookies['refresh_token'];
 
     if (refreshToken) {
       await this.authService.logout(user.id, refreshToken);
     }
 
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
+    res.clearCookie('access_token', { path: '/' });
+    res.clearCookie('refresh_token', { path: '/' });
 
     return { message: 'Logout berhasil' };
   }

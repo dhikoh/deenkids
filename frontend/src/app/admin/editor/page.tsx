@@ -226,7 +226,7 @@ function EditorContent() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (targetStatus?: string) => {
     if (!title) return toast.error("Judul wajib diisi");
     if (!ageGroups || ageGroups.length === 0) return toast.error("Kelompok usia wajib dipilih minimal satu");
     if (contentType === "PEMBELAJARAN" && !nodeId) return toast.error("Kategori pembelajaran wajib dipilih");
@@ -238,6 +238,10 @@ function EditorContent() {
         nodeId: contentType === "PEMBELAJARAN" ? nodeId : (nodeId || undefined),
         displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
       };
+      // SuperAdmin can set status directly (e.g., PUBLISHED)
+      if (isSuperAdmin && targetStatus) {
+        payload.status = targetStatus;
+      }
       if (contentType !== "QNA") {
         payload.articleDetail = { blocks: blocks.map(b => ({ type: b.type, ...b.data })) };
       }
@@ -258,10 +262,18 @@ function EditorContent() {
       }
       if (editId) {
         await apiFetch(`${API_BASE_URL}/editor/content/${editId}`, { method: "PUT", headers: authHeaders(token || ""), body: JSON.stringify(payload) });
-        toast.success("Konten berhasil diperbarui!");
+        if (targetStatus === 'PUBLISHED') {
+          toast.success("Konten berhasil diterbitkan!");
+        } else {
+          toast.success("Konten berhasil diperbarui!");
+        }
       } else {
         const res = await createContent(payload, token || "");
-        toast.success("Draft berhasil disimpan!");
+        if (targetStatus === 'PUBLISHED') {
+          toast.success("Konten berhasil dibuat & diterbitkan!");
+        } else {
+          toast.success("Draft berhasil disimpan!");
+        }
         localStorage.removeItem(AUTO_SAVE_KEY);
         // Redirect ke edit mode untuk konten yang baru dibuat
         if (res?.data?.id) {
@@ -407,9 +419,14 @@ function EditorContent() {
           }} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2">
             <Eye size={18} /> Preview
           </button>
-          <button onClick={handleSave} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-70">
+          <button onClick={() => handleSave()} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-70">
             <Save size={18} /> {isSaving ? "Menyimpan..." : "Simpan Draft"}
           </button>
+          {isSuperAdmin && (
+            <button onClick={() => handleSave('PUBLISHED')} disabled={isSaving} className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-70">
+              <Sparkles size={18} /> Terbitkan Langsung
+            </button>
+          )}
         </div>
       </div>
 
@@ -533,9 +550,14 @@ function EditorContent() {
               <li className="flex items-center gap-2 text-sm text-slate-600"><CheckCircle size={16} className="text-slate-300" /> Blok: {blocks.length} buah</li>
             </ul>
             <div className="space-y-2">
-              <button onClick={handleSave} disabled={isSaving} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-70">
+              <button onClick={() => handleSave()} disabled={isSaving} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-70">
                 <Save size={16} /> {isSaving ? "Menyimpan..." : "Simpan Draft"}
               </button>
+              {isSuperAdmin && (
+                <button onClick={() => handleSave('PUBLISHED')} disabled={isSaving} className="w-full bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-70">
+                  <Sparkles size={16} /> Terbitkan Langsung
+                </button>
+              )}
               {editId && (
                 <button onClick={handleSubmitReview} className="w-full bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2">
                   Ajukan Review <ArrowRight size={16} />

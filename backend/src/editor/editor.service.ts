@@ -1,14 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiCheckerService } from './ai-checker.service';
 import { RewardService } from '../reward/reward.service';
 import { NotificationService } from '../notification/notification.service';
 import { CreateContentDto, UpdateContentDto } from './dto/editor.dto';
 import { sanitizeText, sanitizeJsonDeep } from '../common/utils/sanitize.util';
+import { PointType } from '@prisma/client';
 import slugify from 'slugify';
 
 @Injectable()
 export class EditorService {
+  private readonly logger = new Logger(EditorService.name);
   constructor(
     private prisma: PrismaService,
     private aiChecker: AiCheckerService,
@@ -56,8 +58,23 @@ export class EditorService {
         enableAudio: dto.enableAudio || false,
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : undefined,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : undefined,
+        // Set publishedAt if SuperAdmin directly creates as PUBLISHED
+        ...(forcedStatus === 'PUBLISHED' && { publishedAt: new Date() }),
       },
     });
+
+    // Award points if SuperAdmin directly published on creation
+    if (forcedStatus === 'PUBLISHED') {
+      try {
+        const settings = await this.rewardService.getRewardSettings();
+        await this.rewardService.addPoints(
+          authorId, settings.pointPerApproved, PointType.EARNED,
+          `Konten dipublikasikan: ${content.title}`, content.id,
+        );
+      } catch (err) {
+        this.logger.warn(`Reward on direct publish failed (non-fatal): ${err.message}`);
+      }
+    }
 
     // Create Detail based on Type
     if (dto.type === 'QNA' && dto.qnaDetail) {
@@ -187,6 +204,18 @@ export class EditorService {
 
     // Update main content
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+
+    // Determine new status:
+    // - SuperAdmin can explicitly set status (e.g., PUBLISHED) via dto.status
+    // - REVISION → DRAFT reset for non-SuperAdmin
+    // - Otherwise keep existing status
+    let newStatus = existing.status;
+    if (user?.role === 'SUPERADMIN' && dto.status) {
+      newStatus = dto.status;
+    } else if (existing.status === 'REVISION') {
+      newStatus = 'DRAFT';
+    }
+
     const updateData: any = {
         title: dto.title ? sanitizeText(dto.title) : undefined,
         description: dto.description ? sanitizeText(dto.description) : dto.description,
@@ -196,9 +225,14 @@ export class EditorService {
         enableAudio: dto.enableAudio || false,
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : dto.metaTitle,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : dto.metaDesc,
-        // Reset to draft if was in revision
-        status: existing.status === 'REVISION' ? 'DRAFT' : existing.status,
+        status: newStatus,
     };
+
+    // Set publishedAt when status changes to PUBLISHED
+    if (newStatus === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
+      updateData.publishedAt = new Date();
+    }
+
     // Only SuperAdmin can set displayAuthorName
     if (user?.role === 'SUPERADMIN' && (dto as any).displayAuthorName !== undefined) {
       updateData.displayAuthorName = sanitizeText((dto as any).displayAuthorName || '') || null;
@@ -207,6 +241,34 @@ export class EditorService {
       where: { id: contentId },
       data: updateData,
     });
+
+    // Award points if SuperAdmin directly published (prevent double reward)
+    if (newStatus === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
+      try {
+        const alreadyRewarded = await this.rewardService.hasRewardedForContent(contentId);
+        if (!alreadyRewarded) {
+          const settings = await this.rewardService.getRewardSettings();
+          await this.rewardService.addPoints(
+            existing.authorId, settings.pointPerApproved, PointType.EARNED,
+            `Konten dipublikasikan: ${existing.title}`, contentId,
+          );
+        }
+      } catch (err) {
+        this.logger.warn(`Reward on direct publish failed (non-fatal): ${err.message}`);
+      }
+
+      // Notify the author that their content was published
+      if (existing.authorId !== userId) {
+        await this.notificationService.createNotification({
+          userId: existing.authorId,
+          actorId: userId,
+          type: 'CONTENT_APPROVED',
+          title: 'Konten Anda Dipublikasikan ✅',
+          message: `Konten "${existing.title}" telah diterbitkan langsung oleh SuperAdmin.`,
+          linkUrl: '/admin/my-contents',
+        });
+      }
+    }
 
     // Update QnA Detail
     if (dto.type === 'QNA' && dto.qnaDetail) {
@@ -258,6 +320,11 @@ export class EditorService {
           where: { id: { in: oldTags.map(t => t.tagId) } },
           data: { usageCount: { decrement: 1 } },
         });
+        // Floor negative usageCount to 0 (prevent ghost data)
+        await this.prisma.contentTag.updateMany({
+          where: { usageCount: { lt: 0 } },
+          data: { usageCount: 0 },
+        });
       }
       await this.prisma.contentItemTag.deleteMany({ where: { contentId } });
       for (const tagName of dto.tags) {
@@ -293,7 +360,12 @@ export class EditorService {
   async submitForReview(userId: string, contentId: string) {
     const content = await this.prisma.contentItem.findUnique({ where: { id: contentId } });
     if (!content) throw new NotFoundException('Konten tidak ditemukan');
-    if (content.authorId !== userId) throw new ForbiddenException('Bukan konten Anda');
+
+    // Allow Admin/SuperAdmin to submit others' content for review
+    const caller = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (content.authorId !== userId && !['ADMIN', 'SUPERADMIN'].includes(caller?.role || '')) {
+      throw new ForbiddenException('Bukan konten Anda');
+    }
     if (!['DRAFT', 'REVISION'].includes(content.status)) {
       throw new BadRequestException('Hanya konten Draft atau Revisi yang bisa diajukan');
     }

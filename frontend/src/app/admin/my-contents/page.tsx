@@ -27,6 +27,11 @@ export default function MyContentsPage() {
   const [ageFilter, setAgeFilter] = useState("");
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string>("");
+
+  useEffect(() => {
+    try { const u = JSON.parse(localStorage.getItem("user") || "{}"); setUserRole(u.role || ""); } catch {}
+  }, []);
 
   const load = async () => {
     const token = Cookies.get("_at");
@@ -116,11 +121,13 @@ export default function MyContentsPage() {
                         <MessageCircle size={16} />
                       </button>
                     )}
-                    {(item.status === "DRAFT" || item.status === "REVISION") && (
-                      <>
-                        <Link href={`/admin/editor?id=${item.id}`} className="p-2 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100" title="Edit"><Edit2 size={16} /></Link>
-                        <button onClick={() => handleSubmit(item.id)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100" title="Ajukan Review"><Send size={16} /></button>
-                      </>
+                    {/* Edit button: SuperAdmin/Admin can edit all statuses, Author only DRAFT/REVISION */}
+                    {(['SUPERADMIN', 'ADMIN'].includes(userRole) || ['DRAFT', 'REVISION'].includes(item.status)) && (
+                      <Link href={`/admin/editor?id=${item.id}`} className="p-2 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100" title="Edit"><Edit2 size={16} /></Link>
+                    )}
+                    {/* Submit for review: only for DRAFT/REVISION */}
+                    {['DRAFT', 'REVISION'].includes(item.status) && (
+                      <button onClick={() => handleSubmit(item.id)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100" title="Ajukan Review"><Send size={16} /></button>
                     )}
                     {item.status !== "PUBLISHED" && (
                       confirmDeleteId === item.id ? (

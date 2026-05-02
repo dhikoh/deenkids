@@ -22,10 +22,23 @@ export default function LoginPage() {
     try {
       const data = await login({ email, password });
       
-      // Backend sets HttpOnly access_token cookie via Set-Cookie header.
-      // We store a JS-accessible copy under '_at' for client-side API calls.
+      // Store JS-accessible tokens for cross-origin compatibility
+      // (HttpOnly cookies from api.adably.id are not accessible on adably.id)
       if (data.accessToken) {
-        Cookies.set("_at", data.accessToken, { expires: 1, path: "/" });
+        Cookies.set("_at", data.accessToken, {
+          expires: 1/96, // ~15 minutes (synced with JWT lifetime)
+          path: "/",
+          secure: window.location.protocol === 'https:',
+          sameSite: 'lax',
+        });
+      }
+      if (data.refreshToken) {
+        Cookies.set("_rt", data.refreshToken, {
+          expires: 7, // 7 days
+          path: "/",
+          secure: window.location.protocol === 'https:',
+          sameSite: 'lax',
+        });
       }
       
       // Store basic user info in localStorage for UI purposes
@@ -35,10 +48,8 @@ export default function LoginPage() {
       
       toast.success("Berhasil masuk!");
       
-      // Slight delay to ensure cookies are set before middleware checks
-      setTimeout(() => {
-        router.replace("/admin");
-      }, 150);
+      // Hard navigation ensures middleware picks up the fresh cookies
+      window.location.href = '/admin';
     } catch (error: any) {
       const msg = error.message || "Gagal masuk";
       if (msg.includes("429") || msg.includes("Too Many") || msg.includes("banyak")) {

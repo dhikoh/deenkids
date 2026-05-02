@@ -4,30 +4,68 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
-async function tryRefreshToken(): Promise<boolean> {
+/**
+ * Attempt token refresh by sending _rt (JS-accessible refresh token) via POST body.
+ * On success, updates both _at and _rt cookies for subsequent requests.
+ */
+async function tryRefreshToken(): Promise<string | false> {
   // Deduplicate concurrent refresh calls
-  if (isRefreshing && refreshPromise) return refreshPromise;
+  if (isRefreshing && refreshPromise) return refreshPromise as any;
   isRefreshing = true;
-  refreshPromise = (async () => {
+
+  const doRefresh = async (): Promise<string | false> => {
     try {
+      // Dynamic import to avoid SSR issues
+      const Cookies = (await import('js-cookie')).default;
+      const rt = Cookies.get('_rt');
+      if (!rt) return false;
+
       const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: rt }),
       });
-      return res.ok;
+
+      if (!res.ok) return false;
+
+      const data = await res.json();
+      if (data.accessToken) {
+        // Update _at cookie (15 min)
+        Cookies.set('_at', data.accessToken, {
+          expires: 1/96,
+          path: '/',
+          secure: window.location.protocol === 'https:',
+          sameSite: 'lax',
+        });
+        // Update _rt cookie (7 days)
+        if (data.refreshToken) {
+          Cookies.set('_rt', data.refreshToken, {
+            expires: 7,
+            path: '/',
+            secure: window.location.protocol === 'https:',
+            sameSite: 'lax',
+          });
+        }
+        return data.accessToken;
+      }
+      return false;
     } catch {
       return false;
     } finally {
       isRefreshing = false;
       refreshPromise = null;
     }
-  })();
-  return refreshPromise;
+  };
+
+  refreshPromise = doRefresh() as any;
+  return refreshPromise as any;
 }
 
 function redirectToLogin() {
   if (typeof window !== 'undefined') {
+    const Cookies = require('js-cookie');
+    Cookies.remove('_at', { path: '/' });
+    Cookies.remove('_rt', { path: '/' });
     localStorage.removeItem('user');
     window.location.href = '/login';
   }
@@ -35,14 +73,16 @@ function redirectToLogin() {
 
 // ── Helper ──
 export async function apiFetch(url: string, options: RequestInit = {}) {
-  const res = await fetch(url, { cache: 'no-store', credentials: 'include', ...options });
+  const res = await fetch(url, { cache: 'no-store', ...options });
   if (!res.ok) {
     // On 401 (expired token), try silent refresh once before giving up
     if (res.status === 401 && typeof window !== 'undefined') {
-      const refreshed = await tryRefreshToken();
-      if (refreshed) {
-        // Retry the original request with fresh token
-        const retryRes = await fetch(url, { cache: 'no-store', credentials: 'include', ...options });
+      const newToken = await tryRefreshToken();
+      if (newToken) {
+        // Rebuild headers with the fresh token
+        const newHeaders = new Headers(options.headers || {});
+        newHeaders.set('Authorization', `Bearer ${newToken}`);
+        const retryRes = await fetch(url, { cache: 'no-store', ...options, headers: newHeaders });
         if (retryRes.ok) return retryRes.json();
         // Retry also failed — redirect to login
         if (retryRes.status === 401) {

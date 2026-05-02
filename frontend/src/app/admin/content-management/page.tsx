@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { FileText, Trash2, Edit2, Film, Search, RotateCcw, X } from "lucide-react";
+import { FileText, Trash2, Edit2, Film, Search, RotateCcw, X, Send } from "lucide-react";
 import { copyVideoScript } from "@/lib/videoScript";
-import { fetchAllContents, deleteContent, fetchContentForEdit, unpublishContent } from "@/lib/api";
+import { fetchAllContents, deleteContent, fetchContentForEdit, unpublishContent, submitContentForReview } from "@/lib/api";
 
 const AGE_OPTIONS = ["", "3-5", "5-7", "7-10", "10-13"];
 const statusColors: Record<string, string> = { DRAFT: "bg-slate-100 text-slate-600", REVIEW: "bg-amber-100 text-amber-700", REVISION: "bg-rose-100 text-rose-700", PUBLISHED: "bg-emerald-100 text-emerald-700", ARCHIVED: "bg-slate-200 text-slate-500" };
@@ -58,6 +58,14 @@ export default function ContentManagementPage() {
       await unpublishContent(unpublishTarget.id, unpublishNotes, token || "");
       toast.success("Konten berhasil di-unpublish");
       setUnpublishTarget(null); setUnpublishNotes(""); load();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleSubmitReview = async (id: string) => {
+    const token = Cookies.get("_at");
+    try {
+      await submitContentForReview(id, token || "");
+      toast.success("Konten diajukan untuk review"); load();
     } catch (e: any) { toast.error(e.message); }
   };
 
@@ -124,6 +132,12 @@ export default function ContentManagementPage() {
                   {item.status === "PUBLISHED" && (
                     <button onClick={() => setUnpublishTarget(item)} className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100" title="Unpublish — Tarik untuk revisi">
                       <RotateCcw size={16} />
+                    </button>
+                  )}
+                  {/* Admin/SuperAdmin can submit DRAFT/REVISION content for review */}
+                  {['DRAFT', 'REVISION'].includes(item.status) && (
+                    <button onClick={() => handleSubmitReview(item.id)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100" title="Ajukan untuk Review">
+                      <Send size={16} />
                     </button>
                   )}
                   {confirmDeleteId === item.id ? (

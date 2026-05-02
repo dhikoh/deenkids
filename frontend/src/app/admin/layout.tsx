@@ -62,10 +62,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
   }, []);
 
-  const handleLogout = () => {
-    Cookies.remove('_at');
-    localStorage.removeItem('user');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      const token = Cookies.get('_at');
+      const rt = Cookies.get('_rt');
+      if (token) {
+        // Revoke refresh token in backend database
+        await fetch(`${API_BASE_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ refreshToken: rt || '' }),
+        }).catch(() => {});
+      }
+    } finally {
+      Cookies.remove('_at', { path: '/' });
+      Cookies.remove('_rt', { path: '/' });
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
   };
 
   const isSuperAdmin = user?.role === 'SUPERADMIN';

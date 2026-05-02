@@ -104,9 +104,11 @@ export class EditorController {
       cb(null, true);
     },
   }))
-  async uploadFile(@UploadedFile() file: any) {
+  async uploadFile(@UploadedFile() file: any, @Req() req: any) {
     if (!file) throw new BadRequestException('File tidak ditemukan');
-    const apiBase = process.env.API_BASE_URL || 'https://api.adably.id';
-    return { url: `${apiBase}/uploads/${file.filename}` };
+    // Build URL from request origin to avoid hardcoded domain
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'api.adably.id';
+    return { url: `${protocol}://${host}/uploads/${file.filename}` };
   }
 }
