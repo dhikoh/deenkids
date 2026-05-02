@@ -14,7 +14,7 @@ export function Footer() {
               <span className="font-bold text-xl text-white">Adab<span className="text-emerald-400">ly</span></span>
             </Link>
             <p className="text-sm leading-relaxed">
-              Platform parenting Islami untuk orang tua. Sesuai Alquran dan Hadist.
+              Platform edukasi parenting Islami. Konten disusun berdasarkan referensi Al-Qur'an, Hadits, dan literatur ulama.
             </p>
           </div>
 
@@ -34,7 +34,7 @@ export function Footer() {
               <li><Link href="/login" className="hover:text-emerald-400 transition-colors">Login Panel</Link></li>
             </ul>
             <p className="text-xs mt-6 text-slate-500">
-              Konten ditulis oleh asatidzah dan diperiksa oleh tim reviewer.
+              Konten disusun oleh kontributor dan telah melalui proses peninjauan tim redaksi. Pembaca dianjurkan merujuk langsung pada sumber asli (Al-Qur'an, Hadits, dan pendapat ulama) untuk memastikan keakuratan.
             </p>
           </div>
         </div>
