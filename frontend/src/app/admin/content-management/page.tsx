@@ -38,7 +38,7 @@ export default function ContentManagementPage() {
     const token = Cookies.get("_at");
     try {
       await deleteContent(id, token || "");
-      toast.success("Konten dihapus"); setConfirmDeleteId(null); load();
+      toast.success("Konten dipindahkan ke Tempat Sampah"); setConfirmDeleteId(null); load();
     } catch (e: any) { toast.error(e.message); }
   };
 

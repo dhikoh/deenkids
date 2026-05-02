@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image, AlertTriangle } from "lucide-react";
+import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image, AlertTriangle, Trash2 } from "lucide-react";
 import Cookies from "js-cookie";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -97,6 +97,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       { name: "Pesan", icon: <MessageSquare size={20} />, href: "/admin/messages", show: true, badge: unreadMsg },
       { name: "Reward Poin", icon: <Trophy size={20} />, href: "/admin/rewards", show: true },
       { name: "Profil", icon: <UserCircle size={20} />, href: "/admin/profile", show: true },
+      { name: "Tempat Sampah", icon: <Trash2 size={20} />, href: "/admin/trash", show: true },
     ]},
     { label: "Kelola", items: [
       { name: "Review Konten", icon: <CheckCircle size={20} />, href: "/admin/review", show: isAdminOrSuper },

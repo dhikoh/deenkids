@@ -138,7 +138,7 @@ export class EditorService {
   async getMyContents(authorId: string, status?: string, page: number = 1, search?: string, age?: string) {
     const limit = 20;
     const skip = (page - 1) * limit;
-    const where: any = { authorId };
+    const where: any = { authorId, deletedAt: null };
     if (status) where.status = status;
     if (search) where.title = { contains: search, mode: 'insensitive' };
     if (age && age !== 'Semua') {
@@ -169,7 +169,7 @@ export class EditorService {
 
   async getContentForEdit(userId: string, userRole: string, contentId: string) {
     const content = await this.prisma.contentItem.findUnique({
-      where: { id: contentId },
+      where: { id: contentId, deletedAt: null },
       include: {
         node: true,
         qnaDetail: true,
@@ -192,7 +192,7 @@ export class EditorService {
   }
 
   async updateContent(userId: string, userRole: string, contentId: string, dto: UpdateContentDto) {
-    const existing = await this.prisma.contentItem.findUnique({ where: { id: contentId } });
+    const existing = await this.prisma.contentItem.findUnique({ where: { id: contentId, deletedAt: null } });
     if (!existing) throw new NotFoundException('Konten tidak ditemukan');
     if (existing.authorId !== userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
       throw new ForbiddenException('Anda tidak memiliki akses ke konten ini');
@@ -343,22 +343,42 @@ export class EditorService {
   }
 
   async deleteContent(userId: string, userRole: string, contentId: string) {
-    const existing = await this.prisma.contentItem.findUnique({ where: { id: contentId } });
+    const existing = await this.prisma.contentItem.findUnique({ where: { id: contentId, deletedAt: null } });
     if (!existing) throw new NotFoundException('Konten tidak ditemukan');
     if (existing.authorId !== userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
       throw new ForbiddenException('Anda tidak memiliki akses');
     }
-    // Only allow delete if not published (safety)
+    // Only allow Author to delete non-published content
     if (existing.status === 'PUBLISHED' && userRole === 'AUTHOR') {
       throw new ForbiddenException('Editor tidak bisa menghapus konten yang sudah dipublikasikan');
     }
 
-    await this.prisma.contentItem.delete({ where: { id: contentId } });
-    return { message: 'Konten berhasil dihapus' };
+    // Soft delete: move to trash
+    await this.prisma.contentItem.update({
+      where: { id: contentId },
+      data: {
+        deletedAt: new Date(),
+        previousStatus: existing.status,
+      },
+    });
+
+    // Notify author if deleted by someone else (Admin/SuperAdmin)
+    if (existing.authorId !== userId) {
+      await this.notificationService.createNotification({
+        userId: existing.authorId,
+        actorId: userId,
+        type: 'SYSTEM_ALERT',
+        title: 'Konten Dipindahkan ke Sampah 🗑️',
+        message: `Konten "${existing.title}" telah dipindahkan ke tempat sampah oleh Admin. Konten akan dihapus permanen dalam 30 hari.`,
+        linkUrl: '/admin/trash',
+      });
+    }
+
+    return { message: 'Konten dipindahkan ke Tempat Sampah' };
   }
 
   async submitForReview(userId: string, contentId: string) {
-    const content = await this.prisma.contentItem.findUnique({ where: { id: contentId } });
+    const content = await this.prisma.contentItem.findUnique({ where: { id: contentId, deletedAt: null } });
     if (!content) throw new NotFoundException('Konten tidak ditemukan');
 
     // Allow Admin/SuperAdmin to submit others' content for review
@@ -417,5 +437,111 @@ export class EditorService {
       take: 100,
     });
     return { data: tags };
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // TRASH / RECYCLE BIN
+  // ═══════════════════════════════════════════════════════
+
+  async getTrash(userId: string, userRole: string, page: number = 1, search?: string) {
+    const limit = 20;
+    const skip = (page - 1) * limit;
+    const where: any = { deletedAt: { not: null } };
+
+    // Author: only own trash. Admin/SuperAdmin: all trash.
+    if (!['ADMIN', 'SUPERADMIN'].includes(userRole)) {
+      where.authorId = userId;
+    }
+    if (search) {
+      where.title = { contains: search, mode: 'insensitive' };
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.contentItem.findMany({
+        where,
+        orderBy: { deletedAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          author: { select: { name: true } },
+          node: { select: { title: true } },
+          tags: { include: { tag: true } },
+        },
+      }),
+      this.prisma.contentItem.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async restoreFromTrash(userId: string, userRole: string, contentId: string) {
+    const content = await this.prisma.contentItem.findUnique({
+      where: { id: contentId },
+    });
+    if (!content) throw new NotFoundException('Konten tidak ditemukan');
+    if (!content.deletedAt) throw new BadRequestException('Konten tidak ada di Tempat Sampah');
+
+    // Author: only own. Admin/SuperAdmin: any.
+    if (content.authorId !== userId && !['ADMIN', 'SUPERADMIN'].includes(userRole)) {
+      throw new ForbiddenException('Anda tidak memiliki akses');
+    }
+
+    // All restored content goes to DRAFT — must go through review again
+    await this.prisma.contentItem.update({
+      where: { id: contentId },
+      data: {
+        deletedAt: null,
+        previousStatus: null,
+        status: 'DRAFT',
+      },
+    });
+
+    // Notify author if restored by someone else
+    if (content.authorId !== userId) {
+      await this.notificationService.createNotification({
+        userId: content.authorId,
+        actorId: userId,
+        type: 'SYSTEM_ALERT',
+        title: 'Konten Dipulihkan ♻️',
+        message: `Konten "${content.title}" telah dipulihkan dari Tempat Sampah oleh Admin. Status dikembalikan ke Draft.`,
+        linkUrl: '/admin/my-contents',
+      });
+    }
+
+    return { message: 'Konten berhasil dipulihkan ke Draft' };
+  }
+
+  async permanentlyDelete(userId: string, userRole: string, contentId: string) {
+    // Only SUPERADMIN can permanently delete
+    if (userRole !== 'SUPERADMIN') {
+      throw new ForbiddenException('Hanya SuperAdmin yang bisa menghapus permanen');
+    }
+
+    const content = await this.prisma.contentItem.findUnique({
+      where: { id: contentId },
+    });
+    if (!content) throw new NotFoundException('Konten tidak ditemukan');
+    if (!content.deletedAt) throw new BadRequestException('Konten harus ada di Tempat Sampah terlebih dahulu');
+
+    // Hard delete — Prisma cascade will clean up all related data
+    await this.prisma.contentItem.delete({ where: { id: contentId } });
+
+    return { message: 'Konten dihapus permanen' };
+  }
+
+  async emptyTrash(userId: string, userRole: string) {
+    // Only SUPERADMIN can empty trash
+    if (userRole !== 'SUPERADMIN') {
+      throw new ForbiddenException('Hanya SuperAdmin yang bisa mengosongkan Tempat Sampah');
+    }
+
+    const result = await this.prisma.contentItem.deleteMany({
+      where: { deletedAt: { not: null } },
+    });
+
+    return { message: `${result.count} konten dihapus permanen dari Tempat Sampah` };
   }
 }

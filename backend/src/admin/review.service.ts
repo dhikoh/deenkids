@@ -18,7 +18,7 @@ export class ReviewService {
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({
-        where: { status: 'REVIEW' },
+        where: { status: 'REVIEW', deletedAt: null },
         include: {
           author: { select: { name: true } },
           node: { select: { title: true } },
@@ -29,7 +29,7 @@ export class ReviewService {
         skip,
         take: limit,
       }),
-      this.prisma.contentItem.count({ where: { status: 'REVIEW' } }),
+      this.prisma.contentItem.count({ where: { status: 'REVIEW', deletedAt: null } }),
     ]);
 
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };

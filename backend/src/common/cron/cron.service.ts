@@ -31,7 +31,7 @@ export class CronService {
     // Batch: get all author stats in one query using groupBy
     const stats = await this.prisma.contentItem.groupBy({
       by: ['authorId'],
-      where: { status: 'PUBLISHED' },
+      where: { status: 'PUBLISHED', deletedAt: null },
       _count: true,
       _sum: { viewCount: true, likeCount: true },
       _avg: { avgRating: true },
@@ -96,6 +96,7 @@ export class CronService {
     const contents = await this.prisma.contentItem.findMany({
       where: {
         status: 'PUBLISHED',
+        deletedAt: null,
         OR: [
           { viewCount: { gte: 500 } },
           { likeCount: { gte: 50 } },
@@ -225,6 +226,21 @@ export class CronService {
     });
     if (result.count > 0) {
       this.logger.log(`🧹 Cleaned up ${result.count} resolved error reports older than 30 days`);
+    }
+  }
+
+  // Auto-purge trashed content older than 30 days
+  @Cron('0 3 * * *') // Every day at 3AM
+  async purgeExpiredTrash() {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const result = await this.prisma.contentItem.deleteMany({
+      where: {
+        deletedAt: { lt: cutoff, not: null },
+      },
+    });
+    if (result.count > 0) {
+      this.logger.log(`🗑️ Purged ${result.count} trash items older than 30 days`);
     }
   }
 }

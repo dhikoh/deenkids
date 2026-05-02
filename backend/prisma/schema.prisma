@@ -127,10 +127,13 @@ model ContentItem {
   relatedFrom       RelatedContent[]  @relation("SourceContent")
   relatedTo         RelatedContent[]  @relation("TargetContent")
   enableAudio       Boolean           @default(false)
+  deletedAt         DateTime?         // Soft delete timestamp, null = active
+  previousStatus    String?           // Status before deletion, for trash UI display
 
   @@index([authorId, status])
   @@index([status, type])
   @@index([publishedAt])
+  @@index([deletedAt])
 }
 
 model QnaDetail {

@@ -669,3 +669,33 @@ export async function reopenError(id: string, token: string) {
 export async function resolveAllErrors(token: string) {
   return apiFetch(`${API_BASE_URL}/admin/error-reports/resolve-all`, { method: 'PUT', headers: authHeaders(token) });
 }
+
+// ── Trash / Recycle Bin ──
+export async function fetchTrash(token: string, page = 1, search?: string) {
+  const params = new URLSearchParams({ page: page.toString() });
+  if (search) params.append('search', search);
+  return apiFetch(`${API_BASE_URL}/editor/trash?${params}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function restoreFromTrash(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/editor/trash/${id}/restore`, {
+    method: 'POST',
+    headers: authHeaders(token),
+  });
+}
+
+export async function permanentlyDeleteContent(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/editor/trash/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+}
+
+export async function emptyTrash(token: string) {
+  return apiFetch(`${API_BASE_URL}/editor/trash/empty`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+}

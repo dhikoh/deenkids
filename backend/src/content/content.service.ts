@@ -33,7 +33,7 @@ export class ContentService {
 
   async getContentDetail(slug: string) {
     const content = await this.prisma.contentItem.findUnique({
-      where: { slug, status: 'PUBLISHED' },
+      where: { slug, status: 'PUBLISHED', deletedAt: null },
       include: {
         node: true,
         author: { select: { id: true, name: true } },
@@ -65,6 +65,7 @@ export class ContentService {
         nodeId,
         id: { not: contentId },
         status: 'PUBLISHED',
+        deletedAt: null,
       },
       take: 5,
       select: {
@@ -111,7 +112,7 @@ export class ContentService {
         orderBy = { publishedAt: 'desc' };
     }
 
-    const where: any = { status: 'PUBLISHED' };
+    const where: any = { status: 'PUBLISHED', deletedAt: null };
     const conditions: any[] = [];
     if (age && age !== 'Semua') {
       conditions.push({ ageGroups: { has: age } });

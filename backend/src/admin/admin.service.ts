@@ -11,11 +11,11 @@ export class AdminService {
     if (userRole === 'AUTHOR') {
       // Editor sees their own stats only
       const [totalContents, published, inReview, totalViews, totalLikes] = await Promise.all([
-        this.prisma.contentItem.count({ where: { authorId: userId } }),
-        this.prisma.contentItem.count({ where: { authorId: userId, status: 'PUBLISHED' } }),
-        this.prisma.contentItem.count({ where: { authorId: userId, status: 'REVIEW' } }),
-        this.prisma.contentItem.aggregate({ where: { authorId: userId }, _sum: { viewCount: true } }),
-        this.prisma.contentItem.aggregate({ where: { authorId: userId }, _sum: { likeCount: true } }),
+        this.prisma.contentItem.count({ where: { authorId: userId, deletedAt: null } }),
+        this.prisma.contentItem.count({ where: { authorId: userId, status: 'PUBLISHED', deletedAt: null } }),
+        this.prisma.contentItem.count({ where: { authorId: userId, status: 'REVIEW', deletedAt: null } }),
+        this.prisma.contentItem.aggregate({ where: { authorId: userId, deletedAt: null }, _sum: { viewCount: true } }),
+        this.prisma.contentItem.aggregate({ where: { authorId: userId, deletedAt: null }, _sum: { likeCount: true } }),
       ]);
       return {
         role: 'AUTHOR',
@@ -29,11 +29,11 @@ export class AdminService {
 
     // Admin/SuperAdmin see platform-wide stats
     const [totalViews, totalLikes, totalContent, publishedContent, inReview, totalEditors, recentReviewQueue] = await Promise.all([
-      this.prisma.contentItem.aggregate({ _sum: { viewCount: true } }),
-      this.prisma.contentItem.aggregate({ _sum: { likeCount: true } }),
-      this.prisma.contentItem.count(),
-      this.prisma.contentItem.count({ where: { status: 'PUBLISHED' } }),
-      this.prisma.contentItem.count({ where: { status: 'REVIEW' } }),
+      this.prisma.contentItem.aggregate({ where: { deletedAt: null }, _sum: { viewCount: true } }),
+      this.prisma.contentItem.aggregate({ where: { deletedAt: null }, _sum: { likeCount: true } }),
+      this.prisma.contentItem.count({ where: { deletedAt: null } }),
+      this.prisma.contentItem.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
+      this.prisma.contentItem.count({ where: { status: 'REVIEW', deletedAt: null } }),
       this.prisma.user.count({ where: { role: 'AUTHOR' } }),
       this.prisma.contentItem.findMany({
         where: { status: 'REVIEW' },
@@ -65,7 +65,7 @@ export class AdminService {
   async getAllContents(status?: string, page: number = 1, search?: string, age?: string) {
     const limit = 20;
     const skip = (page - 1) * limit;
-    const where: any = {};
+    const where: any = { deletedAt: null };
     const conditions: any[] = [];
     if (status) where.status = status;
     if (search) conditions.push({ title: { contains: search, mode: 'insensitive' } });

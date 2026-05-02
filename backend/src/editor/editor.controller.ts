@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException, HttpCode, HttpStatus } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -110,5 +110,45 @@ export class EditorController {
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
     const host = req.headers['x-forwarded-host'] || req.headers.host || 'api.adably.id';
     return { url: `${protocol}://${host}/uploads/${file.filename}` };
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // TRASH / RECYCLE BIN
+  // ═══════════════════════════════════════════════════════
+
+  @Get('trash')
+  @ApiOperation({ summary: 'Get trashed (soft-deleted) content items' })
+  @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  async getTrash(
+    @Req() req: any,
+    @Query('page') page?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.editorService.getTrash(req.user.id, req.user.role, page ? parseInt(page) : 1, search);
+  }
+
+  @Post('trash/:id/restore')
+  @ApiOperation({ summary: 'Restore content from trash to DRAFT status' })
+  @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
+  async restoreFromTrash(@Req() req: any, @Param('id') id: string) {
+    return this.editorService.restoreFromTrash(req.user.id, req.user.role, id);
+  }
+
+  // Note: /trash/empty must be registered BEFORE /trash/:id to avoid route collision
+  @Delete('trash/empty')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Permanently delete ALL trashed items (SuperAdmin only)' })
+  @Roles('SUPERADMIN')
+  async emptyTrash(@Req() req: any) {
+    return this.editorService.emptyTrash(req.user.id, req.user.role);
+  }
+
+  @Delete('trash/:id')
+  @ApiOperation({ summary: 'Permanently delete a single trashed item (SuperAdmin only)' })
+  @Roles('SUPERADMIN')
+  async permanentlyDelete(@Req() req: any, @Param('id') id: string) {
+    return this.editorService.permanentlyDelete(req.user.id, req.user.role, id);
   }
 }
