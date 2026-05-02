@@ -115,7 +115,7 @@ async function resetForLaunch() {
   const superadmin = await prisma.user.create({
     data: {
       email: 'superadmin@adably.id',
-      passwordHash: await bcrypt.hash('Bismillah@2017', salt),
+      passwordHash: await bcrypt.hash('superadmin123', salt),
       name: 'Abu Ahmad (SuperAdmin)',
       role: 'SUPERADMIN',
       points: 0,
@@ -126,7 +126,7 @@ async function resetForLaunch() {
   const admin = await prisma.user.create({
     data: {
       email: 'admin@adably.id',
-      passwordHash: await bcrypt.hash('Bismillah@admin', salt),
+      passwordHash: await bcrypt.hash('admin123', salt),
       name: 'Ummu Salma (Admin)',
       role: 'ADMIN',
       points: 0,
@@ -161,8 +161,8 @@ async function resetForLaunch() {
   console.log('══════════════════════════════════════════');
   console.log('');
   console.log('📋 Login Credentials:');
-  console.log('   SuperAdmin: superadmin@adably.id / Bismillah@2017');
-  console.log('   Admin:      admin@adably.id / Bismillah@admin');
+  console.log('   SuperAdmin: superadmin@adably.id / superadmin123');
+  console.log('   Admin:      admin@adably.id / admin123');
   console.log('');
   console.log('📌 Preserved:');
   console.log(`   • ${nodeCount} ContentNode (learning structure)`);
