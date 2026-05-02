@@ -32,7 +32,7 @@ async function main() {
     update: {},
     create: {
       email: 'superadmin@adably.id',
-      passwordHash: await bcrypt.hash('superadmin123', salt),
+      passwordHash: await bcrypt.hash('Bismillah@2017', salt),
       name: 'Abu Ahmad (SuperAdmin)',
       role: Role.SUPERADMIN,
     },
@@ -43,7 +43,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@adably.id',
-      passwordHash: await bcrypt.hash('admin123', salt),
+      passwordHash: await bcrypt.hash('Bismillah@admin', salt),
       name: 'Ummu Salma (Admin)',
       role: Role.ADMIN,
     },
@@ -618,8 +618,8 @@ async function main() {
 
   console.log('\n🎉 Seeding Complete!');
   console.log('📋 Login Credentials:');
-  console.log('   SuperAdmin: superadmin@adably.id / superadmin123');
-  console.log('   Admin:      admin@adably.id / admin123');
+  console.log('   SuperAdmin: superadmin@adably.id / Bismillah@2017');
+  console.log('   Admin:      admin@adably.id / Bismillah@admin');
   console.log('   Author:     editor@adably.id / editor123');
 }
 
