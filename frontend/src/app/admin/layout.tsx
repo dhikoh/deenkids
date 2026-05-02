@@ -53,12 +53,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const handleVisibility = () => { if (document.visibilityState === 'visible') poll(); };
     document.addEventListener('visibilitychange', handleVisibility);
 
+    // Listen for inbox mutations to update badge immediately
+    const handleNotifChanged = () => poll();
+    window.addEventListener('notification-changed', handleNotifChanged);
+
     poll();
     const interval = setInterval(poll, 30000);
     return () => {
       active = false;
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('notification-changed', handleNotifChanged);
     };
   }, []);
 

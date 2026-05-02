@@ -55,6 +55,7 @@ export default function InboxPage() {
     if (!token) return;
     await markNotificationRead(id, token);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    window.dispatchEvent(new CustomEvent('notification-changed'));
   };
 
   const handleReadAll = async () => {
@@ -63,6 +64,7 @@ export default function InboxPage() {
     await markAllNotificationsRead(token);
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     toast.success("Semua notifikasi ditandai dibaca");
+    window.dispatchEvent(new CustomEvent('notification-changed'));
   };
 
   const handleDelete = async (id: string) => {
@@ -72,6 +74,7 @@ export default function InboxPage() {
       await deleteNotification(id, token);
       setNotifications(prev => prev.filter(n => n.id !== id));
       toast.success("Notifikasi dihapus");
+      window.dispatchEvent(new CustomEvent('notification-changed'));
     } catch { toast.error("Gagal menghapus"); }
     setConfirmDelete(null);
   };
@@ -83,6 +86,7 @@ export default function InboxPage() {
       await deleteAllReadNotifications(token);
       setNotifications(prev => prev.filter(n => !n.isRead));
       toast.success("Notifikasi yang dibaca berhasil dihapus");
+      window.dispatchEvent(new CustomEvent('notification-changed'));
     } catch { toast.error("Gagal menghapus"); }
     setConfirmDeleteAll(false);
   };
