@@ -85,11 +85,32 @@ export function EngagementBar({
     }
   };
 
+  // Restore bookmark state from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('adably_bookmarks') || '[]');
+      if (stored.includes(contentId)) setIsBookmarked(true);
+    } catch {}
+  }, [contentId]);
+
   const handleBookmark = async () => {
     const userHash = getUserHash();
     const newBookmarked = !isBookmarked;
     setIsBookmarked(newBookmarked);
     setBookmarks(prev => newBookmarked ? prev + 1 : Math.max(0, prev - 1));
+
+    // Sync with localStorage for /tersimpan page
+    try {
+      const stored = JSON.parse(localStorage.getItem('adably_bookmarks') || '[]');
+      if (newBookmarked) {
+        if (!stored.includes(contentId)) stored.push(contentId);
+      } else {
+        const idx = stored.indexOf(contentId);
+        if (idx > -1) stored.splice(idx, 1);
+      }
+      localStorage.setItem('adably_bookmarks', JSON.stringify(stored));
+    } catch {}
+
     try {
       await fetch(`${API_BASE_URL}/engagement/bookmark`, {
         method: "POST",

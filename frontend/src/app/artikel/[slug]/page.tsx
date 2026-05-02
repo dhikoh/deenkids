@@ -5,6 +5,20 @@ import { ChevronLeft, Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCi
 import { EngagementBar } from "@/components/ui/EngagementBar";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const content = await fetchContentBySlug(slug);
+    return {
+      title: content.title,
+      description: content.description || content.title,
+      openGraph: { title: content.title, description: content.description || content.title, type: "article", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
+      twitter: { card: "summary_large_image", title: content.title, description: content.description || "" },
+    };
+  } catch { return { title: "Artikel" }; }
+}
 
 export default async function ArtikelDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -54,7 +68,7 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
         <div className="prose prose-slate max-w-none">
           {(content.articleDetail.blocks as any[])?.map((block: any, i: number) => {
             if (block.type === 'heading') return <h2 key={i} className="text-xl font-bold text-slate-800 mt-8 mb-3">{block.text}</h2>;
-            if (block.type === 'paragraph') return <p key={i} className="text-slate-600 leading-relaxed mb-4">{block.text}</p>;
+            if (block.type === 'paragraph') return <div key={i} className="mb-4"><p className="text-slate-600 leading-relaxed">{block.text}</p>{block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800">📎 Sumber referensi ↗</a>}</div>;
             if (block.type === 'quick_answer') return (
               <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 my-4">
                 <h3 className="font-bold text-emerald-800 mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5" /> Jawaban Ringkas</h3>
@@ -70,7 +84,7 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
                     <blockquote key={j} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
                       {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
                       <p className="text-slate-700 italic font-medium leading-relaxed">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
-                      <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {dalil.source}</cite>
+                      <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {dalil.sourceUrl ? <a href={dalil.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900">{dalil.source} ↗</a> : dalil.source}</cite>
                     </blockquote>
                   ))}
                 </div>
@@ -96,7 +110,7 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
                 </div>
               );
             }
-            if (block.type === 'tip') return <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 my-4 text-emerald-800 text-sm font-medium">💡 {block.text}</div>;
+            if (block.type === 'tip') return <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 my-4 text-emerald-800 text-sm font-medium">💡 {block.text}{block.referenceUrl && <> — <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="underline text-xs hover:text-emerald-900">Sumber ↗</a></>}</div>;
             if (block.type === 'analogy') return (
               <div key={i} className="bg-teal-50 border border-teal-200 rounded-2xl p-6 my-4">
                 {block.title && <h3 className="font-bold text-teal-800 mb-2">{block.title}</h3>}
@@ -156,7 +170,7 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
                     <blockquote key={`${i}-${j}`} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
                       {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
                       <p className="text-slate-700 italic font-medium leading-relaxed">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
-                      <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {dalil.source}</cite>
+                      <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {dalil.sourceUrl ? <a href={dalil.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900">{dalil.source} ↗</a> : dalil.source}</cite>
                     </blockquote>
                   ));
                 })}
@@ -182,7 +196,8 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
               <ul className="space-y-2">
                 {(content.qnaDetail.tipsBlocks as any[]).map((tip: any, i: number) => (
                   <li key={i} className="text-sm text-slate-600 font-medium flex gap-2">
-                    <span className="text-emerald-500 font-bold">•</span> {tip.text}
+                    <span className="text-emerald-500 font-bold">•</span>
+                    <span>{tip.text}{tip.referenceUrl && <> — <a href={tip.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 underline hover:text-emerald-800 text-xs">Sumber ↗</a></>}</span>
                   </li>
                 ))}
               </ul>
