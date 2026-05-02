@@ -13,9 +13,9 @@ RUN npm install --include=dev
 COPY . .
 RUN npx prisma generate && npm run build
 
-# Create upload dirs owned by app user
+# Create upload dirs owned by app user (only chown these dirs, NOT all of /app)
 RUN mkdir -p uploads/proofs uploads/banners uploads/messages backups && \
-    chown -R appuser:appgroup /app
+    chown -R appuser:appgroup uploads backups
 
 USER appuser
 
@@ -27,3 +27,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -qO- http://localhost:4000/api/content/tags || exit 1
 
 CMD ["npm", "run", "start:prod"]
+

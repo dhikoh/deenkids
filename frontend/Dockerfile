@@ -21,6 +21,8 @@ RUN addgroup -g 1001 -S appgroup && adduser -S appuser -u 1001 -G appgroup
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 
 # Copy only standalone output + static assets + public folder
 COPY --from=builder --chown=appuser:appgroup /app/.next/standalone ./
