@@ -114,13 +114,13 @@ function EditorContent() {
               // Load blocks from articleDetail or qnaDetail
               const loadedBlocks: EditorBlock[] = [];
               if (c.qnaDetail) {
-                if (c.qnaDetail.answerQuick) loadedBlocks.push({ id: genId(), type: "quick_answer", data: { text: c.qnaDetail.answerQuick } });
+                if (c.qnaDetail.answerQuick) loadedBlocks.push({ id: genId(), type: "quick_answer", data: { text: c.qnaDetail.answerQuick, referenceUrl: c.qnaDetail.answerQuickReferenceUrl || '' } });
                 (c.qnaDetail.dialogBlocks || []).forEach((d: any) => {
                   const lines = d.lines || [{ role: d.role || 'anak', text: d.text || '' }];
                   loadedBlocks.push({ id: genId(), type: "dialog", data: { lines } });
                 });
                 (c.qnaDetail.dalilBlocks || []).forEach((d: any) => {
-                  const entries = d.entries || [{ arabic: d.arabic || '', translation: d.translation || '', source: d.source || '' }];
+                  const entries = d.entries || [{ arabic: d.arabic || '', translation: d.translation || '', source: d.source || '', sourceUrl: d.sourceUrl || '' }];
                   loadedBlocks.push({ id: genId(), type: "dalil", data: { entries } });
                 });
                 (c.qnaDetail.analogyBlocks || []).forEach((a: any) => loadedBlocks.push({ id: genId(), type: "analogy", data: a }));
@@ -256,6 +256,7 @@ function EditorContent() {
         payload.qnaDetail = {
           question: title,
           answerQuick: quickAnswer?.data?.text || "",
+          answerQuickReferenceUrl: quickAnswer?.data?.referenceUrl || "",
           dialogBlocks: dialogs.map(b => b.data),
           dalilBlocks: dalils.map(b => b.data),
           analogyBlocks: analogies.map(b => b.data),

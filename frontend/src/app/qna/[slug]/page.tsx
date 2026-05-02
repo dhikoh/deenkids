@@ -72,6 +72,7 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
             <h2 className="font-bold text-emerald-800 mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5" /> Jawaban Ringkas</h2>
             <p className="text-emerald-900 font-medium leading-relaxed">{qna.answerQuick}</p>
+            {qna.answerQuickReferenceUrl && <a href={qna.answerQuickReferenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-2 inline-block">📎 Sumber referensi ↗</a>}
           </div>
 
           {qna.dialogBlocks && qna.dialogBlocks.length > 0 && (

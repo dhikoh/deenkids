@@ -53,18 +53,35 @@ export function EngagementBar({
       body: JSON.stringify({ contentId, userHash }),
     }).catch(() => {});
 
-    // Restore engagement state
+    // Restore engagement state from server (source of truth)
     fetchEngagementStatus(contentId, userHash)
       .then(status => {
         setIsLiked(status.liked ?? false);
-        setIsBookmarked(status.bookmarked ?? false);
+        const serverBookmarked = status.bookmarked ?? false;
+        setIsBookmarked(serverBookmarked);
+        // Sync localStorage with server state
+        try {
+          const stored = JSON.parse(localStorage.getItem('adably_bookmarks') || '[]');
+          if (serverBookmarked && !stored.includes(contentId)) {
+            stored.push(contentId);
+            localStorage.setItem('adably_bookmarks', JSON.stringify(stored));
+          } else if (!serverBookmarked && stored.includes(contentId)) {
+            localStorage.setItem('adably_bookmarks', JSON.stringify(stored.filter((id: string) => id !== contentId)));
+          }
+        } catch {}
         if (status.userRating !== null) {
           setHasRated(true);
           setUserRating(status.userRating);
           setRating(status.userRating);
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        // Server unavailable — fallback to localStorage
+        try {
+          const stored = JSON.parse(localStorage.getItem('adably_bookmarks') || '[]');
+          if (stored.includes(contentId)) setIsBookmarked(true);
+        } catch {}
+      })
       .finally(() => setStatusLoaded(true));
   }, [contentId]);
 
@@ -84,14 +101,6 @@ export function EngagementBar({
       setLikes(prev => !newLiked ? prev + 1 : Math.max(0, prev - 1));
     }
   };
-
-  // Restore bookmark state from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('adably_bookmarks') || '[]');
-      if (stored.includes(contentId)) setIsBookmarked(true);
-    } catch {}
-  }, [contentId]);
 
   const handleBookmark = async () => {
     const userHash = getUserHash();

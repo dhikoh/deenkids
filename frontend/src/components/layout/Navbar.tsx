@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Menu, UserCircle, BookOpen, X } from "lucide-react";
+import { Search, Menu, UserCircle, BookOpen, X, Bookmark } from "lucide-react";
 import { useState, useEffect } from "react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
@@ -24,6 +24,7 @@ export function Navbar() {
     { name: "Pembelajaran", href: "/kurikulum" },
     { name: "Tanya Jawab", href: "/qna" },
     { name: "Artikel", href: "/artikel" },
+    { name: "Tentang Kami", href: "/tentang-kami" },
   ];
 
   return (
@@ -64,6 +65,10 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           <Link href="/search" className={`p-2.5 rounded-full transition-colors ${scrolled ? 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-600' : 'text-slate-600 lg:text-white/80 hover:bg-white/20'}`}>
             <Search className="h-5 w-5" />
+          </Link>
+
+          <Link href="/tersimpan" className={`p-2.5 rounded-full transition-colors ${scrolled ? 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-600' : 'text-slate-600 lg:text-white/80 hover:bg-white/20'}`} title="Konten Tersimpan">
+            <Bookmark className="h-5 w-5" />
           </Link>
 
           <LanguageSwitcher />
