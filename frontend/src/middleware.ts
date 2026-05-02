@@ -18,7 +18,8 @@ async function verifyToken(token: string): Promise<boolean> {
 }
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get('access_token')?.value;
+  // _at = JS-accessible token set by login page; access_token = HttpOnly from backend
+  const token = request.cookies.get('_at')?.value || request.cookies.get('access_token')?.value;
   const refreshToken = request.cookies.get('refresh_token')?.value;
 
   // Protect /admin routes
@@ -85,6 +86,7 @@ export async function middleware(request: NextRequest) {
       // Both tokens invalid — redirect to login
       const loginUrl = new URL('/login', request.url);
       const response = NextResponse.redirect(loginUrl);
+      response.cookies.delete('_at');
       response.cookies.delete('access_token');
       response.cookies.delete('refresh_token');
       return response;
@@ -100,6 +102,7 @@ export async function middleware(request: NextRequest) {
     }
     // Token invalid — clear and let them see login
     const response = NextResponse.next();
+    response.cookies.delete('_at');
     response.cookies.delete('access_token');
     response.cookies.delete('refresh_token');
     return response;
