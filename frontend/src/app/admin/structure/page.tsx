@@ -13,6 +13,7 @@ export default function StructurePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", type: "CATEGORY", parentId: "", description: "", ageGroups: ["3-5", "5-7", "7-10", "10-13"], order: 0 });
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [confirmDeleteNodeId, setConfirmDeleteNodeId] = useState<string | null>(null);
 
   const load = async () => {
     const token = Cookies.get("_at");
@@ -48,9 +49,8 @@ export default function StructurePage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus node ini?")) return;
     const token = Cookies.get("_at");
-    try { await deleteStructureNode(id, token || ""); toast.success("Node dihapus"); load(); }
+    try { await deleteStructureNode(id, token || ""); toast.success("Node dihapus"); setConfirmDeleteNodeId(null); load(); }
     catch (e: any) { toast.error(e.message); }
   };
 
@@ -80,7 +80,14 @@ export default function StructurePage() {
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button onClick={() => { setForm({ title: "", type: node.type === "CATEGORY" ? "MODULE" : "TOPIC", parentId: node.id, description: "", ageGroups: ["3-5", "5-7", "7-10", "10-13"], order: 0 }); setEditingId(null); setShowForm(true); }} className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100" title="Tambah sub-node"><Plus size={14} /></button>
           <button onClick={() => startEdit(node)} className="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100" title="Edit"><Edit2 size={14} /></button>
-          <button onClick={() => handleDelete(node.id)} className="p-1.5 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100" title="Hapus"><Trash2 size={14} /></button>
+          {confirmDeleteNodeId === node.id ? (
+            <>
+              <button onClick={() => handleDelete(node.id)} className="px-2 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded">Ya, Hapus</button>
+              <button onClick={() => setConfirmDeleteNodeId(null)} className="px-2 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded">Batal</button>
+            </>
+          ) : (
+            <button onClick={() => setConfirmDeleteNodeId(node.id)} className="p-1.5 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100" title="Hapus"><Trash2 size={14} /></button>
+          )}
         </div>
       </div>
       {expanded.has(node.id) && node.children?.length > 0 && renderTree(node.children, depth + 1)}

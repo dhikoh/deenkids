@@ -177,11 +177,23 @@ export async function fetchAnnouncement() {
 
 // ── Auth ──
 export async function login(data: any) {
-  return apiFetch(`${API_BASE_URL}/auth/login`, {
+  // IMPORTANT: Use raw fetch(), NOT apiFetch(), because apiFetch intercepts
+  // 401 responses as "session expired" and redirects to /login.
+  // Login's 401 means "wrong credentials" — must show error toast instead.
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
+    cache: 'no-store',
   });
+  if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error('Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.');
+    }
+    const error = await res.json().catch(() => ({ message: 'Gagal masuk' }));
+    throw new Error(error.message || `HTTP ${res.status}`);
+  }
+  return res.json();
 }
 
 export async function changePassword(data: { currentPassword: string; newPassword: string }, token: string) {

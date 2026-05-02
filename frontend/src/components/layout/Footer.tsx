@@ -6,9 +6,14 @@ import { fetchPageContent } from "@/lib/api";
 
 export function Footer() {
   const [contact, setContact] = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     fetchPageContent("contact").then(r => setContact(r.data?.content || null)).catch(() => {});
+    try {
+      const user = localStorage.getItem("user");
+      if (user && JSON.parse(user)?.name) setIsLoggedIn(true);
+    } catch {}
   }, []);
 
   return (
@@ -41,7 +46,13 @@ export function Footer() {
           <div>
             <h4 className="font-bold text-white mb-4">Kontributor</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/login" className="hover:text-emerald-400 transition-colors">Login Panel</Link></li>
+              <li>
+                {isLoggedIn ? (
+                  <Link href="/admin" className="hover:text-emerald-400 transition-colors">Dashboard</Link>
+                ) : (
+                  <Link href="/login" className="hover:text-emerald-400 transition-colors">Login Panel</Link>
+                )}
+              </li>
               <li><Link href="/tersimpan" className="hover:text-emerald-400 transition-colors">🔖 Konten Tersimpan</Link></li>
             </ul>
             <p className="text-xs mt-6 text-slate-500">

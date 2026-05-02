@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Menu, UserCircle, BookOpen, X, Bookmark } from "lucide-react";
+import { Search, Menu, UserCircle, BookOpen, X, Bookmark, LayoutDashboard } from "lucide-react";
 import { useState, useEffect } from "react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
@@ -10,6 +10,7 @@ export function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,6 +18,30 @@ export function Navbar() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auth state: check localStorage for logged-in user
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.name) setUser(parsed);
+      }
+    } catch {}
+
+    // Listen for storage changes (e.g., logout from another tab)
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "user") {
+        if (e.newValue) {
+          try { setUser(JSON.parse(e.newValue)); } catch { setUser(null); }
+        } else {
+          setUser(null);
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const navLinks = [
@@ -73,10 +98,18 @@ export function Navbar() {
 
           <LanguageSwitcher />
           
-          <Link href="/login" className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm rounded-full transition-all hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5">
-            <UserCircle className="h-5 w-5" />
-            Masuk
-          </Link>
+          {/* Auth-aware button: Dashboard or Login */}
+          {user ? (
+            <Link href="/admin" className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm rounded-full transition-all hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5">
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </Link>
+          ) : (
+            <Link href="/login" className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm rounded-full transition-all hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5">
+              <UserCircle className="h-5 w-5" />
+              Masuk
+            </Link>
+          )}
 
           {/* Mobile Menu Toggle */}
           <button 
@@ -103,14 +136,26 @@ export function Navbar() {
               {link.name}
             </Link>
           ))}
-          <Link 
-            href="/login" 
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="flex items-center justify-center gap-2 p-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl mt-4 shadow-md shadow-emerald-500/20"
-          >
-            <UserCircle className="h-5 w-5" />
-            Area Kontributor
-          </Link>
+          {/* Mobile auth-aware button */}
+          {user ? (
+            <Link 
+              href="/admin" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center justify-center gap-2 p-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl mt-4 shadow-md shadow-emerald-500/20"
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              Dashboard — {user.name}
+            </Link>
+          ) : (
+            <Link 
+              href="/login" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center justify-center gap-2 p-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl mt-4 shadow-md shadow-emerald-500/20"
+            >
+              <UserCircle className="h-5 w-5" />
+              Area Kontributor
+            </Link>
+          )}
         </div>
       </div>
     </header>

@@ -57,17 +57,38 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect authenticated users away from /login
-  if (request.nextUrl.pathname === '/login' && token) {
-    const isValid = await verifyToken(token);
-    if (isValid) {
-      const adminUrl = new URL('/admin', request.url);
-      return NextResponse.redirect(adminUrl);
+  if (request.nextUrl.pathname === '/login') {
+    if (token) {
+      const isValid = await verifyToken(token);
+      if (isValid) {
+        const adminUrl = new URL('/admin', request.url);
+        return NextResponse.redirect(adminUrl);
+      }
+      // Token invalid — clear and let them see login
+      const response = NextResponse.next();
+      response.cookies.delete('_at');
+      response.cookies.delete('_rt');
+      return response;
     }
-    // Token invalid — clear and let them see login
-    const response = NextResponse.next();
-    response.cookies.delete('_at');
-    response.cookies.delete('_rt');
-    return response;
+    // No _at but _rt exists — try silent refresh before showing login
+    if (refreshToken) {
+      const refreshResult = await attemptSilentRefresh(refreshToken, request);
+      if (refreshResult) {
+        // Refresh succeeded — redirect to admin instead of showing login
+        const adminUrl = new URL('/admin', request.url);
+        const response = NextResponse.redirect(adminUrl);
+        // Copy the new cookies from the refresh result
+        for (const cookie of refreshResult.cookies.getAll()) {
+          response.cookies.set(cookie.name, cookie.value, {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+          });
+        }
+        return response;
+      }
+    }
   }
 
   return NextResponse.next();

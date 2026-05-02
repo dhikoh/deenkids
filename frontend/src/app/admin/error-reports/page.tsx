@@ -29,6 +29,7 @@ export default function ErrorReportsPage() {
   const [filter, setFilter] = useState<string>("false"); // "false" = unresolved, "true" = resolved, "" = all
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmResolveAll, setConfirmResolveAll] = useState(false);
 
   const token = Cookies.get("_at") || "";
 
@@ -74,10 +75,10 @@ export default function ErrorReportsPage() {
   };
 
   const handleResolveAll = async () => {
-    if (!confirm("Tandai semua error sebagai resolved?")) return;
     try {
       await resolveAllErrors(token);
       toast.success("Semua error resolved");
+      setConfirmResolveAll(false);
       load();
     } catch { toast.error("Gagal"); }
   };
@@ -102,9 +103,17 @@ export default function ErrorReportsPage() {
           <p className="text-sm text-slate-500 mt-1">Monitor dan kelola error yang terjadi di frontend</p>
         </div>
         {stats.unresolved > 0 && (
-          <button onClick={handleResolveAll} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors">
-            <CheckCheck size={16} /> Resolve Semua ({stats.unresolved})
-          </button>
+          confirmResolveAll ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-amber-600 font-medium">Resolve semua?</span>
+              <button onClick={handleResolveAll} className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">Ya, Resolve</button>
+              <button onClick={() => setConfirmResolveAll(false)} className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Batal</button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmResolveAll(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors">
+              <CheckCheck size={16} /> Resolve Semua ({stats.unresolved})
+            </button>
+          )
         )}
       </div>
 
