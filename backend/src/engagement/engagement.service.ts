@@ -97,6 +97,8 @@ export class EngagementService {
   }
 
   async recordView(contentId: string, userHash: string) {
+    await this.validateContent(contentId);
+
     // Deduplicate: max 1 view per user per 24h
     const viewExists = await this.prisma.contentView.findFirst({
       where: {

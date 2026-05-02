@@ -243,4 +243,23 @@ export class CronService {
       this.logger.log(`🗑️ Purged ${result.count} trash items older than 30 days`);
     }
   }
+
+  // Weekly: clean orphan tags (usageCount=0, no linked content)
+  @Cron('0 4 * * 1') // Every Monday at 4AM
+  async cleanupOrphanTags() {
+    // Find tags with zero usage that have no ContentItemTag relations
+    const orphans = await this.prisma.contentTag.findMany({
+      where: {
+        usageCount: { lte: 0 },
+        items: { none: {} },
+      },
+      select: { id: true },
+    });
+    if (orphans.length > 0) {
+      await this.prisma.contentTag.deleteMany({
+        where: { id: { in: orphans.map(t => t.id) } },
+      });
+      this.logger.log(`🏷️ Cleaned up ${orphans.length} orphan tags`);
+    }
+  }
 }

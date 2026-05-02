@@ -103,8 +103,8 @@ model ContentItem {
   node              ContentNode?      @relation(fields: [nodeId], references: [id])
   authorId          String
   author            User              @relation(fields: [authorId], references: [id])
-  displayAuthorName String?           // SuperAdmin alias — if set, shown instead of author.name
-  ageGroups         String[]          // e.g., ["3-5", "5-7"]
+  displayAuthorName String? // SuperAdmin alias — if set, shown instead of author.name
+  ageGroups         String[] // e.g., ["3-5", "5-7"]
   metaTitle         String?
   metaDesc          String?
   viewCount         Int               @default(0)
@@ -128,8 +128,8 @@ model ContentItem {
   relatedFrom       RelatedContent[]  @relation("SourceContent")
   relatedTo         RelatedContent[]  @relation("TargetContent")
   enableAudio       Boolean           @default(false)
-  deletedAt         DateTime?         // Soft delete timestamp, null = active
-  previousStatus    String?           // Status before deletion, for trash UI display
+  deletedAt         DateTime? // Soft delete timestamp, null = active
+  previousStatus    String? // Status before deletion, for trash UI display
 
   @@index([authorId, status])
   @@index([status, type])
@@ -138,15 +138,16 @@ model ContentItem {
 }
 
 model QnaDetail {
-  id            String      @id @default(uuid())
-  contentId     String      @unique
-  content       ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
-  question      String
-  answerQuick   String
-  dialogBlocks  Json // array of dialog objects
-  dalilBlocks   Json // array of dalil objects
-  analogyBlocks Json // array of analogy objects
-  tipsBlocks    Json // array of tips objects
+  id                      String      @id @default(uuid())
+  contentId               String      @unique
+  content                 ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  question                String
+  answerQuick             String
+  answerQuickReferenceUrl String? // Reference URL for the quick answer
+  dialogBlocks            Json // array of dialog objects
+  dalilBlocks             Json // array of dalil objects
+  analogyBlocks           Json // array of analogy objects
+  tipsBlocks              Json // array of tips objects
 }
 
 model ArticleDetail {
@@ -156,8 +157,6 @@ model ArticleDetail {
   coverUrl  String?
   blocks    Json // article content blocks
 }
-
-
 
 model ContentTag {
   id         String           @id @default(uuid())
@@ -281,17 +280,17 @@ enum NotificationType {
 }
 
 model InternalNotification {
-  id         String           @id @default(uuid())
-  userId     String
-  user       User             @relation("NotifiedUser", fields: [userId], references: [id], onDelete: Cascade)
-  actorId    String?
-  actor      User?            @relation("NotifierUser", fields: [actorId], references: [id], onDelete: SetNull)
-  type       NotificationType
-  title      String
-  message    String
-  linkUrl    String?
-  isRead     Boolean          @default(false)
-  createdAt  DateTime         @default(now())
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation("NotifiedUser", fields: [userId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actor     User?            @relation("NotifierUser", fields: [actorId], references: [id], onDelete: SetNull)
+  type      NotificationType
+  title     String
+  message   String
+  linkUrl   String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
 
   @@index([userId, isRead])
   @@index([createdAt])
@@ -339,16 +338,16 @@ model AuditLog {
 }
 
 model DonationSubmission {
-  id          String    @id @default(uuid())
-  name        String
-  amount      Int       // Rupiah
-  method      String    // "bank" | "qris" | "saweria"
-  message     String?
-  proofUrl    String?   // file path to proof image
-  isVerified  Boolean   @default(false)
-  verifiedAt  DateTime?
-  verifiedBy  String?
-  createdAt   DateTime  @default(now())
+  id         String    @id @default(uuid())
+  name       String
+  amount     Int // Rupiah
+  method     String // "bank" | "qris" | "saweria"
+  message    String?
+  proofUrl   String? // file path to proof image
+  isVerified Boolean   @default(false)
+  verifiedAt DateTime?
+  verifiedBy String?
+  createdAt  DateTime  @default(now())
 }
 
 enum FeedbackType {
@@ -463,7 +462,7 @@ model ErrorReport {
   fingerprint String   @unique // hash of message+source — prevents duplicates
   message     String
   stack       String?
-  source      String?  // URL where error occurred
+  source      String? // URL where error occurred
   userAgent   String?
   userId      String?
   occurrences Int      @default(1)

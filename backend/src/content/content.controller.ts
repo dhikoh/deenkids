@@ -25,14 +25,16 @@ export class ContentController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'type', required: false })
   @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'limit', required: false })
   async getList(
     @Query('age') age?: string,
     @Query('sort') sort?: string,
     @Query('page') page?: number,
     @Query('type') type?: string,
     @Query('search') search?: string,
+    @Query('limit') limit?: number,
   ) {
-    return this.contentService.getList({ age, sort, page, type, search });
+    return this.contentService.getList({ age, sort, page, type, search, limit });
   }
 
   @Get('tags')
@@ -62,6 +64,7 @@ export class ContentController {
     const skip = ((page ? parseInt(page) : 1) - 1) * take;
     const where: any = {
       status: 'PUBLISHED',
+      deletedAt: null,
     };
     // Search + age filter combined with AND
     const conditions: any[] = [];

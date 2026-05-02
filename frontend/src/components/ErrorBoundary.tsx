@@ -18,6 +18,9 @@ interface Props { children: ReactNode }
 interface State { hasError: boolean; errorMessage: string }
 
 export class ErrorBoundary extends Component<Props, State> {
+  private reportCount = 0;
+  private static MAX_REPORTS = 3;
+
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false, errorMessage: "" };
@@ -28,6 +31,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (this.reportCount >= ErrorBoundary.MAX_REPORTS) return;
+    this.reportCount++;
     submitErrorReport({
       message: error.message || "React render error",
       stack: [error.stack, errorInfo.componentStack].filter(Boolean).join("\n---\n"),
@@ -69,11 +74,15 @@ export function GlobalErrorListener() {
   useEffect(() => {
     // Debounce: don't send the same error within 5 seconds
     const recentErrors = new Set<string>();
+    let reportCount = 0;
+    const MAX_REPORTS = 10;
 
     const handleError = (event: ErrorEvent) => {
       const key = `${event.message}|${event.filename}`;
       if (recentErrors.has(key)) return;
+      if (reportCount >= MAX_REPORTS) return;
       recentErrors.add(key);
+      reportCount++;
       setTimeout(() => recentErrors.delete(key), 5000);
 
       submitErrorReport({
@@ -89,7 +98,9 @@ export function GlobalErrorListener() {
       const message = event.reason?.message || String(event.reason) || "Unhandled promise rejection";
       const key = `promise|${message}`;
       if (recentErrors.has(key)) return;
+      if (reportCount >= MAX_REPORTS) return;
       recentErrors.add(key);
+      reportCount++;
       setTimeout(() => recentErrors.delete(key), 5000);
 
       submitErrorReport({

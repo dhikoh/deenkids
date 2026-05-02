@@ -84,6 +84,7 @@ export class EditorService {
           contentId: content.id,
           question: sanitized.question || sanitizeText(dto.title),
           answerQuick: sanitized.answerQuick || '',
+          answerQuickReferenceUrl: sanitized.answerQuickReferenceUrl || null,
           dialogBlocks: sanitized.dialogBlocks || [],
           dalilBlocks: sanitized.dalilBlocks || [],
           analogyBlocks: sanitized.analogyBlocks || [],
@@ -278,6 +279,7 @@ export class EditorService {
         update: {
           question: sanitized.question,
           answerQuick: sanitized.answerQuick,
+          answerQuickReferenceUrl: sanitized.answerQuickReferenceUrl || null,
           dialogBlocks: sanitized.dialogBlocks || [],
           dalilBlocks: sanitized.dalilBlocks || [],
           analogyBlocks: sanitized.analogyBlocks || [],
@@ -287,6 +289,7 @@ export class EditorService {
           contentId,
           question: sanitized.question || sanitizeText(dto.title || ''),
           answerQuick: sanitized.answerQuick || '',
+          answerQuickReferenceUrl: sanitized.answerQuickReferenceUrl || null,
           dialogBlocks: sanitized.dialogBlocks || [],
           dalilBlocks: sanitized.dalilBlocks || [],
           analogyBlocks: sanitized.analogyBlocks || [],

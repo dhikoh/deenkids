@@ -141,7 +141,7 @@ export default function LoginPage() {
             <summary className="font-medium text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer">Lupa Password?</summary>
             <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-left">
               <p className="text-amber-800 font-medium text-xs">Silakan hubungi Admin untuk reset password.</p>
-              <p className="text-amber-600 text-xs mt-1">📧 Email: admin@adably.id</p>
+              <a href="/tentang-kami" className="text-amber-600 text-xs mt-1 underline hover:text-amber-800 inline-block">📧 Lihat info kontak di halaman Tentang Kami →</a>
             </div>
           </details>
         </div>

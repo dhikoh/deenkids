@@ -63,9 +63,10 @@ async function tryRefreshToken(): Promise<string | false> {
 
 function redirectToLogin() {
   if (typeof window !== 'undefined') {
-    const Cookies = require('js-cookie');
-    Cookies.remove('_at', { path: '/' });
-    Cookies.remove('_rt', { path: '/' });
+    import('js-cookie').then(({ default: Cookies }) => {
+      Cookies.remove('_at', { path: '/' });
+      Cookies.remove('_rt', { path: '/' });
+    }).catch(() => {});
     localStorage.removeItem('user');
     window.location.href = '/login';
   }
