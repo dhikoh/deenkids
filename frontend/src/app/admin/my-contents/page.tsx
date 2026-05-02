@@ -114,6 +114,12 @@ export default function MyContentsPage() {
                     </div>
                     <h3 className="font-bold text-slate-800">{item.title}</h3>
                     <p className="text-xs text-slate-500 mt-1">{item.node?.title} • {new Date(item.updatedAt).toLocaleDateString("id-ID")}</p>
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                      <span>👁 {item.viewCount || 0}</span>
+                      <span>❤️ {item.likeCount || 0}</span>
+                      <span>🔖 {item.bookmarkCount || 0}</span>
+                      {(item.avgRating || 0) > 0 && <span>⭐ {Number(item.avgRating).toFixed(1)}</span>}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {showNotes && (

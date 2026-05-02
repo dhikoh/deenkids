@@ -40,6 +40,7 @@ model User {
   conversationsA   Conversation[]         @relation("ConversationA")
   conversationsB   Conversation[]         @relation("ConversationB")
   sentMessages     Message[]
+  loginHistory     LoginHistory[]
 }
 
 model RefreshToken {
@@ -473,4 +474,24 @@ model ErrorReport {
 
   @@index([isResolved, lastSeenAt])
   @@index([lastSeenAt])
+}
+
+model LoginHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  loginAt   DateTime @default(now())
+
+  @@index([userId, loginAt])
+}
+
+model PageContent {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  title     String
+  content   Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
 }

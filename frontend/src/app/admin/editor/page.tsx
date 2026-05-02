@@ -322,8 +322,8 @@ function EditorContent() {
           </div>
         </div>
         <div className="p-4">
-          {type === "paragraph" && <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Tulis isi konten..." className="w-full border-slate-200 rounded-lg p-3 min-h-[100px] focus:border-emerald-500 focus:ring-emerald-500" />}
-          {type === "quick_answer" && <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Jawaban singkat yang langsung dibacakan ke anak..." className="w-full border-slate-200 rounded-lg p-3 min-h-[80px] focus:border-emerald-500 text-lg font-medium bg-emerald-50/50" />}
+          {type === "paragraph" && <div className="space-y-2"><textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Tulis isi konten..." className="w-full border-slate-200 rounded-lg p-3 min-h-[100px] focus:border-emerald-500 focus:ring-emerald-500" /><input type="url" value={data.referenceUrl || ''} onChange={e => updateBlock(id, { referenceUrl: e.target.value })} placeholder="📎 Link referensi (opsional) — https://..." className="w-full border-slate-200 rounded-lg p-2 text-sm text-emerald-700" /></div>}
+          {type === "quick_answer" && <div className="space-y-2"><textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Jawaban singkat yang langsung dibacakan ke anak..." className="w-full border-slate-200 rounded-lg p-3 min-h-[80px] focus:border-emerald-500 text-lg font-medium bg-emerald-50/50" /><input type="url" value={data.referenceUrl || ''} onChange={e => updateBlock(id, { referenceUrl: e.target.value })} placeholder="📎 Link referensi (opsional) — https://..." className="w-full border-slate-200 rounded-lg p-2 text-sm text-emerald-700" /></div>}
           {type === "dialog" && (
             <div className="space-y-2">
               {(data.lines || []).map((line: any, li: number) => (
@@ -348,6 +348,7 @@ function EditorContent() {
                   <textarea value={entry.arabic} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], arabic: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="Teks Arab (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[50px] text-right font-serif text-lg" dir="rtl" />
                   <textarea value={entry.translation} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], translation: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="Terjemahan / isi dalil" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px]" />
                   <input type="text" value={entry.source} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], source: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="Sumber: QS. Al-Baqarah: 43" className="w-full border-slate-200 rounded-lg text-sm p-2 font-bold" />
+                  <input type="url" value={entry.sourceUrl || ''} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], sourceUrl: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="🔗 URL sumber (opsional) — https://sunnah.com/..." className="w-full border-slate-200 rounded-lg text-sm p-2 text-emerald-700" />
                 </div>
               ))}
               <button onClick={() => updateBlock(id, { entries: [...(data.entries || []), { arabic: "", translation: "", source: "" }] })} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-100"><Plus size={12} /> Tambah Dalil</button>
@@ -359,7 +360,7 @@ function EditorContent() {
               <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Bayangkan Allah memberi kita hadiah..." className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[80px]" />
             </div>
           )}
-          {type === "tip" && <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Tips untuk orang tua..." className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px] bg-sky-50/50" />}
+                    {type === "tip" && <div className="space-y-2"><textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Tips untuk orang tua..." className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px] bg-sky-50/50" /><input type="url" value={data.referenceUrl || ''} onChange={e => updateBlock(id, { referenceUrl: e.target.value })} placeholder="📎 Link referensi (opsional) — https://..." className="w-full border-slate-200 rounded-lg p-2 text-sm text-emerald-700" /></div>}
           {type === "image" && (
             <div className="space-y-2">
               {data.url && <img src={data.url} alt="" className="rounded-xl max-h-60 object-cover border border-slate-200" />}

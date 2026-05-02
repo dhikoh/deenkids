@@ -107,6 +107,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ]},
     { label: "SuperAdmin", items: [
       { name: "Prompt Generator", icon: <Wand2 size={20} />, href: "/admin/prompt-generator", show: isSuperAdmin },
+      { name: "Tentang Kami", icon: <FileText size={20} />, href: "/admin/about-editor", show: isSuperAdmin },
+      { name: "Kontak CS", icon: <MessageSquare size={20} />, href: "/admin/contact-editor", show: isSuperAdmin },
       { name: "Donasi Masuk", icon: <DollarSign size={20} />, href: "/admin/donation-inbox", show: isSuperAdmin },
       { name: "Kritik & Saran", icon: <MessageSquare size={20} />, href: "/admin/feedback", show: isSuperAdmin },
       { name: "Withdrawal", icon: <Wallet size={20} />, href: "/admin/withdrawal-inbox", show: isSuperAdmin },

@@ -699,3 +699,38 @@ export async function emptyTrash(token: string) {
     headers: authHeaders(token),
   });
 }
+
+// ── Login History ──
+export async function fetchLoginHistory(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/profile/login-history`, {
+    headers: authHeaders(token),
+  });
+}
+
+// ── Page Content (CMS) ──
+export async function fetchPageContent(slug: string) {
+  return apiFetch(`${API_BASE_URL}/pages/${slug}`);
+}
+
+export async function fetchPageContentAdmin(slug: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/pages/${slug}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function updatePageContent(slug: string, data: { title?: string; content?: any }, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/pages/${slug}`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+}
+
+// ── Batch Content (Bookmarks) ──
+export async function fetchContentBatch(ids: string[]) {
+  return apiFetch(`${API_BASE_URL}/content/batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+}

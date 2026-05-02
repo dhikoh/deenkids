@@ -79,7 +79,7 @@ export default function LoginPage() {
             Masuk ke Adably
           </h2>
           <p className="mt-2 text-center text-sm text-slate-600">
-            Platform edukasi Islami — sesuai Alquran dan Hadist
+            Panel kontributor — platform edukasi parenting Islami
           </p>
         </div>
         
@@ -136,7 +136,13 @@ export default function LoginPage() {
           </div>
         </form>
         
-        <div className="mt-6 text-center">
+        <div className="mt-4 text-center">
+          <button type="button" onClick={() => alert('Silakan hubungi Admin untuk reset password.\n\nEmail: admin@adably.id')} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
+            Lupa Password?
+          </button>
+        </div>
+
+        <div className="mt-4 text-center">
           <Link href="/" className="text-sm font-medium text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors">
             <ChevronLeft className="h-4 w-4 mr-1" /> Kembali ke Beranda
           </Link>

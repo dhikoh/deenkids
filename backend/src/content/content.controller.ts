@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
 import { ContentService } from './content.service';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
@@ -161,6 +161,18 @@ export class ContentController {
       data: { clicks: { increment: 1 } },
     }).catch(() => {});
     return { ok: true };
+  }
+
+  @Post('batch')
+  @ApiOperation({ summary: 'Get multiple contents by IDs (for bookmarks)' })
+  async getBatch(@Body() body: { ids: string[] }) {
+    if (!body.ids || body.ids.length === 0) return { data: [] };
+    const items = await this.prisma.contentItem.findMany({
+      where: { id: { in: body.ids.slice(0, 50) }, status: 'PUBLISHED', deletedAt: null },
+      select: { id: true, title: true, slug: true, description: true, type: true, ageGroups: true, viewCount: true, likeCount: true, avgRating: true, publishedAt: true },
+      orderBy: { publishedAt: 'desc' },
+    });
+    return { data: items };
   }
 
   @Get(':slug')

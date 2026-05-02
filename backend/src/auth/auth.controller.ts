@@ -17,8 +17,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Login user & set HttpOnly cookies' })
   @ApiResponse({ status: 200, description: 'Berhasil login' })
   @ApiResponse({ status: 401, description: 'Kredensial salah' })
-  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const { user, accessToken, refreshToken } = await this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const ip = req.headers['x-forwarded-for'] as string || req.ip || '';
+    const userAgent = req.headers['user-agent'] || '';
+    const { user, accessToken, refreshToken } = await this.authService.login(loginDto, ip, userAgent);
 
     // Set HttpOnly Cookies for security
     res.cookie('access_token', accessToken, {

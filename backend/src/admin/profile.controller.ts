@@ -46,4 +46,16 @@ export class ProfileController {
     });
     return { data: updated, message: 'Data rekening berhasil diperbarui' };
   }
+
+  @Get('login-history')
+  @ApiOperation({ summary: 'Get login history (last 10)' })
+  async getLoginHistory(@Req() req: any) {
+    const history = await this.prisma.loginHistory.findMany({
+      where: { userId: req.user.id },
+      orderBy: { loginAt: 'desc' },
+      take: 10,
+      select: { id: true, ip: true, userAgent: true, loginAt: true },
+    });
+    return { data: history };
+  }
 }

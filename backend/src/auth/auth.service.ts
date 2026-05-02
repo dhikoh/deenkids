@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/auth.dto';
-import { NotificationType } from '@prisma/client';
 
 /** Maximum concurrent sessions per user */
 const MAX_SESSIONS = 5;
@@ -17,7 +16,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, ip?: string, userAgent?: string) {
     const user = await this.prisma.user.findUnique({
       where: { email: loginDto.email },
     });
@@ -62,17 +61,23 @@ export class AuthService {
         this.logger.log(`🔒 Pruned ${tokensToDelete.length} old sessions for user ${user.id}`);
       }
 
-      // Notify user if they already had active sessions
-      if (allTokens.length > 1) {
-        await this.prisma.internalNotification.create({
-          data: {
-            userId: user.id,
-            type: NotificationType.SYSTEM_ALERT,
-            title: 'Login Baru Terdeteksi 🔐',
-            message: 'Akun Anda baru saja login dari perangkat baru. Jika ini bukan Anda, segera ubah password.',
-            linkUrl: '/admin/profile',
-          },
-        }).catch(err => this.logger.warn(`Notification failed: ${err.message}`));
+      // Record login in history (non-blocking)
+      await this.prisma.loginHistory.create({
+        data: { userId: user.id, ip: ip || null, userAgent: userAgent || null },
+      }).catch(err => this.logger.warn(`Login history failed: ${err.message}`));
+
+      // Keep only last 50 login records per user
+      const historyCount = await this.prisma.loginHistory.count({ where: { userId: user.id } });
+      if (historyCount > 50) {
+        const oldest = await this.prisma.loginHistory.findMany({
+          where: { userId: user.id },
+          orderBy: { loginAt: 'asc' },
+          take: historyCount - 50,
+          select: { id: true },
+        });
+        await this.prisma.loginHistory.deleteMany({
+          where: { id: { in: oldest.map(h => h.id) } },
+        });
       }
     } catch (err) {
       this.logger.warn(`Session management error (non-fatal): ${err.message}`);

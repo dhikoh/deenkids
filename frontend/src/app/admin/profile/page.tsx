@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { User, CreditCard, Lock, Globe, Save } from "lucide-react";
-import { changePassword, apiFetch, authHeaders, API_BASE_URL } from "@/lib/api";
+import { User, CreditCard, Lock, Globe, Save, Shield } from "lucide-react";
+import { changePassword, apiFetch, authHeaders, API_BASE_URL, fetchLoginHistory } from "@/lib/api";
 const authH = authHeaders;
 
 export default function ProfilePage() {
@@ -11,6 +11,7 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ name: "", phone: "", bio: "", locale: "id" });
   const [bank, setBank] = useState({ bankName: "", bankAccount: "", bankHolder: "" });
   const [pw, setPw] = useState({ currentPassword: "", newPassword: "" });
+  const [loginHistory, setLoginHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -20,6 +21,8 @@ export default function ProfilePage() {
       setProfile(r.data);
       setForm({ name: r.data.name || "", phone: r.data.phone || "", bio: r.data.bio || "", locale: r.data.locale || "id" });
       setBank({ bankName: r.data.bankName || "", bankAccount: r.data.bankAccount || "", bankHolder: r.data.bankHolder || "" });
+      const hist = await fetchLoginHistory(token);
+      setLoginHistory(hist.data || []);
     } catch { toast.error("Gagal memuat profil"); }
     finally { setLoading(false); }
   };
@@ -36,6 +39,13 @@ export default function ProfilePage() {
   const savePw = async () => {
     const token = Cookies.get("_at"); if (!token) return;
     try { await changePassword(pw, token); toast.success("Password berhasil diubah"); setPw({ currentPassword: "", newPassword: "" }); } catch (e: any) { toast.error(e.message); }
+  };
+
+  const parseDevice = (ua: string) => {
+    if (!ua) return "Unknown";
+    const browser = ua.includes("Chrome") ? "Chrome" : ua.includes("Firefox") ? "Firefox" : ua.includes("Safari") ? "Safari" : "Browser";
+    const os = ua.includes("Windows") ? "Windows" : ua.includes("Mac") ? "Mac" : ua.includes("Linux") ? "Linux" : ua.includes("Android") ? "Android" : ua.includes("iPhone") ? "iPhone" : "OS";
+    return `${browser} / ${os}`;
   };
 
   if (loading) return <div className="p-8 text-center text-slate-500">Memuat...</div>;
@@ -80,6 +90,26 @@ export default function ProfilePage() {
           <div><label className="text-sm font-semibold text-slate-700">Password Baru</label><input type="password" value={pw.newPassword} onChange={e => setPw({ ...pw, newPassword: e.target.value })} className="w-full border border-slate-300 rounded-lg p-2.5 mt-1" /></div>
         </div>
         <button onClick={savePw} className="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2"><Lock size={16} /> Ubah Password</button>
+      </div>
+
+      {/* Login History */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <h3 className="font-bold text-slate-800 flex items-center gap-2"><Shield size={18} /> Riwayat Login</h3>
+        {loginHistory.length === 0 ? (
+          <p className="text-sm text-slate-400">Belum ada riwayat login.</p>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {loginHistory.map((h: any) => (
+              <div key={h.id} className="flex justify-between items-center py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">{parseDevice(h.userAgent)}</p>
+                  <p className="text-xs text-slate-400">{h.ip || 'IP tidak tersedia'}</p>
+                </div>
+                <p className="text-xs text-slate-500">{new Date(h.loginAt).toLocaleString('id-ID')}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Info */}
