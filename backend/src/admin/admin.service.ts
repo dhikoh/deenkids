@@ -36,7 +36,7 @@ export class AdminService {
       this.prisma.contentItem.count({ where: { status: 'REVIEW', deletedAt: null } }),
       this.prisma.user.count({ where: { role: 'AUTHOR' } }),
       this.prisma.contentItem.findMany({
-        where: { status: 'REVIEW' },
+        where: { status: 'REVIEW', deletedAt: null },
         include: { author: { select: { name: true } }, aiCheckResults: { orderBy: { checkedAt: 'desc' }, take: 1 } },
         orderBy: { updatedAt: 'desc' },
         take: 5,

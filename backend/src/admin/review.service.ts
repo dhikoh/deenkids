@@ -37,7 +37,7 @@ export class ReviewService {
 
   async reviewContent(contentId: string, reviewerId: string, action: ReviewAction, notes?: string, manualScore?: number) {
     const content = await this.prisma.contentItem.findUnique({
-      where: { id: contentId },
+      where: { id: contentId, deletedAt: null },
       include: { aiCheckResults: { orderBy: { checkedAt: 'desc' }, take: 1 } },
     });
 
@@ -122,7 +122,7 @@ export class ReviewService {
   }
 
   async unpublishContent(contentId: string, reviewerId: string, notes?: string) {
-    const content = await this.prisma.contentItem.findUnique({ where: { id: contentId } });
+    const content = await this.prisma.contentItem.findUnique({ where: { id: contentId, deletedAt: null } });
     if (!content) throw new NotFoundException('Konten tidak ditemukan');
     if (content.status !== 'PUBLISHED') {
       throw new BadRequestException(`Hanya konten PUBLISHED yang bisa di-unpublish. Status saat ini: "${content.status}"`);

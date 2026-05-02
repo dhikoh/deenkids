@@ -11,7 +11,7 @@ export class StructureService {
     const nodes = await this.prisma.contentNode.findMany({
       orderBy: { order: 'asc' },
       include: {
-        _count: { select: { contents: true } },
+        _count: { select: { contents: { where: { deletedAt: null } } } },
       },
     });
 
@@ -84,7 +84,7 @@ export class StructureService {
   }
 
   async assignContentToNode(contentId: string, nodeId: string) {
-    const content = await this.prisma.contentItem.findUnique({ where: { id: contentId } });
+    const content = await this.prisma.contentItem.findUnique({ where: { id: contentId, deletedAt: null } });
     if (!content) throw new NotFoundException('Konten tidak ditemukan');
 
     const node = await this.prisma.contentNode.findUnique({ where: { id: nodeId } });

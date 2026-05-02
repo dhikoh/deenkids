@@ -6,7 +6,7 @@ export class EngagementService {
   constructor(private prisma: PrismaService) {}
 
   private async validateContent(contentId: string) {
-    const exists = await this.prisma.contentItem.findUnique({ where: { id: contentId }, select: { id: true } });
+    const exists = await this.prisma.contentItem.findFirst({ where: { id: contentId, deletedAt: null, status: 'PUBLISHED' }, select: { id: true } });
     if (!exists) throw new NotFoundException('Konten tidak ditemukan');
   }
 

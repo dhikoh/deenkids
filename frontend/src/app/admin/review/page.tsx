@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchReviewQueue, processReview } from "@/lib/api";
+import { fetchReviewQueue, processReview, fetchContentForEdit } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { ClipboardCheck, Check, X, Edit2, AlertCircle } from "lucide-react";
+import { ClipboardCheck, Check, X, Edit2, AlertCircle, Eye, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function ReviewPage() {
   const [queue, setQueue] = useState<any[]>([]);
@@ -13,6 +13,9 @@ export default function ReviewPage() {
   const [activeNotes, setActiveNotes] = useState("");
   const [showNotesFor, setShowNotesFor] = useState<string | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'revision' | null>(null);
+  const [expandedPreview, setExpandedPreview] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<Record<string, any>>({});
+  const [loadingPreview, setLoadingPreview] = useState<string | null>(null);
 
   useEffect(() => {
     loadQueue();
@@ -31,6 +34,26 @@ export default function ReviewPage() {
     }
   };
 
+  const togglePreview = async (id: string) => {
+    if (expandedPreview === id) {
+      setExpandedPreview(null);
+      return;
+    }
+    setExpandedPreview(id);
+    if (previewData[id]) return; // Already loaded
+    setLoadingPreview(id);
+    try {
+      const token = Cookies.get("_at");
+      if (!token) return;
+      const res = await fetchContentForEdit(token, id);
+      setPreviewData(prev => ({ ...prev, [id]: res.data }));
+    } catch {
+      toast.error("Gagal memuat detail konten");
+    } finally {
+      setLoadingPreview(null);
+    }
+  };
+
   const handleActionClick = (id: string, action: 'approve' | 'reject' | 'revision') => {
     setShowNotesFor(id);
     setActionType(action);
@@ -46,12 +69,117 @@ export default function ReviewPage() {
       await processReview(id, actionType, activeNotes, token);
       toast.success(`Konten berhasil di-${actionType}`);
       setShowNotesFor(null);
-      loadQueue(); // Reload queue
+      loadQueue();
     } catch (error: any) {
       toast.error(error.message || "Gagal memproses review");
     } finally {
       setProcessingId(null);
     }
+  };
+
+  const renderPreview = (data: any) => {
+    if (!data) return null;
+    return (
+      <div className="border-t border-slate-200 bg-slate-50/70 p-5 space-y-4">
+        {/* Description */}
+        {data.description && (
+          <div>
+            <h4 className="text-xs font-bold text-slate-500 uppercase mb-1">Deskripsi</h4>
+            <p className="text-sm text-slate-700">{data.description}</p>
+          </div>
+        )}
+
+        {/* Tags */}
+        {data.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {data.tags.map((t: any, i: number) => (
+              <span key={i} className="px-2 py-0.5 bg-sky-50 text-sky-600 text-[10px] font-bold rounded">{t.tag?.name || t.name}</span>
+            ))}
+          </div>
+        )}
+
+        {/* QnA Detail */}
+        {data.qnaDetail && (
+          <div className="space-y-3">
+            {data.qnaDetail.answerQuick && (
+              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                <h4 className="text-xs font-bold text-emerald-700 mb-1">💡 Jawaban Instan</h4>
+                <p className="text-sm text-slate-700">{data.qnaDetail.answerQuick}</p>
+              </div>
+            )}
+            {(data.qnaDetail.dialogBlocks || []).map((d: any, i: number) => (
+              <div key={i} className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                <h4 className="text-xs font-bold text-amber-700 mb-1">💬 Dialog {i + 1}</h4>
+                {(d.lines || []).map((line: any, li: number) => (
+                  <p key={li} className="text-sm text-slate-700"><span className="font-semibold">{line.role}:</span> {line.text}</p>
+                ))}
+              </div>
+            ))}
+            {(data.qnaDetail.dalilBlocks || []).map((d: any, i: number) => (
+              <div key={i} className="bg-orange-50 border border-orange-100 rounded-xl p-3">
+                <h4 className="text-xs font-bold text-orange-700 mb-1">📖 Dalil {i + 1}</h4>
+                {(d.entries || []).map((e: any, ei: number) => (
+                  <div key={ei} className="text-sm">
+                    {e.arabic && <p className="text-right font-arabic text-lg text-slate-800 mb-1">{e.arabic}</p>}
+                    {e.translation && <p className="text-slate-600 italic">{e.translation}</p>}
+                    {e.source && <p className="text-xs text-slate-400 mt-1">Sumber: {e.source}</p>}
+                  </div>
+                ))}
+              </div>
+            ))}
+            {(data.qnaDetail.analogyBlocks || []).map((a: any, i: number) => (
+              <div key={i} className="bg-teal-50 border border-teal-100 rounded-xl p-3">
+                <h4 className="text-xs font-bold text-teal-700 mb-1">🧩 Analogi</h4>
+                {a.title && <p className="text-sm font-semibold text-slate-800">{a.title}</p>}
+                <p className="text-sm text-slate-700">{a.text}</p>
+              </div>
+            ))}
+            {(data.qnaDetail.tipsBlocks || []).map((t: any, i: number) => (
+              <div key={i} className="bg-sky-50 border border-sky-100 rounded-xl p-3">
+                <h4 className="text-xs font-bold text-sky-700 mb-1">ℹ️ Tips</h4>
+                <p className="text-sm text-slate-700">{t.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Article Detail */}
+        {data.articleDetail?.blocks && (
+          <div className="space-y-3">
+            {(data.articleDetail.blocks as any[]).map((block: any, i: number) => (
+              <div key={i} className="bg-white border border-slate-100 rounded-xl p-3">
+                <span className="text-[10px] font-bold uppercase text-slate-400">{block.type}</span>
+                {block.type === 'paragraph' && <p className="text-sm text-slate-700 mt-1">{block.text}</p>}
+                {block.type === 'image' && block.url && <img src={block.url} alt={block.caption || ''} className="rounded-lg max-h-48 mt-1" />}
+                {block.type === 'video' && block.url && <p className="text-sm text-blue-600 mt-1">{block.url}</p>}
+                {block.text && block.type !== 'paragraph' && <p className="text-sm text-slate-700 mt-1">{block.text}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Review History */}
+        {data.reviewHistory?.length > 0 && (
+          <div>
+            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Riwayat Review</h4>
+            <div className="space-y-1">
+              {data.reviewHistory.map((r: any, i: number) => (
+                <div key={i} className="flex items-center gap-2 text-xs text-slate-500">
+                  <span className={`px-1.5 py-0.5 rounded font-bold ${
+                    r.action === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                    r.action === 'REJECTED' ? 'bg-rose-100 text-rose-700' :
+                    'bg-amber-100 text-amber-700'
+                  }`}>{r.action}</span>
+                  <span>{r.reviewer?.name || 'Unknown'}</span>
+                  <span>• {new Date(r.createdAt).toLocaleDateString('id-ID')}</span>
+                  {r.notes && <span className="text-slate-400">— {r.notes}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (isLoading) return <div className="p-8">Memuat antrean...</div>;
@@ -65,80 +193,101 @@ export default function ReviewPage() {
 
       <div className="space-y-4">
         {queue.map((item) => (
-          <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-bold text-lg text-slate-800">{item.title}</h3>
-                <p className="text-sm text-slate-500">Oleh: <span className="font-medium text-slate-700">{item.author?.name || 'Unknown'}</span> • Tipe: {item.type} • Usia: {(item.ageGroups || []).join(', ')}</p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {item.aiCheckResults?.[0]?.score != null && (
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    item.aiCheckResults[0].score >= 80 ? 'bg-emerald-100 text-emerald-700' :
-                    item.aiCheckResults[0].score >= 60 ? 'bg-amber-100 text-amber-700' :
-                    'bg-rose-100 text-rose-700'
-                  }`}>
-                    AI: {item.aiCheckResults[0].score}/100
+          <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-bold text-lg text-slate-800">{item.title}</h3>
+                  <p className="text-sm text-slate-500">Oleh: <span className="font-medium text-slate-700">{item.author?.name || 'Unknown'}</span> • Tipe: {item.type} • Usia: {(item.ageGroups || []).join(', ')}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {item.aiCheckResults?.[0]?.score != null && (
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      item.aiCheckResults[0].score >= 80 ? 'bg-emerald-100 text-emerald-700' :
+                      item.aiCheckResults[0].score >= 60 ? 'bg-amber-100 text-amber-700' :
+                      'bg-rose-100 text-rose-700'
+                    }`}>
+                      AI: {item.aiCheckResults[0].score}/100
+                    </span>
+                  )}
+                  <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                    <AlertCircle size={14} /> Menunggu Review
                   </span>
-                )}
-                <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                  <AlertCircle size={14} /> Menunggu Review
-                </span>
-              </div>
-            </div>
-
-            {showNotesFor === item.id ? (
-              <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Catatan untuk AUTHOR ({actionType === 'approve' ? 'Opsional' : 'Wajib'})
-                </label>
-                <textarea 
-                  value={activeNotes}
-                  onChange={(e) => setActiveNotes(e.target.value)}
-                  placeholder="Tambahkan alasan atau saran perbaikan..."
-                  className="w-full border-slate-300 rounded-lg p-3 text-sm focus:ring-emerald-500 focus:border-emerald-500 min-h-[100px] mb-3"
-                />
-                <div className="flex justify-end gap-2">
-                  <button 
-                    onClick={() => setShowNotesFor(null)}
-                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button 
-                    onClick={() => submitAction(item.id)}
-                    disabled={processingId === item.id || (actionType !== 'approve' && !activeNotes.trim())}
-                    className={`px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors disabled:opacity-50 ${
-                      actionType === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' :
-                      actionType === 'reject' ? 'bg-rose-600 hover:bg-rose-700' :
-                      'bg-amber-500 hover:bg-amber-600'
-                    }`}
-                  >
-                    {processingId === item.id ? "Memproses..." : "Konfirmasi"}
-                  </button>
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-                <button 
-                  onClick={() => handleActionClick(item.id, 'approve')}
-                  className="flex items-center gap-1 px-4 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-sm font-bold transition-colors"
-                >
-                  <Check size={16} /> Setujui (Publish)
-                </button>
-                <button 
-                  onClick={() => handleActionClick(item.id, 'revision')}
-                  className="flex items-center gap-1 px-4 py-2 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg text-sm font-bold transition-colors"
-                >
-                  <Edit2 size={16} /> Minta Revisi
-                </button>
-                <button 
-                  onClick={() => handleActionClick(item.id, 'reject')}
-                  className="flex items-center gap-1 px-4 py-2 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-lg text-sm font-bold transition-colors"
-                >
-                  <X size={16} /> Tolak
-                </button>
-              </div>
+
+              {/* Preview Toggle Button */}
+              <button
+                onClick={() => togglePreview(item.id)}
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 transition-colors mb-4"
+              >
+                <Eye size={16} />
+                {expandedPreview === item.id ? 'Sembunyikan Konten' : 'Lihat Isi Konten'}
+                {expandedPreview === item.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+
+              {showNotesFor === item.id ? (
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Catatan untuk AUTHOR ({actionType === 'approve' ? 'Opsional' : 'Wajib'})
+                  </label>
+                  <textarea
+                    value={activeNotes}
+                    onChange={(e) => setActiveNotes(e.target.value)}
+                    placeholder="Tambahkan alasan atau saran perbaikan..."
+                    className="w-full border-slate-300 rounded-lg p-3 text-sm focus:ring-emerald-500 focus:border-emerald-500 min-h-[100px] mb-3"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => setShowNotesFor(null)}
+                      className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      onClick={() => submitAction(item.id)}
+                      disabled={processingId === item.id || (actionType !== 'approve' && !activeNotes.trim())}
+                      className={`px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors disabled:opacity-50 ${
+                        actionType === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' :
+                        actionType === 'reject' ? 'bg-rose-600 hover:bg-rose-700' :
+                        'bg-amber-500 hover:bg-amber-600'
+                      }`}
+                    >
+                      {processingId === item.id ? "Memproses..." : "Konfirmasi"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => handleActionClick(item.id, 'approve')}
+                    className="flex items-center gap-1 px-4 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-sm font-bold transition-colors"
+                  >
+                    <Check size={16} /> Setujui (Publish)
+                  </button>
+                  <button
+                    onClick={() => handleActionClick(item.id, 'revision')}
+                    className="flex items-center gap-1 px-4 py-2 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg text-sm font-bold transition-colors"
+                  >
+                    <Edit2 size={16} /> Minta Revisi
+                  </button>
+                  <button
+                    onClick={() => handleActionClick(item.id, 'reject')}
+                    className="flex items-center gap-1 px-4 py-2 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-lg text-sm font-bold transition-colors"
+                  >
+                    <X size={16} /> Tolak
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Expandable Content Preview */}
+            {expandedPreview === item.id && (
+              loadingPreview === item.id ? (
+                <div className="border-t border-slate-200 p-6 text-center text-sm text-slate-400 animate-pulse">Memuat isi konten...</div>
+              ) : (
+                renderPreview(previewData[item.id])
+              )
             )}
           </div>
         ))}

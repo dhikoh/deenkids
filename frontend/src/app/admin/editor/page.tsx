@@ -62,6 +62,7 @@ function EditorContent() {
   const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [editId, setEditId] = useState<string | null>(null);
+  const [editStatus, setEditStatus] = useState<string | null>(null);
   const [showTerms, setShowTerms] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [lastAutoSave, setLastAutoSave] = useState<string | null>(null);
@@ -106,6 +107,7 @@ function EditorContent() {
               setAgeGroups(c.ageGroups && c.ageGroups.length > 0 ? c.ageGroups : ["3-5"]); setNodeId(c.nodeId || "");
               setDisplayAuthorName(c.displayAuthorName || "");
               setEnableAudio(c.enableAudio ?? false);
+              setEditStatus(c.status || null);
               setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
               const cType = c.type === "PEMBELAJARAN" ? "PEMBELAJARAN" : c.type === "QNA" ? "QNA" : "ARTICLE";
               setContentType(cType);
@@ -397,8 +399,21 @@ function EditorContent() {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Tulis Konten ✍️</h1>
-          <p className="text-slate-500">Buat konten interaktif — Pembelajaran, Tanya Jawab, atau Artikel.</p>
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+            {editId ? 'Edit Konten ✏️' : 'Tulis Konten ✍️'}
+            {editStatus && (
+              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                editStatus === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700' :
+                editStatus === 'REVIEW' ? 'bg-amber-100 text-amber-700' :
+                editStatus === 'REVISION' ? 'bg-rose-100 text-rose-700' :
+                editStatus === 'DRAFT' ? 'bg-slate-100 text-slate-600' :
+                'bg-slate-100 text-slate-600'
+              }`}>
+                {editStatus === 'PUBLISHED' ? '✅ Terbit' : editStatus === 'REVIEW' ? '⏳ Menunggu Review' : editStatus === 'REVISION' ? '✏️ Perlu Revisi' : editStatus === 'DRAFT' ? '📝 Draft' : editStatus}
+              </span>
+            )}
+          </h1>
+          <p className="text-slate-500">{editId ? 'Perbarui konten yang sudah ada.' : 'Buat konten interaktif — Pembelajaran, Tanya Jawab, atau Artikel.'}</p>
           {lastAutoSave && <p className="text-xs text-emerald-500 mt-1 flex items-center gap-1"><Clock size={12} /> Tersimpan otomatis {lastAutoSave}</p>}
         </div>
         <div className="flex items-center gap-3">
