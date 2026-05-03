@@ -189,7 +189,11 @@ Spesifikasi Wajib:
   if (options.noLivingBeings) {
     prompt += `\n- Karakter: TANPA makhluk bernyawa (manusia/hewan utuh). Gunakan siluet, objek benda mati, pemandangan, atau simbol islami (masjid, Al-Quran, dll).`;
   } else {
-    prompt += `\n- Karakter: Jika menampilkan orang, pastikan sopan. Anak muslim mengenakan peci/baju koko, dan anak perempuan mengenakan hijab.`;
+    prompt += `\n- Karakter Manusia (WAJIB FACELESS): Jika menampilkan orang, WAJIB tanpa fitur wajah (TIDAK ADA mata, hidung, atau mulut — wajah harus rata/kosong/blank face).
+  * Ayah: Berjenggot, mengenakan pakaian muslim/koko.
+  * Ibu: Mengenakan hijab syar'i yang menjulur panjang.
+  * Anak Laki-laki: Mengenakan peci/kopiah.
+  * Anak Perempuan: Mengenakan hijab.`;
   }
 
   if (options.includeText) {
@@ -201,7 +205,7 @@ Spesifikasi Wajib:
   prompt += `
 
 (Prompt for Engine / English Translation reference):
-"A high quality illustration for Islamic kids education titled ${title}. Style: ${style}. ${options.noLivingBeings ? "No living beings, no faces, focus on objects/environment." : "Muslim boy wearing kufi, muslim girl wearing hijab."} Warm lighting, vibrant colors. ${options.includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, clean composition with negative space."} --ar 16:9"`;
+"A high quality illustration for Islamic kids education titled ${title}. Style: ${style}. ${options.noLivingBeings ? "No living beings, no humans, no animals, focus on objects/environment." : "FACELESS characters (strictly NO eyes, NO nose, NO mouth, completely blank faces). Muslim father with beard, muslim mother with long hijab, muslim boy with kufi, muslim girl with hijab."} Warm lighting, vibrant colors. ${options.includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, clean composition with negative space."} --ar 16:9"`;
 
   return prompt;
 }
