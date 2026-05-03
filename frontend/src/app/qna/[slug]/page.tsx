@@ -1,7 +1,7 @@
 import { fetchContentBySlug } from "@/lib/api";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCircle, User } from "lucide-react";
+import { ChevronLeft, Star, ThumbsUp, Eye, Lightbulb, MessageCircle, User } from "lucide-react";
 import { EngagementBar } from "@/components/ui/EngagementBar";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
@@ -186,47 +186,6 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
         </div>
       )}
 
-      {content.articleDetail && (
-        <div className="prose prose-slate max-w-none">
-          {(content.articleDetail.blocks as any[])?.map((block: any, i: number) => {
-            if (block.type === 'heading') return <h2 key={i} className="text-xl font-bold text-slate-800 mt-8 mb-3">{block.text}</h2>;
-            if (block.type === 'paragraph') return <div key={i} className="mb-4"><p className="text-slate-600 leading-relaxed">{block.text}</p>{block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800">📎 Sumber referensi ↗</a>}</div>;
-            if (block.type === 'dalil') {
-              const entries = block.entries || [block];
-              return entries.map((d: any, j: number) => (
-                <blockquote key={`${i}-${j}`} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4 my-4">
-                  {d.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{d.arabic}</p>}
-                  <p className="italic text-slate-700">&ldquo;{d.translation || d.text}&rdquo;</p>
-                  <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {d.sourceUrl ? <a href={d.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900">{d.source} ↗</a> : d.source}</cite>
-                </blockquote>
-              ));
-            }
-            if (block.type === 'tip') return <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 my-4 text-emerald-800 text-sm font-medium">💡 {block.text}{block.referenceUrl && <> — <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="underline text-xs hover:text-emerald-900">Sumber ↗</a></>}</div>;
-            if (block.type === 'dialog') return (
-              <div key={i} className={`flex ${block.role === 'anak' ? 'justify-start' : 'justify-end'} my-2`}>
-                <div className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm font-medium ${block.role === 'anak' ? 'bg-slate-100 text-slate-700 rounded-bl-sm' : 'bg-emerald-500 text-white rounded-br-sm'}`}>
-                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-60">{block.role === 'anak' ? '👦 Anak' : '👩 Orang Tua'}</p>
-                  {block.text}
-                </div>
-              </div>
-            );
-            if (block.type === 'analogy') return (
-              <div key={i} className="bg-teal-50 border border-teal-200 rounded-2xl p-6 my-4">
-                {block.title && <h3 className="font-bold text-teal-800 mb-2">{block.title}</h3>}
-                <p className="text-teal-700 font-medium">{block.text}</p>
-              </div>
-            );
-            if (block.type === 'image' && block.url) return <img key={i} src={block.url} alt={block.caption || ''} className="rounded-2xl w-full my-4 border border-slate-200" />;
-            if (block.type === 'video' && block.url) {
-              // YouTube embed
-              const ytMatch = block.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-              if (ytMatch) return <div key={i} className="aspect-video rounded-2xl overflow-hidden my-4"><iframe src={`https://www.youtube.com/embed/${ytMatch[1]}`} className="w-full h-full" allowFullScreen /></div>;
-              return <a key={i} href={block.url} target="_blank" rel="noopener noreferrer" className="block bg-slate-100 rounded-xl p-4 my-4 text-emerald-600 font-bold hover:underline">🎬 {block.caption || block.url}</a>;
-            }
-            return null;
-          })}
-        </div>
-      )}
 
       {/* Engagement Bar */}
       <EngagementBar
