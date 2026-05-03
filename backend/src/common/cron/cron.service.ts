@@ -2,6 +2,7 @@ import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RewardService } from '../../reward/reward.service';
+import { StorageService } from '../storage/storage.service';
 import { PointType } from '@prisma/client';
 import * as fs from 'fs';
 import { join } from 'path';
@@ -13,6 +14,7 @@ export class CronService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
     @Inject(forwardRef(() => RewardService)) private readonly rewardService: RewardService,
   ) {}
 
@@ -58,7 +60,7 @@ export class CronService {
     this.logger.log(`📊 Recalculated stats for ${stats.length} authors`);
   }
 
-  // Cleanup proof images older than 3 months (data stays in DB)
+  // Cleanup proof images older than 3 months (financial record stays in DB)
   @Cron('0 4 1 * *') // 1st of every month at 4AM
   async cleanupOldProofImages() {
     const threeMonthsAgo = new Date();
@@ -72,14 +74,12 @@ export class CronService {
     let deleted = 0;
     for (const d of oldDonations) {
       if (d.proofUrl) {
-        const filePath = join(process.cwd(), d.proofUrl);
         try {
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            deleted++;
-          }
+          // Delete from MinIO object storage (safe no-op if URL doesn't match)
+          await this.storageService.deleteFile(d.proofUrl);
+          deleted++;
         } catch {}
-        // Clear proofUrl but keep financial record
+        // Clear proofUrl but keep the financial record
         await this.prisma.donationSubmission.update({
           where: { id: d.id },
           data: { proofUrl: null },
