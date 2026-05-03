@@ -27,7 +27,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 2 * 60 * 60 * 1000, // 2 hours
       path: '/',
     });
 

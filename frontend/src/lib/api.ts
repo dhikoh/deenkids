@@ -30,9 +30,9 @@ async function tryRefreshToken(): Promise<string | false> {
 
       const data = await res.json();
       if (data.accessToken) {
-        // Update _at cookie (15 min)
+        // Update _at cookie (2 hours)
         Cookies.set('_at', data.accessToken, {
-          expires: 1/96,
+          expires: 1/12,
           path: '/',
           secure: window.location.protocol === 'https:',
           sameSite: 'lax',

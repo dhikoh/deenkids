@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock, Volume2, VolumeX, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
@@ -45,6 +45,7 @@ function defaultData(type: BlockType): any {
 const AUTO_SAVE_KEY = "adably_editor_draft";
 
 function EditorContent() {
+  const router = useRouter();
   const [contentType, setContentType] = useState<ContentTypeOption>("QNA");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -280,7 +281,7 @@ function EditorContent() {
         localStorage.removeItem(AUTO_SAVE_KEY);
         // Redirect ke edit mode untuk konten yang baru dibuat
         if (res?.data?.id) {
-          window.location.href = `/admin/editor?id=${res.data.id}`;
+          router.push(`/admin/editor?id=${res.data.id}`);
           return;
         }
       }

@@ -37,7 +37,7 @@ export default function LoginPage() {
       // (HttpOnly cookies from api.adably.id are not accessible on adably.id)
       if (data.accessToken) {
         Cookies.set("_at", data.accessToken, {
-          expires: 1/96, // ~15 minutes (synced with JWT lifetime)
+          expires: 1/12, // 2 hours (synced with JWT lifetime)
           path: "/",
           secure: window.location.protocol === 'https:',
           sameSite: 'lax',

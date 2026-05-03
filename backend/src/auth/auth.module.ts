@@ -13,7 +13,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get('JWT_SECRET', 'adably-super-secret-key-2026'),
-        signOptions: { expiresIn: '15m' },
+        signOptions: { expiresIn: '2h' },
       }),
     }),
   ],

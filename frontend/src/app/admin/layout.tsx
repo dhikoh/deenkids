@@ -67,6 +67,44 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
   }, []);
 
+  // Background auto-refresh: silently refresh _at every 90 minutes to prevent session expiry
+  useEffect(() => {
+    const REFRESH_INTERVAL = 90 * 60 * 1000; // 90 minutes
+
+    const silentRefresh = async () => {
+      try {
+        const rt = Cookies.get('_rt');
+        if (!rt) return;
+        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: rt }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.accessToken) {
+          Cookies.set('_at', data.accessToken, {
+            expires: 1/12, // 2 hours
+            path: '/',
+            secure: window.location.protocol === 'https:',
+            sameSite: 'lax',
+          });
+        }
+        if (data.refreshToken) {
+          Cookies.set('_rt', data.refreshToken, {
+            expires: 7,
+            path: '/',
+            secure: window.location.protocol === 'https:',
+            sameSite: 'lax',
+          });
+        }
+      } catch {}
+    };
+
+    const refreshTimer = setInterval(silentRefresh, REFRESH_INTERVAL);
+    return () => clearInterval(refreshTimer);
+  }, []);
+
   const handleLogout = async () => {
     try {
       const token = Cookies.get('_at');
