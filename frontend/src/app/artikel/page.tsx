@@ -73,7 +73,13 @@ export default function ArtikelPage() {
       {!loading && (
         <div className="grid md:grid-cols-2 gap-6">
           {items.map((item: any) => (
-            <Link href={`/artikel/${item.slug}`} key={item.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+            <Link href={`/artikel/${item.slug}`} key={item.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group overflow-hidden">
+              {item.thumbnailUrl && (
+                <div className="w-full h-40 overflow-hidden">
+                  <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                </div>
+              )}
+              <div className="p-6">
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <span className="text-[10px] font-bold px-2 py-1 bg-amber-50 text-amber-700 rounded-md uppercase tracking-wider">Artikel</span>
                 {(item.ageGroups || []).map((a: string) => <span key={a} className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">{a} thn</span>)}
@@ -86,6 +92,7 @@ export default function ArtikelPage() {
                 <span className="flex items-center gap-1"><ThumbsUp className="h-3 w-3" /> {item.likeCount}</span>
                 <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {item.viewCount}</span>
                 <span className="ml-auto text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-bold">Baca <ArrowRight className="h-3 w-3" /></span>
+              </div>
               </div>
             </Link>
           ))}

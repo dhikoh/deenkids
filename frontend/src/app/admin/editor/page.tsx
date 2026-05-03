@@ -160,13 +160,13 @@ function EditorContent() {
     if (editId) return; // Don't auto-save when editing existing content
     const timer = setInterval(() => {
       if (title || blocks.length > 0) {
-        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, savedAt: new Date().toISOString() };
+        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, thumbnailUrl, savedAt: new Date().toISOString() };
         localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft));
         setLastAutoSave(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
       }
     }, 30000);
     return () => clearInterval(timer);
-  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, editId]);
+  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, thumbnailUrl, editId]);
 
   const recoverDraft = () => {
     try {
@@ -182,6 +182,7 @@ function EditorContent() {
         if (d.blocks) setBlocks(d.blocks);
         if (d.displayAuthorName) setDisplayAuthorName(d.displayAuthorName);
         if (d.enableAudio !== undefined) setEnableAudio(d.enableAudio);
+        if (d.thumbnailUrl) setThumbnailUrl(d.thumbnailUrl);
         toast.success("Draft berhasil dipulihkan!");
       }
     } catch {} finally { setShowRecovery(false); }
