@@ -13,39 +13,138 @@ type SingleCharType = "ayah" | "ibu" | "anakLaki" | "anakPerempuan";
 const HISTORY_KEY = "adably_prompt_history";
 const MAX_HISTORY = 5;
 
-function generateKisahPrompt(subType: KisahSubType, title: string, ages: string[], options: Record<string, boolean>): string {
-  const ageLabel = ages.length ? ages.map(a => a === "Semua Usia" ? "semua usia" : `${a} tahun`).join(", ") : "semua usia";
+function generateKisahPrompt(subType: KisahSubType, title: string, options: Record<string, boolean>): string {
+  const TARGET_USIA = "3–10 tahun";
   const subTypeLabel = subType === "SIRAH" ? "Sirah Nabawiyah" : subType === "TELADAN" ? "Teladan Sahabat/Ulama" : "Cerita Fiksi Islami";
-  let prompt = `Kamu adalah penulis konten kisah Islami untuk platform edukasi anak bernama Adably.\n\n`;
+
+  let prompt = `Kamu adalah PENULIS KISAH ISLAMI untuk platform edukasi anak "Adably". Tugasmu membuat naskah kisah yang PANJANG, KAYA DETAIL, dan MENGALIR seperti seorang pencerita ulung — bukan sekadar ringkasan. Konten ini akan DIBACAKAN melalui fitur audio, sehingga setiap kalimat harus terasa hidup, hangat, dan memikat.\n\n`;
+
   if (subType === "SIRAH") {
-    prompt += `ATURAN WAJIB — SIRAH NABAWIYAH:\n1. Ikuti HANYA fakta dari kitab Sirah mu'tabar (Ibnu Hisyam, Ar-Rahiqul Makhtum, Sirah Ibnu Katsir).\n2. JANGAN tambahkan dialog fiktif atau kejadian tanpa dasar riwayat.\n3. JANGAN gambarkan wajah atau ciri fisik detail Nabi.\n4. Sampaikan hikmah di akhir kisah.\n`;
+    prompt += `══════════════════════════════════════════
+ATURAN WAJIB — SIRAH NABAWIYAH
+══════════════════════════════════════════
+1. Ikuti HANYA fakta dari kitab Sirah mu'tabar:
+   • Ibnu Hisyam (Sirah Nabawiyah)
+   • Ar-Rahiqul Makhtum (Shafiyyurrahman Al-Mubarakfuri)
+   • Sirah Ibnu Katsir (Al-Bidayah Wan Nihayah)
+2. Dialog/percakapan BOLEH dimuat dalam narasi HANYA jika bersumber dari riwayat shahih.
+   Cantumkan sumbernya dalam tanda kurung setelah dialog.
+   Contoh: "Wahai Ibrahim, apakah kamu percaya?" (HR. Bukhari no. 1234)
+3. JANGAN gambarkan wajah, warna mata, atau ciri fisik detail Nabi. Cukup sebut kemuliaan dan sifat agungnya.
+4. JANGAN tambahkan kejadian, dialog, atau detail yang tidak ada dalam riwayat.\n\n`;
   } else if (subType === "TELADAN") {
-    prompt += `ATURAN WAJIB — TELADAN SAHABAT/ULAMA:\n1. Ikuti fakta dari kitab tarikh mu'tabar (Siyar A'lam An-Nubala, Al-Isabah, Tahdzib Al-Asma).\n2. JANGAN tambahkan dialog atau kejadian fiktif tanpa dasar riwayat.\n3. Sampaikan teladan & hikmah dari kisah ini.\n`;
+    prompt += `══════════════════════════════════════════
+ATURAN WAJIB — TELADAN SAHABAT / ULAMA
+══════════════════════════════════════════
+1. Ikuti fakta dari kitab tarikh mu'tabar:
+   • Siyar A'lam An-Nubala (Imam Adz-Dzahabi)
+   • Al-Isabah fi Tamyiz Ash-Shahabah (Ibnu Hajar)
+   • Tahdzib Al-Asma (Imam Nawawi)
+2. Dialog/percakapan BOLEH dimuat dalam narasi jika bersumber dari riwayat shahih.
+   Cantumkan sumbernya. Contoh: "Demi Allah, aku tidak pernah..." (Riwayat Ahmad, 2/345)
+3. JANGAN tambahkan kejadian atau dialog fiktif tanpa dasar riwayat.\n\n`;
   } else {
-    prompt += `ATURAN WAJIB — CERITA FIKSI ISLAMI:\n1. Karakter dan cerita bersifat fiktif (tidak mengklaim sebagai kisah nyata).\n2. Nilai Islam harus terselip ALAMI dalam alur — bukan khotbah langsung.\n3. Setting realistis (keluarga, sekolah, lingkungan modern).\n4. JANGAN masukkan sumber dalil — cukup nilai Islam dalam cerita.\n`;
+    prompt += `══════════════════════════════════════════
+ATURAN WAJIB — CERITA FIKSI ISLAMI
+══════════════════════════════════════════
+1. Karakter dan cerita BERSIFAT FIKTIF — tidak mengklaim kisah nyata.
+2. Nilai Islam (sholat, sedekah, jujur, sabar, dll.) harus TERSELIP ALAMI dalam alur cerita — JANGAN ceramah langsung.
+3. Setting: kehidupan sehari-hari anak muslim (keluarga, sekolah, taman, masjid).
+4. Dialog antar tokoh BEBAS dibuat sesuai alur cerita yang menarik — tidak membutuhkan sumber.
+5. JANGAN cantumkan blok dalil Al-Quran/Hadits terpisah (boleh disebut ringan dalam narasi).\n\n`;
   }
-  prompt += `5. Bahasa sederhana, mengalir seperti dongeng, mudah dipahami anak usia ${ageLabel}.\n\n`;
-  prompt += `═══════════════════════════════════════\nTUGAS:\nBuatkan konten "${subTypeLabel}" dengan judul: "${title}"\nTarget pembaca: anak usia ${ageLabel}\n═══════════════════════════════════════\n\n`;
-  prompt += `FORMAT OUTPUT:\n\n═══ METADATA ═══\n- Judul: [judul kisah yang menarik]\n- Deskripsi Singkat: [1-2 kalimat ringkasan]\n- Kelompok Usia: ${ageLabel}\n- Tag: [3-5 kata kunci, dipisah koma]\n\n═══ BLOK KONTEN ═══\n\n`;
-  prompt += `📌 BLOK: PEMBUKA/HOOK (paragraph)\nKalimat pembuka menarik yang langsung memikat perhatian anak.\n\n`;
-  prompt += `📖 BLOK: NARASI KISAH (paragraph)\nIsi cerita mengalir dalam beberapa paragraf. Tambahkan judul sub-bab (heading) untuk memisahkan babak cerita.\n\n`;
-  prompt += `💡 BLOK: HIKMAH & PELAJARAN (tip)\nPelajaran yang bisa dipetik, disampaikan hangat dan sederhana.\n\n`;
-  prompt += `🤲 BLOK: PENUTUP DOA (paragraph)\nDoa pendek yang relevan dengan tema kisah.\n\n`;
+
+  prompt += `══════════════════════════════════════════
+TUGAS
+══════════════════════════════════════════
+Buatkan konten "${subTypeLabel}" dengan judul: "${title}"
+Target pembaca  : Anak usia ${TARGET_USIA}
+Gaya penyampaian: PENCERITA — panjang, mengalir, penuh detail adegan & suasana
+Panjang minimum : 600–1.000 kata untuk isi kisah utama\n\n`;
+
+  prompt += `══════════════════════════════════════════
+FORMAT OUTPUT — METADATA
+══════════════════════════════════════════
+• Judul    : [judul kisah yang menarik dan sesuai anak]
+• Deskripsi: [2–3 kalimat ringkasan yang menggugah rasa ingin tahu]
+• Usia     : ${TARGET_USIA}
+• Tag      : [4–6 kata kunci relevan, pisahkan koma]\n\n`;
+
+  prompt += `══════════════════════════════════════════
+FORMAT OUTPUT — BLOK KONTEN EDITOR ADABLY
+══════════════════════════════════════════
+Susun konten menggunakan blok-blok berikut. Setiap blok HARUS diisi dengan baik.\n\n`;
+
+  prompt += `━━━ 📝 BLOK 1: ISI KONTEN (paragraph + heading) — WAJIB PANJANG ━━━
+Tulis MINIMAL 3 babak kisah. Setiap babak diawali JUDUL BABAK (heading) lalu diikuti 2–4 paragraf narasi panjang.
+Gunakan struktur:
+
+[HEADING] Babak 1: [nama babak — misal: "Sebuah Perintah yang Berat"]
+[PARAGRAPH] Narasi babak 1 — gambarkan suasana, tokoh, perasaan, detail tempat & waktu. ${subType !== "CERITA_FIKSI" ? "Sisipkan dialog bersumber dalam narasi jika ada." : "Sisipkan dialog antar tokoh yang membuat cerita hidup."}
+
+[HEADING] Babak 2: [nama babak — misal: "Ujian yang Datang"]
+[PARAGRAPH] Narasi babak 2 — kembangkan konflik atau perjalanan kisah...
+
+[HEADING] Babak 3: [nama babak — momen klimaks/puncak]
+[PARAGRAPH] Narasi babak 3 — klimaks kisah, momen paling menyentuh...
+
+[PARAGRAPH] Penutup naratif — resolusi kisah, suasana akhir yang hangat & bermakna.\n\n`;
+
+  if (subType !== "CERITA_FIKSI") {
+    prompt += `━━━ 📖 BLOK 2: DALIL / LANDASAN (dalil) ━━━
+Cantumkan 1–2 ayat Al-Quran atau Hadits Shahih yang paling relevan dengan tema kisah.
+Format per dalil:
+• Arabic  : [teks arab]
+• Terjemah: [terjemahan bahasa Indonesia]
+• Sumber  : [nama surah + ayat, atau kitab hadits + nomor]
+Tempatkan di posisi paling bermakna (sebelum klimaks atau setelah narasi utama).\n\n`;
+  }
+
+  if (options.analogi) {
+    const bloknr = subType !== "CERITA_FIKSI" ? "3" : "2";
+    prompt += `━━━ 🧩 BLOK ${bloknr}: ANALOGI SEDERHANA (analogy) ━━━
+Buat 1 analogi singkat yang membantu anak usia ${TARGET_USIA} memahami hikmah utama kisah.
+Gunakan perumpamaan dari kehidupan sehari-hari (tumbuhan, air, teman bermain, mainan, dll.).
+Format:
+• Judul Analogi: [nama analogi singkat]
+• Penjelasan   : [2–3 kalimat yang mudah dipahami anak]\n\n`;
+  }
+
+  const tipBlockNr = subType !== "CERITA_FIKSI" ? (options.analogi ? "4" : "3") : (options.analogi ? "3" : "2");
+  prompt += `━━━ ℹ️ BLOK ${tipBlockNr}: CATATAN / TIPS (tip) ━━━
+Hikmah dan pelajaran utama dari kisah ini — untuk anak sekaligus panduan orang tua/pendidik.
+Tulis 3–4 poin hikmah praktis, hangat, dan memotivasi — BUKAN ceramah.
+Format per poin:
+• 💡 [poin hikmah yang singkat namun bermakna]\n\n`;
+
   if ((subType === "SIRAH" || subType === "TELADAN") && options.referensi) {
-    prompt += `📚 BLOK: REFERENSI SUMBER (dalil)\nCantumkan sumber kitab rujukan kisah ini.\nContoh: "Sumber: Ar-Rahiqul Makhtum, Syaikh Shafiyyurrahman, hal. 45"\n\n`;
+    prompt += `━━━ 📚 REFERENSI SUMBER (dalil — tipe referensi) ━━━
+Cantumkan sumber kitab utama rujukan kisah ini.
+Format:
+• Kitab  : [judul kitab]
+• Penulis: [nama ulama pengarang]
+• Hal./No.: [nomor halaman atau hadits]\n\n`;
   }
-  prompt += `═══ PANDUAN USIA ═══\n`;
-  if (ages.includes("3-5")) prompt += `- Usia 3-5 tahun: Kalimat SANGAT singkat, kisah pendek dengan 1 pesan sederhana.\n`;
-  if (ages.includes("5-7")) prompt += `- Usia 5-7 tahun: Kalimat pendek, alur jelas, karakter sedikit.\n`;
-  if (ages.includes("7-10")) prompt += `- Usia 7-10 tahun: Lebih detail, alur sebab-akibat.\n`;
-  if (ages.includes("10-13")) prompt += `- Usia 10-13 tahun: Boleh kompleks, sisipkan latar sejarah singkat.\n`;
-  if (ages.includes("Semua Usia") || ages.length === 0) prompt += `- Semua usia: Gunakan bahasa universal.\n`;
-  prompt += `\n═══ CATATAN AKHIR ═══\n- Buat cerita MENGALIR, tidak menggurui\n- Nilai Islam terasa alami, bukan dipaksakan\n- Akhiri dengan kehangatan atau rasa ingin tahu`;
+
+  prompt += `══════════════════════════════════════════
+PANDUAN PENULISAN — GAYA PENCERITA
+══════════════════════════════════════════
+✅ Tulis seperti MENDONGENG — gambarkan suasana, cuaca, perasaan, warna, suara
+✅ Gunakan kalimat aktif yang hidup: "Matanya berbinar...", "Angin berhembus pelan..."
+✅ Setiap babak harus punya KONFLIK kecil dan RESOLUSI yang memuaskan
+✅ Bahasa SEDERHANA tapi KAYA — anak usia 3–10 tahun bisa memahaminya saat didengarkan
+✅ Konten ini akan DIBACAKAN audio — pastikan kalimat enak didengar & mengalir
+✅ Nilai Islam terasa ALAMI dalam cerita — tidak dipaksakan
+✅ Akhiri dengan kehangatan, rasa syukur, atau motivasi yang menyentuh
+❌ JANGAN terlalu singkat — ini bukan ringkasan, ini KISAH LENGKAP
+❌ JANGAN menggurui atau berceramah langsung kepada pembaca`;
+
   return prompt;
 }
 
+
 function generatePrompt(type: ContentType, title: string, ages: string[], options: Record<string, boolean>, kisahSubType?: KisahSubType): string {
-  if (type === "KISAH") return generateKisahPrompt(kisahSubType || "SIRAH", title, ages, options);
+  if (type === "KISAH") return generateKisahPrompt(kisahSubType || "SIRAH", title, options);
   const ageLabel = ages.length ? ages.map(a => a === "Semua Usia" ? "semua usia" : `${a} tahun`).join(", ") : "semua usia";
 
   const typeLabel = type === "QNA" ? "Tanya Jawab" : type === "PEMBELAJARAN" ? "Pembelajaran" : "Artikel";
@@ -468,17 +567,26 @@ export default function PromptGeneratorPage() {
                 <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={type === "KISAH" ? `Contoh: ${kisahSubType === "SIRAH" ? "Kisah Nabi Ibrahim Membangun Ka'bah" : kisahSubType === "TELADAN" ? "Kedermawanan Utsman bin Affan" : "Hana dan Hari Pertama di Sekolah"}` : "Contoh: Mengapa Kita Harus Sholat 5 Waktu?"} className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500" />
               </div>
 
-              {/* Usia */}
+              {/* Usia — KISAH selalu 3-10, tipe lain pilih manual */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <label className="block text-sm font-bold text-slate-700 mb-2">3. Target Usia</label>
-            <div className="flex flex-wrap gap-2">
-              {["3-5", "5-7", "7-10", "10-13", "Semua Usia"].map(age => (
-                <label key={age} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm font-bold transition-all ${ages.includes(age) ? "border-purple-500 bg-purple-50 text-purple-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
-                  <input type="checkbox" checked={ages.includes(age)} onChange={() => toggleAge(age)} className="w-4 h-4 text-purple-600 rounded" />
-                  {age === "Semua Usia" ? age : `${age} Tahun`}
-                </label>
-              ))}
-            </div>
+            {type === "KISAH" ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-sm font-bold">
+                  📖 Kisah Islami — Semua Usia (3–10 Tahun)
+                </span>
+                <p className="text-xs text-slate-400">Konten kisah dirancang universal untuk seluruh rentang usia anak 3–10 tahun.</p>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {["3-5", "5-7", "7-10", "10-13", "Semua Usia"].map(age => (
+                  <label key={age} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm font-bold transition-all ${ages.includes(age) ? "border-purple-500 bg-purple-50 text-purple-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                    <input type="checkbox" checked={ages.includes(age)} onChange={() => toggleAge(age)} className="w-4 h-4 text-purple-600 rounded" />
+                    {age === "Semua Usia" ? age : `${age} Tahun`}
+                  </label>
+                ))}
+              </div>
+            )}
               </div>
 
               {/* Opsi — conditional per type */}
