@@ -6,6 +6,7 @@ import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightb
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle, submitContentForReview, apiFetch, authHeaders, API_BASE_URL } from "@/lib/api";
+import ImageCropperModal from "@/components/ImageCropperModal";
 
 type ContentTypeOption = "PEMBELAJARAN" | "QNA" | "ARTICLE";
 type BlockType = "paragraph" | "quick_answer" | "dialog" | "dalil" | "analogy" | "tip" | "image" | "video";
@@ -60,6 +61,8 @@ function EditorContent() {
   const [enableAudio, setEnableAudio] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [cropperSrc, setCropperSrc] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [nodes, setNodes] = useState<any[]>([]);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
@@ -479,32 +482,40 @@ function EditorContent() {
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Thumbnail <span className="text-xs text-slate-400 font-normal">(opsional — untuk card & share preview)</span></label>
                 {thumbnailUrl ? (
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-slate-200 shadow-sm">
                       <img src={thumbnailUrl} alt="Thumbnail" className="w-full h-full object-cover" />
                     </div>
-                    <button type="button" onClick={() => setThumbnailUrl("")} className="text-xs font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1"><Trash2 size={14} /> Hapus</button>
+                    <div className="flex flex-col gap-1.5">
+                      <label className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${thumbnailUploading ? 'bg-slate-100 text-slate-400' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
+                        <Image size={13} /> Ganti & Crop Ulang
+                        <input type="file" accept="image/*" className="hidden" disabled={thumbnailUploading} onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 15 * 1024 * 1024) { toast.error('Ukuran maksimal 15MB'); return; }
+                          const objectUrl = URL.createObjectURL(file);
+                          setCropperSrc(objectUrl);
+                          setShowCropper(true);
+                          e.target.value = '';
+                        }} />
+                      </label>
+                      <button type="button" onClick={() => setThumbnailUrl("")} className="text-xs font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-rose-50 transition-colors">
+                        <Trash2 size={13} /> Hapus
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors ${thumbnailUploading ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50'}`}>
                     <Image size={20} className="text-slate-400" />
-                    <span className="text-sm text-slate-500">{thumbnailUploading ? 'Mengupload...' : 'Upload gambar thumbnail (maks 5MB)'}</span>
-                    <input type="file" accept="image/*" className="hidden" disabled={thumbnailUploading} onChange={async (e) => {
+                    <span className="text-sm text-slate-500">{thumbnailUploading ? 'Mengupload...' : 'Pilih gambar → akan otomatis terbuka editor crop (maks 15MB)'}</span>
+                    <input type="file" accept="image/*" className="hidden" disabled={thumbnailUploading} onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      if (file.size > 5 * 1024 * 1024) { toast.error('Ukuran maksimal 5MB'); return; }
-                      setThumbnailUploading(true);
-                      try {
-                        const token = Cookies.get('_at');
-                        const fd = new FormData();
-                        fd.append('file', file);
-                        const res = await fetch(`${API_BASE_URL}/editor/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
-                        if (!res.ok) throw new Error('Upload gagal');
-                        const data = await res.json();
-                        setThumbnailUrl(data.url);
-                        toast.success('Thumbnail berhasil diupload');
-                      } catch (err: any) { toast.error(err.message || 'Gagal upload'); }
-                      finally { setThumbnailUploading(false); e.target.value = ''; }
+                      if (file.size > 15 * 1024 * 1024) { toast.error('Ukuran maksimal 15MB'); return; }
+                      const objectUrl = URL.createObjectURL(file);
+                      setCropperSrc(objectUrl);
+                      setShowCropper(true);
+                      e.target.value = '';
                     }} />
                   </label>
                 )}
@@ -654,6 +665,42 @@ function EditorContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Image Cropper Modal */}
+      {showCropper && cropperSrc && (
+        <ImageCropperModal
+          imageSrc={cropperSrc}
+          onCancel={() => {
+            setShowCropper(false);
+            URL.revokeObjectURL(cropperSrc);
+            setCropperSrc(null);
+          }}
+          onCropComplete={async (blob) => {
+            setShowCropper(false);
+            URL.revokeObjectURL(cropperSrc);
+            setCropperSrc(null);
+            setThumbnailUploading(true);
+            try {
+              const token = Cookies.get('_at');
+              const fd = new FormData();
+              fd.append('file', new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' }));
+              const res = await fetch(`${API_BASE_URL}/editor/upload`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: fd,
+              });
+              if (!res.ok) throw new Error('Upload gagal');
+              const data = await res.json();
+              setThumbnailUrl(data.url);
+              toast.success('Thumbnail berhasil di-crop & diupload!');
+            } catch (err: any) {
+              toast.error(err.message || 'Gagal upload thumbnail');
+            } finally {
+              setThumbnailUploading(false);
+            }
+          }}
+        />
       )}
     </div>
   );
