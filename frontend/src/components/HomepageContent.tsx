@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { BookOpen, Star, ArrowRight, MessageCircleQuestion, FileText, Eye, Heart, ChevronRight } from "lucide-react";
-import { fetchContentTree, fetchContentList } from "@/lib/api";
+import { BookOpen, Star, ArrowRight, MessageCircleQuestion, FileText, Eye, Heart, ChevronRight, Scroll } from "lucide-react";
+import { fetchContentTree, fetchContentList, fetchKisahTree } from "@/lib/api";
 
 const AGE_FILTERS = [
   { label: "Semua Usia", value: "Semua" },
@@ -67,11 +67,13 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
   const [nodes, setNodes] = useState(initialNodes);
   const [qnaItems, setQnaItems] = useState<any[]>([]);
   const [articleItems, setArticleItems] = useState<any[]>([]);
+  const [kisahNodes, setKisahNodes] = useState<any[]>([]);
   const [loadingNodes, setLoadingNodes] = useState(false);
   const [loadingQna, setLoadingQna] = useState(true);
   const [loadingArticle, setLoadingArticle] = useState(true);
+  const [loadingKisah, setLoadingKisah] = useState(true);
 
-  // Fetch QnA and Articles on mount and when age changes
+  // Fetch QnA, Articles, Pembelajaran nodes — re-runs when age filter changes
   useEffect(() => {
     const ageParam = selectedAge === "Semua" ? undefined : selectedAge;
 
@@ -94,6 +96,14 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
       .catch(() => setArticleItems([]))
       .finally(() => setLoadingArticle(false));
   }, [selectedAge]);
+
+  // Fetch Kisah sub-categories ONCE on mount — not age-filtered (global nodes)
+  useEffect(() => {
+    fetchKisahTree()
+      .then((res) => setKisahNodes(Array.isArray(res) ? res : (res?.data || [])))
+      .catch(() => setKisahNodes([]))
+      .finally(() => setLoadingKisah(false));
+  }, []);
 
   const flatNodes = Array.isArray(nodes) ? nodes : [];
 
@@ -217,6 +227,53 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
             </div>
           ) : (
             <EmptyState message="Belum ada artikel untuk filter usia ini." />
+          )}
+        </div>
+      </section>
+
+      {/* Kisah Islami */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
+            <div>
+              <h2 className="text-3xl font-extrabold text-slate-800">📖 Kisah Islami</h2>
+              <p className="text-slate-500 mt-2 text-lg">Sirah Nabawiyah, teladan sahabat, dan cerita Islami untuk anak.</p>
+            </div>
+            <Link href="/kisah" className="inline-flex items-center bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-2.5 px-6 rounded-xl border border-amber-200">
+              Lihat Semua <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
+          </div>
+          {loadingKisah ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-44 bg-amber-50 rounded-3xl animate-pulse" />
+              ))}
+            </div>
+          ) : kisahNodes.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {kisahNodes.slice(0, 6).map((node: any, index: number) => (
+                <Link href={`/kisah/${node.slug}`} key={node.id} className="group">
+                  <div className="relative h-full bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden p-7 rounded-3xl border border-amber-200 shadow-sm transition-all duration-500 hover:shadow-xl hover:-translate-y-1 hover:border-amber-400">
+                    <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-40 ${index % 2 === 0 ? 'bg-amber-400' : 'bg-orange-400'}`} />
+                    <div className="relative z-10">
+                      <div className="h-12 w-12 rounded-2xl flex items-center justify-center mb-5 shadow-sm bg-gradient-to-br from-amber-100 to-orange-200 text-amber-700 border border-amber-300">
+                        {node.icon ? <span className="text-xl">{node.icon}</span> : <Scroll className="h-6 w-6" />}
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-amber-700 transition-colors">{node.title}</h3>
+                      <p className="text-slate-600 text-sm leading-relaxed">{node.description || 'Koleksi kisah islami untuk anak.'}</p>
+                      {node.contentCount != null && (
+                        <p className="text-xs font-bold text-amber-600 mt-3">{node.contentCount} kisah tersedia</p>
+                      )}
+                      <div className="mt-5 flex items-center text-sm font-bold text-amber-600 group-hover:text-amber-700 transition-colors">
+                        Baca Kisah <ArrowRight className="h-4 w-4 ml-1 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <EmptyState message="Belum ada sub-kategori kisah yang tersedia." />
           )}
         </div>
       </section>

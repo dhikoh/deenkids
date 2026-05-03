@@ -43,6 +43,12 @@ export default async function KisahDetailPage({
   const authorName = content.authorName || content.displayAuthorName || content.author?.name || "Anonim";
   const blocks: any[] = content.articleDetail?.blocks || [];
 
+  // Audio for KISAH: only title + paragraph/heading blocks (no dalil, dialog, analogy, tip)
+  const audioBlocks: any[] = [
+    { type: 'paragraph', text: content.title }, // Read title first
+    ...blocks.filter((b: any) => b.type === 'paragraph' || b.type === 'heading'),
+  ];
+
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 pt-28 max-w-3xl">
       {/* Breadcrumb */}
@@ -88,7 +94,7 @@ export default async function KisahDetailPage({
       {/* Audio Player — prominent for Kisah */}
       {content.enableAudio && (
         <div className="mb-6">
-          <AudioPlayerWrapper blocks={blocks} enableAudio={content.enableAudio} contentType={content.type} />
+          <AudioPlayerWrapper blocks={audioBlocks} enableAudio={content.enableAudio} contentType={content.type} />
         </div>
       )}
 

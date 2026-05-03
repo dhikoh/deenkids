@@ -5,12 +5,47 @@ import { Wand2, Copy, Check, PenLine, Clock, Trash2, ChevronDown, ChevronUp } fr
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-type ContentType = "QNA" | "PEMBELAJARAN" | "ARTIKEL" | "IMAGE_PROMPT";
+type ContentType = "QNA" | "PEMBELAJARAN" | "ARTIKEL" | "KISAH" | "IMAGE_PROMPT";
+type KisahSubType = "SIRAH" | "TELADAN" | "CERITA_FIKSI";
+type ScenePreset = "KELUARGA" | "NABI_SAHABAT" | "KELOMPOK_ANAK" | "TUNGGAL" | "TANPA_MAKHLUK";
+type SingleCharType = "ayah" | "ibu" | "anakLaki" | "anakPerempuan";
 
 const HISTORY_KEY = "adably_prompt_history";
 const MAX_HISTORY = 5;
 
-function generatePrompt(type: ContentType, title: string, ages: string[], options: Record<string, boolean>): string {
+function generateKisahPrompt(subType: KisahSubType, title: string, ages: string[], options: Record<string, boolean>): string {
+  const ageLabel = ages.length ? ages.map(a => a === "Semua Usia" ? "semua usia" : `${a} tahun`).join(", ") : "semua usia";
+  const subTypeLabel = subType === "SIRAH" ? "Sirah Nabawiyah" : subType === "TELADAN" ? "Teladan Sahabat/Ulama" : "Cerita Fiksi Islami";
+  let prompt = `Kamu adalah penulis konten kisah Islami untuk platform edukasi anak bernama Adably.\n\n`;
+  if (subType === "SIRAH") {
+    prompt += `ATURAN WAJIB — SIRAH NABAWIYAH:\n1. Ikuti HANYA fakta dari kitab Sirah mu'tabar (Ibnu Hisyam, Ar-Rahiqul Makhtum, Sirah Ibnu Katsir).\n2. JANGAN tambahkan dialog fiktif atau kejadian tanpa dasar riwayat.\n3. JANGAN gambarkan wajah atau ciri fisik detail Nabi.\n4. Sampaikan hikmah di akhir kisah.\n`;
+  } else if (subType === "TELADAN") {
+    prompt += `ATURAN WAJIB — TELADAN SAHABAT/ULAMA:\n1. Ikuti fakta dari kitab tarikh mu'tabar (Siyar A'lam An-Nubala, Al-Isabah, Tahdzib Al-Asma).\n2. JANGAN tambahkan dialog atau kejadian fiktif tanpa dasar riwayat.\n3. Sampaikan teladan & hikmah dari kisah ini.\n`;
+  } else {
+    prompt += `ATURAN WAJIB — CERITA FIKSI ISLAMI:\n1. Karakter dan cerita bersifat fiktif (tidak mengklaim sebagai kisah nyata).\n2. Nilai Islam harus terselip ALAMI dalam alur — bukan khotbah langsung.\n3. Setting realistis (keluarga, sekolah, lingkungan modern).\n4. JANGAN masukkan sumber dalil — cukup nilai Islam dalam cerita.\n`;
+  }
+  prompt += `5. Bahasa sederhana, mengalir seperti dongeng, mudah dipahami anak usia ${ageLabel}.\n\n`;
+  prompt += `═══════════════════════════════════════\nTUGAS:\nBuatkan konten "${subTypeLabel}" dengan judul: "${title}"\nTarget pembaca: anak usia ${ageLabel}\n═══════════════════════════════════════\n\n`;
+  prompt += `FORMAT OUTPUT:\n\n═══ METADATA ═══\n- Judul: [judul kisah yang menarik]\n- Deskripsi Singkat: [1-2 kalimat ringkasan]\n- Kelompok Usia: ${ageLabel}\n- Tag: [3-5 kata kunci, dipisah koma]\n\n═══ BLOK KONTEN ═══\n\n`;
+  prompt += `📌 BLOK: PEMBUKA/HOOK (paragraph)\nKalimat pembuka menarik yang langsung memikat perhatian anak.\n\n`;
+  prompt += `📖 BLOK: NARASI KISAH (paragraph)\nIsi cerita mengalir dalam beberapa paragraf. Tambahkan judul sub-bab (heading) untuk memisahkan babak cerita.\n\n`;
+  prompt += `💡 BLOK: HIKMAH & PELAJARAN (tip)\nPelajaran yang bisa dipetik, disampaikan hangat dan sederhana.\n\n`;
+  prompt += `🤲 BLOK: PENUTUP DOA (paragraph)\nDoa pendek yang relevan dengan tema kisah.\n\n`;
+  if ((subType === "SIRAH" || subType === "TELADAN") && options.referensi) {
+    prompt += `📚 BLOK: REFERENSI SUMBER (dalil)\nCantumkan sumber kitab rujukan kisah ini.\nContoh: "Sumber: Ar-Rahiqul Makhtum, Syaikh Shafiyyurrahman, hal. 45"\n\n`;
+  }
+  prompt += `═══ PANDUAN USIA ═══\n`;
+  if (ages.includes("3-5")) prompt += `- Usia 3-5 tahun: Kalimat SANGAT singkat, kisah pendek dengan 1 pesan sederhana.\n`;
+  if (ages.includes("5-7")) prompt += `- Usia 5-7 tahun: Kalimat pendek, alur jelas, karakter sedikit.\n`;
+  if (ages.includes("7-10")) prompt += `- Usia 7-10 tahun: Lebih detail, alur sebab-akibat.\n`;
+  if (ages.includes("10-13")) prompt += `- Usia 10-13 tahun: Boleh kompleks, sisipkan latar sejarah singkat.\n`;
+  if (ages.includes("Semua Usia") || ages.length === 0) prompt += `- Semua usia: Gunakan bahasa universal.\n`;
+  prompt += `\n═══ CATATAN AKHIR ═══\n- Buat cerita MENGALIR, tidak menggurui\n- Nilai Islam terasa alami, bukan dipaksakan\n- Akhiri dengan kehangatan atau rasa ingin tahu`;
+  return prompt;
+}
+
+function generatePrompt(type: ContentType, title: string, ages: string[], options: Record<string, boolean>, kisahSubType?: KisahSubType): string {
+  if (type === "KISAH") return generateKisahPrompt(kisahSubType || "SIRAH", title, ages, options);
   const ageLabel = ages.length ? ages.map(a => a === "Semua Usia" ? "semua usia" : `${a} tahun`).join(", ") : "semua usia";
 
   const typeLabel = type === "QNA" ? "Tanya Jawab" : type === "PEMBELAJARAN" ? "Pembelajaran" : "Artikel";
@@ -176,63 +211,90 @@ TIPS:
   return prompt;
 }
 
+function buildCharacterSpec(
+  scenePreset: ScenePreset,
+  familyChars: { ayah: boolean; ibu: boolean; anakLaki: boolean; anakPerempuan: boolean },
+  prophetCompanion: boolean,
+  childCount: number,
+  childGender: "laki" | "perempuan" | "campur",
+  singleChar: SingleCharType,
+): { id: string; en: string } {
+  const faceless = "WAJIB FACELESS — TIDAK ADA fitur wajah (mata/hidung/mulut) — wajah harus kosong/blank";
+  const facelessEn = "STRICTLY FACELESS — NO facial features (no eyes, no nose, no mouth) — completely blank faces";
+  if (scenePreset === "TANPA_MAKHLUK") {
+    return {
+      id: "TANPA makhluk bernyawa. Fokus pada: arsitektur islami (masjid/menara), pemandangan alam (awan/bintang/bulan), benda islami (Al-Quran/tasbih/lentera), atau motif geometris islami.",
+      en: "No living beings. Focus on Islamic architecture, natural scenery, Islamic objects (Quran, prayer beads, lantern), or geometric Islamic art patterns.",
+    };
+  }
+  if (scenePreset === "NABI_SAHABAT") {
+    const comp = prophetCompanion ? " Di sampingnya, seorang sahabat FACELESS berjenggot dalam pakaian islami (jubah)." : "";
+    const compEn = prophetCompanion ? " Beside the Prophet, a single FACELESS bearded male companion in traditional Islamic garb (jubah, turban)." : "";
+    return {
+      id: `Representasikan Nabi sebagai SILUET BERCAHAYA saja — dikelilingi nur/cahaya emas lembut yang memancar. DILARANG KERAS: fitur wajah, detail tubuh, bentuk manusia realistis. Hanya siluet jubah putih bersinar. Cahaya nur HARUS mendominasi gambar.${comp}`,
+      en: `Represent the Prophet as a LUMINOUS SILHOUETTE ONLY surrounded by soft golden radiant aura (nur/light). STRICTLY FORBIDDEN: facial features, body details, realistic human form. Only a glowing white-clothed outline. The nur light must dominate.${compEn}`,
+    };
+  }
+  if (scenePreset === "TUNGGAL") {
+    const specs: Record<SingleCharType, { id: string; en: string }> = {
+      ayah: { id: `Seorang ayah muslim ${faceless}, berjenggot, pakaian koko/jubah.`, en: `A single Muslim father, ${facelessEn}, with beard, Islamic clothing.` },
+      ibu: { id: `Seorang ibu muslimah ${faceless}, mengenakan hijab syar'i panjang.`, en: `A single Muslim mother, ${facelessEn}, wearing long modest hijab.` },
+      anakLaki: { id: `Seorang anak laki-laki muslim ${faceless}, mengenakan peci/kopiah.`, en: `A single Muslim boy, ${facelessEn}, wearing kufi/peci.` },
+      anakPerempuan: { id: `Seorang anak perempuan muslimah ${faceless}, mengenakan hijab.`, en: `A single Muslim girl, ${facelessEn}, wearing hijab.` },
+    };
+    return specs[singleChar];
+  }
+  if (scenePreset === "KELOMPOK_ANAK") {
+    const n = Math.max(1, Math.min(4, childCount));
+    const half = Math.ceil(n / 2);
+    const idStr = childGender === "laki" ? `${n} anak laki-laki muslim (peci/kopiah)` : childGender === "perempuan" ? `${n} anak perempuan muslimah (hijab)` : `${half} anak laki-laki (peci) dan ${n - half} anak perempuan (hijab)`;
+    const enStr = childGender === "laki" ? `${n} Muslim boys (kufi)` : childGender === "perempuan" ? `${n} Muslim girls (hijab)` : `${half} Muslim boys (kufi) and ${n - half} Muslim girls (hijab)`;
+    return { id: `${idStr}, semua ${faceless}.`, en: `${enStr}, all ${facelessEn}.` };
+  }
+  // KELUARGA
+  const parts: string[] = [];
+  const partsEn: string[] = [];
+  if (familyChars.ayah) { parts.push("ayah berjenggot (koko/jubah)"); partsEn.push("Muslim father with beard (Islamic clothing)"); }
+  if (familyChars.ibu) { parts.push("ibu berhijab syar'i panjang"); partsEn.push("Muslim mother with long hijab"); }
+  if (familyChars.anakLaki) { parts.push("anak laki-laki (peci/kopiah)"); partsEn.push("Muslim boy (kufi)"); }
+  if (familyChars.anakPerempuan) { parts.push("anak perempuan (hijab)"); partsEn.push("Muslim girl (hijab)"); }
+  if (parts.length === 0) { parts.push("satu figur muslim"); partsEn.push("one Muslim figure"); }
+  return {
+    id: `Karakter: ${parts.join(", ")}. Semua ${faceless}.`,
+    en: `Characters: ${partsEn.join(", ")}. All ${facelessEn}.`,
+  };
+}
+
 function generateImagePrompt(
   title: string,
   style: string,
-  options: Record<string, boolean>,
-  extras: { expression: string; activity: string; setting: string; colorPalette: string }
+  scenePreset: ScenePreset,
+  familyChars: { ayah: boolean; ibu: boolean; anakLaki: boolean; anakPerempuan: boolean },
+  prophetCompanion: boolean,
+  childCount: number,
+  childGender: "laki" | "perempuan" | "campur",
+  singleChar: SingleCharType,
+  extras: { expression: string; activity: string; setting: string; colorPalette: string },
+  includeText: boolean,
 ): string {
-  let prompt = `Tolong buatkan gambar (image generation) untuk thumbnail artikel edukasi anak Islami.
-
-Konteks Judul: "${title}"
-
-Spesifikasi Wajib:
-- Gaya Visual: ${style}
-- Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat (warm lighting)
-- Aspek Rasio: Widescreen 16:9 (Sangat Penting!)`;
-
-  if (extras.setting.trim()) {
-    prompt += `\n- Latar/Setting: ${extras.setting.trim()}`;
+  const charSpec = buildCharacterSpec(scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar);
+  const hasLiving = scenePreset !== "TANPA_MAKHLUK";
+  let prompt = `Tolong buatkan gambar (image generation) untuk thumbnail konten edukasi anak Islami.\n\nKonteks Judul: "${title}"\n\nSpesifikasi Wajib:\n- Gaya Visual: ${style}\n- Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat (warm lighting)\n- Aspek Rasio: Widescreen 16:9 (Sangat Penting!)\n- ${charSpec.id}`;
+  if (hasLiving && scenePreset !== "NABI_SAHABAT" && extras.expression.trim()) {
+    prompt += `\n- Ekspresi/Suasana Hati: ${extras.expression.trim()} (gambarkan lewat bahasa tubuh & postur — BUKAN wajah).`;
   }
-
-  if (extras.colorPalette.trim()) {
-    prompt += `\n- Palet Warna Dominan: ${extras.colorPalette.trim()}`;
-  }
-
-  if (options.noLivingBeings) {
-    prompt += `\n- Karakter: TANPA makhluk bernyawa (manusia/hewan utuh). Gunakan siluet, objek benda mati, pemandangan, atau simbol islami (masjid, Al-Quran, dll).`;
+  if (extras.activity.trim()) prompt += `\n- Aktivitas: ${extras.activity.trim()}.`;
+  if (extras.setting.trim()) prompt += `\n- Latar/Setting: ${extras.setting.trim()}.`;
+  if (extras.colorPalette.trim()) prompt += `\n- Palet Warna Dominan: ${extras.colorPalette.trim()}.`;
+  if (includeText) {
+    prompt += `\n- Tipografi: Tambahkan teks "${title}" dengan font tebal, mudah dibaca. PASTIKAN EJAAN BENAR 100%.`;
   } else {
-    prompt += `\n- Karakter Manusia (WAJIB FACELESS): Jika menampilkan orang, WAJIB tanpa fitur wajah (TIDAK ADA mata, hidung, atau mulut — wajah harus rata/kosong/blank face).
-  * Ayah: Berjenggot, mengenakan pakaian muslim/koko.
-  * Ibu: Mengenakan hijab syar'i yang menjulur panjang.
-  * Anak Laki-laki: Mengenakan peci/kopiah.
-  * Anak Perempuan: Mengenakan hijab.`;
-
-    if (extras.expression.trim()) {
-      prompt += `\n- Ekspresi/Suasana Hati: ${extras.expression.trim()} (gambarkan melalui bahasa tubuh, postur, dan gesture — bukan wajah).`;
-    }
-
-    if (extras.activity.trim()) {
-      prompt += `\n- Aktivitas/Tindakan yang Digambarkan: ${extras.activity.trim()}.`;
-    }
+    prompt += `\n- ATURAN KETAT: TIDAK BOLEH ADA TEKS, HURUF, ATAU TULISAN APAPUN. Sediakan Negative Space untuk penambahan teks manual.`;
   }
-
-  if (options.includeText) {
-    prompt += `\n- Tipografi/Teks: Tambahkan teks judul "${title}" di dalam gambar dengan tipografi tebal (bold), mudah dibaca, dan letakkan di tengah atau area yang kosong. PASTIKAN EJAAN BENAR 100%.`;
-  } else {
-    prompt += `\n- Aturan Ketat: TIDAK BOLEH ADA TEKS, HURUF, ATAU TULISAN APAPUN di dalam gambar (kami akan menambahkan teks secara manual). Berikan "Negative Space" (ruang kosong) agar kami bisa menaruh teks nanti.`;
-  }
-
   const engActivity = extras.activity.trim() ? `, performing: ${extras.activity.trim()}` : "";
-  const engExpression = extras.expression.trim() && !options.noLivingBeings ? `, mood/expression shown through body language: ${extras.expression.trim()}` : "";
   const engSetting = extras.setting.trim() ? `, set in: ${extras.setting.trim()}` : "";
-  const engColors = extras.colorPalette.trim() ? `, dominant color palette: ${extras.colorPalette.trim()}` : "";
-
-  prompt += `
-
-(Prompt for Engine / English Translation reference):
-"A high quality illustration for Islamic kids education titled ${title}. Style: ${style}. ${options.noLivingBeings ? "No living beings, no humans, no animals, focus on objects/environment." : `FACELESS characters (strictly NO eyes, NO nose, NO mouth, completely blank faces). Muslim father with beard, muslim mother with long hijab, muslim boy with kufi, muslim girl with hijab${engActivity}${engExpression}`}${engSetting}${engColors}. Warm lighting, vibrant colors. ${options.includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, clean composition with negative space."} --ar 16:9"`;
-
+  const engColors = extras.colorPalette.trim() ? `, dominant colors: ${extras.colorPalette.trim()}` : "";
+  prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${style}. ${charSpec.en}${engActivity}${engSetting}${engColors}. Warm lighting, vibrant child-friendly colors. ${includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, negative space for manual text."} --ar 16:9"`;
   return prompt;
 }
 
@@ -240,6 +302,7 @@ export default function PromptGeneratorPage() {
   const [mode, setMode] = useState<"CONTENT" | "IMAGE">("CONTENT");
   const [type, setType] = useState<ContentType>("QNA");
   const [title, setTitle] = useState("");
+  const [kisahSubType, setKisahSubType] = useState<KisahSubType>("SIRAH");
   const [ages, setAges] = useState<string[]>(["5-7"]);
   const [options, setOptions] = useState({
     dalil: true,
@@ -247,19 +310,18 @@ export default function PromptGeneratorPage() {
     dialog: true,
     tips: true,
     perbedaanPendapat: false,
+    referensi: true,
   });
 
   const [imageStyle, setImageStyle] = useState<string>("Animasi 3D (Pixar/Disney)");
-  const [imageOptions, setImageOptions] = useState({
-    noLivingBeings: false,
-    includeText: false,
-  });
-  const [imageExtras, setImageExtras] = useState({
-    expression: "",
-    activity: "",
-    setting: "",
-    colorPalette: "",
-  });
+  const [scenePreset, setScenePreset] = useState<ScenePreset>("KELUARGA");
+  const [familyChars, setFamilyChars] = useState({ ayah: true, ibu: true, anakLaki: false, anakPerempuan: false });
+  const [prophetCompanion, setProphetCompanion] = useState(false);
+  const [childCount, setChildCount] = useState(2);
+  const [childGender, setChildGender] = useState<"laki" | "perempuan" | "campur">("campur");
+  const [singleChar, setSingleChar] = useState<SingleCharType>("anakLaki");
+  const [includeText, setIncludeText] = useState(false);
+  const [imageExtras, setImageExtras] = useState({ expression: "", activity: "", setting: "", colorPalette: "" });
 
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [copied, setCopied] = useState(false);
@@ -275,20 +337,15 @@ export default function PromptGeneratorPage() {
 
   const handleGenerate = () => {
     if (!title.trim()) return toast.error("Judul/topik wajib diisi");
-    
     let prompt = "";
     let historyType: ContentType = type;
-    
     if (mode === "CONTENT") {
-      prompt = generatePrompt(type, title.trim(), ages, options);
+      prompt = generatePrompt(type, title.trim(), ages, options, kisahSubType);
     } else {
-      prompt = generateImagePrompt(title.trim(), imageStyle, imageOptions, imageExtras);
+      prompt = generateImagePrompt(title.trim(), imageStyle, scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, imageExtras, includeText);
       historyType = "IMAGE_PROMPT";
     }
-    
     setGeneratedPrompt(prompt);
-
-    // Save to history
     const entry = { title: title.trim(), type: historyType, prompt, date: new Date().toISOString() };
     const updated = [entry, ...history.filter(h => h.title !== title.trim() || h.type !== historyType)].slice(0, MAX_HISTORY);
     setHistory(updated);
@@ -333,6 +390,7 @@ export default function PromptGeneratorPage() {
     { value: "QNA", label: "Tanya Jawab", icon: "🗨️", desc: "Dialog anak + orang tua, jawaban instan" },
     { value: "PEMBELAJARAN", label: "Pembelajaran", icon: "📚", desc: "Narasi + dalil + analogi" },
     { value: "ARTIKEL", label: "Artikel", icon: "📝", desc: "Prosa + dalil + analogi" },
+    { value: "KISAH", label: "Kisah", icon: "📖", desc: "Sirah, Teladan, atau Cerita Fiksi" },
   ];
 
   const imageStyles = [
@@ -373,7 +431,7 @@ export default function PromptGeneratorPage() {
               {/* Tipe Konten */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <label className="block text-sm font-bold text-slate-700 mb-3">1. Pilih Tujuan Konten</label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {typeConfigs.map(t => (
                 <button key={t.value} onClick={() => setType(t.value)} className={`p-4 rounded-xl text-left border-2 transition-all ${type === t.value ? "border-purple-500 bg-purple-50 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}>
                   <span className="text-2xl">{t.icon}</span>
@@ -384,10 +442,30 @@ export default function PromptGeneratorPage() {
             </div>
               </div>
 
+              {/* KISAH Sub-Type Selector — only shown when KISAH is selected */}
+              {type === "KISAH" && (
+                <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 shadow-sm">
+                  <label className="block text-sm font-bold text-amber-800 mb-3">1b. Pilih Sub-Tipe Kisah</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { value: "SIRAH" as KisahSubType, label: "Sirah Nabawiyah", icon: "👑", desc: "Kisah Nabi dari kitab mu'tabar" },
+                      { value: "TELADAN" as KisahSubType, label: "Teladan Sahabat", icon: "⭐", desc: "Kisah sahabat & ulama terdahulu" },
+                      { value: "CERITA_FIKSI" as KisahSubType, label: "Cerita Fiksi", icon: "🌙", desc: "Cerita islami modern, tanpa sumber" },
+                    ].map(st => (
+                      <button key={st.value} onClick={() => setKisahSubType(st.value)} className={`p-4 rounded-xl text-left border-2 transition-all ${kisahSubType === st.value ? "border-amber-500 bg-amber-100 shadow-sm" : "border-amber-200 hover:border-amber-300 bg-white"}`}>
+                        <span className="text-2xl">{st.icon}</span>
+                        <p className="font-bold text-sm text-slate-800 mt-1">{st.label}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{st.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Judul */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <label className="block text-sm font-bold text-slate-700 mb-2">2. Judul / Topik Konten</label>
-                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Contoh: Mengapa Kita Harus Sholat 5 Waktu?" className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500" />
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={type === "KISAH" ? `Contoh: ${kisahSubType === "SIRAH" ? "Kisah Nabi Ibrahim Membangun Ka'bah" : kisahSubType === "TELADAN" ? "Kedermawanan Utsman bin Affan" : "Hana dan Hari Pertama di Sekolah"}` : "Contoh: Mengapa Kita Harus Sholat 5 Waktu?"} className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500" />
               </div>
 
               {/* Usia */}
@@ -403,25 +481,45 @@ export default function PromptGeneratorPage() {
             </div>
               </div>
 
-              {/* Opsi */}
+              {/* Opsi — conditional per type */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <label className="block text-sm font-bold text-slate-700 mb-3">4. Opsi Tambahan</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { key: "dalil", label: "📖 Sertakan Dalil Al-Quran & Hadits", always: true },
-                { key: "analogi", label: "🧩 Sertakan Analogi Anak-anak", always: true },
-                { key: "dialog", label: "💬 Sertakan Simulasi Dialog", always: false, onlyFor: "QNA" as ContentType },
-                { key: "tips", label: "ℹ️ Sertakan Tips Orang Tua", always: true },
-                { key: "perbedaanPendapat", label: "⚖️ Sampaikan Perbedaan Pendapat Ulama", always: true },
-              ].map(opt => {
-                if (!opt.always && opt.onlyFor && type !== opt.onlyFor) return null;
-                return (
-                  <label key={opt.key} className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${(options as any)[opt.key] ? "border-purple-200 bg-purple-50 text-purple-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-                    <input type="checkbox" checked={(options as any)[opt.key]} onChange={e => setOptions({ ...options, [opt.key]: e.target.checked })} className="w-4 h-4 text-purple-600 rounded" />
-                    {opt.label}
+              {type === "KISAH" ? (
+                <>
+                  {(kisahSubType === "SIRAH" || kisahSubType === "TELADAN") && (
+                    <label className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${options.referensi ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                      <input type="checkbox" checked={options.referensi} onChange={e => setOptions({ ...options, referensi: e.target.checked })} className="w-4 h-4 text-amber-600 rounded" />
+                      📚 Sertakan Referensi Kitab Sumber
+                    </label>
+                  )}
+                  <label className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${options.analogi ? "border-purple-200 bg-purple-50 text-purple-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                    <input type="checkbox" checked={options.analogi} onChange={e => setOptions({ ...options, analogi: e.target.checked })} className="w-4 h-4 text-purple-600 rounded" />
+                    🧩 Sertakan Analogi/Perumpamaan
                   </label>
-                );
-              })}
+                  {kisahSubType === "CERITA_FIKSI" && (
+                    <p className="col-span-2 text-xs text-slate-400 italic p-2">Cerita Fiksi tidak menggunakan sumber dalil atau kitab.</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  {[
+                    { key: "dalil", label: "📖 Sertakan Dalil Al-Quran & Hadits", always: true },
+                    { key: "analogi", label: "🧩 Sertakan Analogi Anak-anak", always: true },
+                    { key: "dialog", label: "💬 Sertakan Simulasi Dialog", always: false, onlyFor: "QNA" as ContentType },
+                    { key: "tips", label: "ℹ️ Sertakan Tips Orang Tua", always: true },
+                    { key: "perbedaanPendapat", label: "⚖️ Sampaikan Perbedaan Pendapat Ulama", always: true },
+                  ].map(opt => {
+                    if (!opt.always && opt.onlyFor && type !== opt.onlyFor) return null;
+                    return (
+                      <label key={opt.key} className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${(options as any)[opt.key] ? "border-purple-200 bg-purple-50 text-purple-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                        <input type="checkbox" checked={(options as any)[opt.key]} onChange={e => setOptions({ ...options, [opt.key]: e.target.checked })} className="w-4 h-4 text-purple-600 rounded" />
+                        {opt.label}
+                      </label>
+                    );
+                  })}
+                </>
+              )}
             </div>
               </div>
             </>
@@ -443,87 +541,110 @@ export default function PromptGeneratorPage() {
 
               {/* Judul */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <label className="block text-sm font-bold text-slate-700 mb-2">2. Konteks Judul Artikel</label>
-                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Contoh: Mengapa Kita Harus Sholat 5 Waktu?" className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500" />
+                <label className="block text-sm font-bold text-slate-700 mb-2">2. Konteks Judul/Topik</label>
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Contoh: Kisah Nabi Ibrahim, Mengapa Kita Sholat, dll." className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500" />
                 <p className="text-xs text-slate-400 mt-2">AI akan menggambar elemen yang relevan dengan topik ini.</p>
               </div>
 
-              {/* Opsi */}
+              {/* Scene Preset */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <label className="block text-sm font-bold text-slate-700 mb-3">3. Aturan Pembuatan</label>
-                <div className="space-y-3">
-                  <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${imageOptions.includeText ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-                    <input type="checkbox" checked={imageOptions.includeText} onChange={e => setImageOptions({ ...imageOptions, includeText: e.target.checked })} className="w-4 h-4 mt-0.5 text-amber-600 rounded" />
-                    <div>
-                      <p className="font-bold">Sertakan Teks Judul di Gambar</p>
-                      <p className="text-xs mt-0.5 opacity-80">Catatan: AI sering *typo*. Direkomendasikan dimatikan jika Anda ingin menambahkan teks secara manual via Canva.</p>
+                <label className="block text-sm font-bold text-slate-700 mb-3">3. Pilih Preset Adegan</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {([
+                    { value: "KELUARGA", icon: "👨‍👩‍👧", label: "Keluarga", desc: "Pilih karakter keluarga" },
+                    { value: "NABI_SAHABAT", icon: "🌟", label: "Nabi & Sahabat", desc: "Siluet nur + sahabat" },
+                    { value: "KELOMPOK_ANAK", icon: "👦", label: "Kelompok Anak", desc: "1-4 anak muslim" },
+                    { value: "TUNGGAL", icon: "👤", label: "Karakter Tunggal", desc: "Satu figur saja" },
+                    { value: "TANPA_MAKHLUK", icon: "🌿", label: "Tanpa Makhluk", desc: "Objek & lingkungan" },
+                  ] as {value: ScenePreset; icon: string; label: string; desc: string}[]).map(sp => (
+                    <button key={sp.value} onClick={() => setScenePreset(sp.value)} className={`p-4 rounded-xl text-left border-2 transition-all ${scenePreset === sp.value ? "border-purple-500 bg-purple-50 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}>
+                      <span className="text-2xl">{sp.icon}</span>
+                      <p className="font-bold text-sm text-slate-800 mt-1">{sp.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{sp.desc}</p>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Conditional sub-options */}
+                <div className="mt-4">
+                  {scenePreset === "NABI_SAHABAT" && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                      <p className="text-xs font-bold text-amber-800 flex items-center gap-1">⚠️ Representasi Nabi</p>
+                      <p className="text-xs text-amber-700">Nabi digambarkan sebagai SILUET BERCAHAYA (nur) saja — tanpa fitur wajah atau detail fisik. Periksa hasil gambar sebelum digunakan.</p>
+                      <label className="flex items-center gap-2 text-sm font-medium text-amber-800 cursor-pointer">
+                        <input type="checkbox" checked={prophetCompanion} onChange={e => setProphetCompanion(e.target.checked)} className="w-4 h-4 text-amber-600 rounded" />
+                        Tambahkan sahabat (faceless) di sampingnya
+                      </label>
                     </div>
-                  </label>
-                  
-                  <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${imageOptions.noLivingBeings ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-                    <input type="checkbox" checked={imageOptions.noLivingBeings} onChange={e => setImageOptions({ ...imageOptions, noLivingBeings: e.target.checked })} className="w-4 h-4 mt-0.5 text-emerald-600 rounded" />
-                    <div>
-                      <p className="font-bold">Tanpa Makhluk Bernyawa (Hanya Objek)</p>
-                      <p className="text-xs mt-0.5 opacity-80">Gambar hanya akan menampilkan siluet, objek benda mati, atau pemandangan untuk mematuhi syariat.</p>
+                  )}
+                  {scenePreset === "KELUARGA" && (
+                    <div className="mt-3">
+                      <p className="text-xs font-bold text-slate-600 mb-2">Pilih anggota keluarga yang ditampilkan:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {([["ayah","👨 Ayah"],["ibu","👩 Ibu"],["anakLaki","👦 Anak Laki-laki"],["anakPerempuan","👧 Anak Perempuan"]] as [keyof typeof familyChars, string][]).map(([key, label]) => (
+                          <label key={key} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm font-medium transition-all ${familyChars[key] ? "border-purple-300 bg-purple-50 text-purple-800" : "border-slate-200 text-slate-500"}`}>
+                            <input type="checkbox" checked={familyChars[key]} onChange={e => setFamilyChars({...familyChars, [key]: e.target.checked})} className="w-4 h-4 rounded text-purple-600" />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </label>
+                  )}
+                  {scenePreset === "KELOMPOK_ANAK" && (
+                    <div className="mt-3 flex flex-col gap-3">
+                      <div>
+                        <p className="text-xs font-bold text-slate-600 mb-1">Jumlah anak: <span className="text-purple-600">{childCount}</span></p>
+                        <input type="range" min={1} max={4} value={childCount} onChange={e => setChildCount(parseInt(e.target.value))} className="w-full accent-purple-500" />
+                      </div>
+                      <div className="flex gap-2">
+                        {([["laki","Laki-laki"],["perempuan","Perempuan"],["campur","Campuran"]] as ["laki"|"perempuan"|"campur", string][]).map(([val, label]) => (
+                          <button key={val} onClick={() => setChildGender(val)} className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${childGender === val ? "border-purple-500 bg-purple-50 text-purple-700" : "border-slate-200 text-slate-500"}`}>{label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {scenePreset === "TUNGGAL" && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {([["ayah","👨 Ayah"],["ibu","👩 Ibu"],["anakLaki","👦 Anak Laki"],["anakPerempuan","👧 Anak Perempuan"]] as [SingleCharType, string][]).map(([val, label]) => (
+                        <button key={val} onClick={() => setSingleChar(val)} className={`py-2 text-xs font-bold rounded-lg border transition-all ${singleChar === val ? "border-purple-500 bg-purple-50 text-purple-700" : "border-slate-200 text-slate-500"}`}>{label}</button>
+                      ))}
+                    </div>
+                  )}
+                  {scenePreset === "TANPA_MAKHLUK" && (
+                    <p className="mt-3 text-xs text-slate-500 italic">Gambar akan menampilkan arsitektur islami, pemandangan alam, benda islami, atau motif geometris.</p>
+                  )}
                 </div>
               </div>
 
-              {/* Konteks Tambahan */}
+              {/* Include text + extras */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <label className="block text-sm font-bold text-slate-700 mb-1">4. Konteks Tambahan <span className="text-xs font-normal text-slate-400">(opsional — semakin detail semakin baik)</span></label>
-                <p className="text-xs text-slate-400 mb-4">Isi salah satu atau semua field di bawah untuk menghasilkan prompt yang lebih kaya dan spesifik.</p>
+                <label className="block text-sm font-bold text-slate-700 mb-3">4. Konteks Tambahan <span className="text-xs font-normal text-slate-400">(opsional)</span></label>
                 <div className="space-y-3">
-                  {/* Aktivitas */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">⚡ Aktivitas / Tindakan</label>
-                    <input
-                      type="text"
-                      value={imageExtras.activity}
-                      onChange={e => setImageExtras({ ...imageExtras, activity: e.target.value })}
-                      placeholder="misal: Sholat berjamaah, Memasukkan koin sedekah, Membaca Al-Quran bersama"
-                      className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400 focus:ring-purple-400"
-                    />
-                  </div>
-
-                  {/* Ekspresi — disembunyikan jika noLivingBeings aktif */}
-                  {!imageOptions.noLivingBeings && (
+                  <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${includeText ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 text-slate-600"}`}>
+                    <input type="checkbox" checked={includeText} onChange={e => setIncludeText(e.target.checked)} className="w-4 h-4 mt-0.5 text-amber-600 rounded" />
+                    <div>
+                      <p className="font-bold">Sertakan Teks Judul di Gambar</p>
+                      <p className="text-xs mt-0.5 opacity-80">Catatan: AI sering salah ejaan. Direkomendasikan OFF jika ingin tambah teks manual via Canva.</p>
+                    </div>
+                  </label>
+                  {scenePreset !== "TANPA_MAKHLUK" && scenePreset !== "NABI_SAHABAT" && (
                     <div>
                       <label className="block text-xs font-bold text-slate-600 mb-1">😊 Ekspresi / Suasana Hati</label>
-                      <input
-                        type="text"
-                        value={imageExtras.expression}
-                        onChange={e => setImageExtras({ ...imageExtras, expression: e.target.value })}
-                        placeholder="misal: Bahagia & khusyuk, Penasaran, Semangat, Tenang"
-                        className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400 focus:ring-purple-400"
-                      />
-                      <p className="text-[11px] text-slate-400 mt-1">Karena karakter faceless, ekspresi akan digambarkan lewat bahasa tubuh & postur.</p>
+                      <input type="text" value={imageExtras.expression} onChange={e => setImageExtras({...imageExtras, expression: e.target.value})} placeholder="misal: Bahagia & khusyuk, Penasaran, Semangat" className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400" />
+                      <p className="text-[11px] text-slate-400 mt-1">Ekspresi digambarkan lewat bahasa tubuh & postur — bukan wajah.</p>
                     </div>
                   )}
-
-                  {/* Latar */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">⚡ Aktivitas / Tindakan</label>
+                    <input type="text" value={imageExtras.activity} onChange={e => setImageExtras({...imageExtras, activity: e.target.value})} placeholder="misal: Sholat berjamaah, Membaca Al-Quran bersama, Sedekah" className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400" />
+                  </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-600 mb-1">🏡 Latar / Setting</label>
-                    <input
-                      type="text"
-                      value={imageExtras.setting}
-                      onChange={e => setImageExtras({ ...imageExtras, setting: e.target.value })}
-                      placeholder="misal: Masjid, Ruang keluarga, Taman islami, Sekolah"
-                      className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400 focus:ring-purple-400"
-                    />
+                    <input type="text" value={imageExtras.setting} onChange={e => setImageExtras({...imageExtras, setting: e.target.value})} placeholder="misal: Masjid, Ruang keluarga, Taman islami, Padang pasir" className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400" />
                   </div>
-
-                  {/* Palet Warna */}
                   <div>
                     <label className="block text-xs font-bold text-slate-600 mb-1">🎨 Palet Warna Dominan</label>
-                    <input
-                      type="text"
-                      value={imageExtras.colorPalette}
-                      onChange={e => setImageExtras({ ...imageExtras, colorPalette: e.target.value })}
-                      placeholder="misal: Hijau & Emas, Biru Langit & Putih, Netral Hangat"
-                      className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400 focus:ring-purple-400"
-                    />
+                    <input type="text" value={imageExtras.colorPalette} onChange={e => setImageExtras({...imageExtras, colorPalette: e.target.value})} placeholder="misal: Hijau & Emas, Biru Langit & Putih, Netral Hangat" className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400" />
                   </div>
                 </div>
               </div>

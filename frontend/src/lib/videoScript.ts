@@ -1,8 +1,58 @@
 /**
- * Generate a video script prompt from Adably content — ready to paste into AI tools.
+ * Generate a video script prompt or story script from Adably content.
+ * KISAH type → clean narration script (Naskah Kisah)
+ * Other types → YouTube video script prompt
  * Follows manhaj salaf guidelines and avoids tashwir of living creatures.
  */
-export function generateVideoScript(content: any): string {
+
+// ─── KISAH: Clean Narration Script ───────────────────────────────────────────
+
+function generateKisahScript(content: any): string {
+  const ageLabel = (content.ageGroups || []).join(', ') || 'semua usia';
+  const nodeTitle = content.node?.title || 'Kisah Islami';
+
+  // Build ordered paragraphs from articleDetail blocks
+  const narasi: string[] = [];
+  const referensi: string[] = [];
+
+  for (const block of (content.articleDetail?.blocks || [])) {
+    if (block.type === 'paragraph' && block.text) {
+      narasi.push(block.text);
+    }
+    if (block.type === 'heading' && block.text) {
+      narasi.push(`\n── ${block.text} ──`);
+    }
+    if (block.type === 'dalil') {
+      const entries = block.entries || [block];
+      for (const e of entries) {
+        if (e.source) referensi.push(`• ${e.source}${e.translation ? ` — "${e.translation}"` : ''}`);
+      }
+    }
+  }
+
+  let script =
+    `╔════════════════════════════════════════╗\n` +
+    `   📖 NASKAH KISAH — Adably\n` +
+    `╚════════════════════════════════════════╝\n\n` +
+    `Judul    : ${content.title}\n` +
+    `Kategori : ${nodeTitle}\n` +
+    `Usia     : ${ageLabel} tahun\n`;
+
+  script += `\n════════════ ISI KISAH ════════════\n\n`;
+  script += narasi.join('\n\n');
+
+  if (referensi.length > 0) {
+    script += `\n\n════════ REFERENSI SUMBER ════════\n`;
+    script += referensi.join('\n');
+  }
+
+  script += `\n\n══════════════════════════════════\nAdably — Platform Edukasi Islami Anak`;
+  return script;
+}
+
+// ─── OTHER TYPES: YouTube Video Script Prompt ────────────────────────────────
+
+function generateVideoScriptPrompt(content: any): string {
   const blocks: string[] = [];
 
   // QNA detail
@@ -23,7 +73,7 @@ export function generateVideoScript(content: any): string {
     }
   }
 
-  // Article detail
+  // Article / Pembelajaran detail (unified blocks)
   if (content.articleDetail?.blocks?.length) {
     blocks.push(`ISI KONTEN:\n${content.articleDetail.blocks.map((b: any) => {
       if (b.type === 'paragraph' || b.type === 'heading') return b.text;
@@ -37,6 +87,10 @@ export function generateVideoScript(content: any): string {
   }
 
   const ageGroup = (content.ageGroups || []).join(', ') || '3-10';
+  const typeLabel =
+    content.type === 'QNA' ? 'Tanya Jawab' :
+    content.type === 'PEMBELAJARAN' ? 'Pembelajaran' :
+    'Artikel';
 
   return `=== PROMPT UNTUK AI VIDEO CREATOR ===
 
@@ -60,7 +114,7 @@ ATURAN WAJIB:
 === KONTEN SUMBER ===
 
 Judul: ${content.title}
-Tipe: ${content.type === 'QNA' ? 'Tanya Jawab' : content.type === 'PEMBELAJARAN' ? 'Pembelajaran' : 'Artikel'}
+Tipe: ${typeLabel}
 Usia Target: ${ageGroup} tahun
 ${content.node?.title ? `Kategori: ${content.node.title}` : ''}
 
@@ -78,6 +132,13 @@ Berikan output dalam format berikut:
    - [SCENE PENUTUP] Ajakan + doa
 4. THUMBNAIL TEXT (teks pendek untuk thumbnail, max 5 kata)
 5. TAGS YOUTUBE (10 tags relevan, pisahkan koma)`;
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+export function generateVideoScript(content: any): string {
+  if (content.type === 'KISAH') return generateKisahScript(content);
+  return generateVideoScriptPrompt(content);
 }
 
 export function copyVideoScript(content: any): boolean {
