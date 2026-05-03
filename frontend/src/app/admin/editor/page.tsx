@@ -58,6 +58,8 @@ function EditorContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [displayAuthorName, setDisplayAuthorName] = useState("");
   const [enableAudio, setEnableAudio] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [nodes, setNodes] = useState<any[]>([]);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
@@ -108,6 +110,7 @@ function EditorContent() {
               setAgeGroups(c.ageGroups && c.ageGroups.length > 0 ? c.ageGroups : ["3-5"]); setNodeId(c.nodeId || "");
               setDisplayAuthorName(c.displayAuthorName || "");
               setEnableAudio(c.enableAudio ?? false);
+              setThumbnailUrl(c.thumbnailUrl || "");
               setEditStatus(c.status || null);
               setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
               const cType = c.type === "PEMBELAJARAN" ? "PEMBELAJARAN" : c.type === "QNA" ? "QNA" : "ARTICLE";
@@ -238,6 +241,7 @@ function EditorContent() {
     try {
       const payload: any = {
         title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, tags,
+        thumbnailUrl: thumbnailUrl || null,
         nodeId: contentType === "PEMBELAJARAN" ? nodeId : (nodeId || undefined),
         displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
       };
@@ -469,6 +473,40 @@ function EditorContent() {
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Deskripsi Singkat</label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ringkasan konten..." className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500 min-h-[60px]" />
+              </div>
+              {/* Thumbnail Upload */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Thumbnail <span className="text-xs text-slate-400 font-normal">(opsional — untuk card & share preview)</span></label>
+                {thumbnailUrl ? (
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+                      <img src={thumbnailUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                    </div>
+                    <button type="button" onClick={() => setThumbnailUrl("")} className="text-xs font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1"><Trash2 size={14} /> Hapus</button>
+                  </div>
+                ) : (
+                  <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors ${thumbnailUploading ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50'}`}>
+                    <Image size={20} className="text-slate-400" />
+                    <span className="text-sm text-slate-500">{thumbnailUploading ? 'Mengupload...' : 'Upload gambar thumbnail (maks 5MB)'}</span>
+                    <input type="file" accept="image/*" className="hidden" disabled={thumbnailUploading} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 5 * 1024 * 1024) { toast.error('Ukuran maksimal 5MB'); return; }
+                      setThumbnailUploading(true);
+                      try {
+                        const token = Cookies.get('_at');
+                        const fd = new FormData();
+                        fd.append('file', file);
+                        const res = await fetch(`${API_BASE_URL}/editor/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+                        if (!res.ok) throw new Error('Upload gagal');
+                        const data = await res.json();
+                        setThumbnailUrl(data.url);
+                        toast.success('Thumbnail berhasil diupload');
+                      } catch (err: any) { toast.error(err.message || 'Gagal upload'); }
+                      finally { setThumbnailUploading(false); e.target.value = ''; }
+                    }} />
+                  </label>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {contentType === "PEMBELAJARAN" && (

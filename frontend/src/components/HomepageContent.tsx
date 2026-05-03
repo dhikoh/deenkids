@@ -32,19 +32,26 @@ function ContentCard({ item, index }: { item: any; index: number }) {
   const typeStyle = isQna ? "bg-amber-50 text-amber-700 border border-amber-200" : isPembelajaran ? "bg-purple-50 text-purple-700 border border-purple-200" : "bg-sky-50 text-sky-700 border border-sky-200";
   return (
     <Link href={isQna ? `/qna/${item.slug}` : `/artikel/${item.slug}`} className="group">
-      <div className="h-full bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-emerald-200 transition-all duration-300">
-        <div className="flex items-center gap-2 mb-3">
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${typeStyle}`}>
-            {typeLabel}
-          </span>
-          <span className="text-xs text-slate-400 font-medium">{(item.ageGroups || []).join(', ')}</span>
-        </div>
-        <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-emerald-700 transition-colors line-clamp-2">{item.title}</h3>
-        <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 mb-4">{item.description || "Konten edukasi Islam untuk anak."}</p>
-        <div className="flex items-center gap-4 text-xs text-slate-400">
-          <span className="flex items-center gap-1"><Eye size={14} /> {(item.viewCount || 0).toLocaleString()}</span>
-          <span className="flex items-center gap-1"><Heart size={14} /> {(item.likeCount || 0).toLocaleString()}</span>
-          {(item.displayAuthorName || item.author?.name) && <span className="ml-auto font-medium text-slate-500">{item.displayAuthorName || item.author.name}</span>}
+      <div className="h-full bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-emerald-200 transition-all duration-300 overflow-hidden">
+        {item.thumbnailUrl && (
+          <div className="w-full h-40 overflow-hidden">
+            <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          </div>
+        )}
+        <div className="p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${typeStyle}`}>
+              {typeLabel}
+            </span>
+            <span className="text-xs text-slate-400 font-medium">{(item.ageGroups || []).join(', ')}</span>
+          </div>
+          <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-emerald-700 transition-colors line-clamp-2">{item.title}</h3>
+          <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 mb-4">{item.description || "Konten edukasi Islam untuk anak."}</p>
+          <div className="flex items-center gap-4 text-xs text-slate-400">
+            <span className="flex items-center gap-1"><Eye size={14} /> {(item.viewCount || 0).toLocaleString()}</span>
+            <span className="flex items-center gap-1"><Heart size={14} /> {(item.likeCount || 0).toLocaleString()}</span>
+            {(item.displayAuthorName || item.author?.name) && <span className="ml-auto font-medium text-slate-500">{item.displayAuthorName || item.author.name}</span>}
+          </div>
         </div>
       </div>
     </Link>

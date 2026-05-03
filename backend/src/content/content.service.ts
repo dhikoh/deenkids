@@ -144,6 +144,7 @@ export class ContentService {
           ratingCount: true,
           publishedAt: true,
           description: true,
+          thumbnailUrl: true,
           displayAuthorName: true,
           author: { select: { name: true } },
           node: { select: { title: true } },

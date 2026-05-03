@@ -97,6 +97,7 @@ model ContentItem {
   slug              String            @unique
   title             String
   description       String?
+  thumbnailUrl      String?           // URL gambar thumbnail untuk card & OG image
   type              ContentType
   status            ContentStatus     @default(DRAFT)
   nodeId            String?

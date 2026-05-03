@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return {
       title: content.title,
       description: content.description || content.title,
-      openGraph: { title: content.title, description: content.description || content.title, type: "article", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
+      openGraph: { title: content.title, description: content.description || content.title, type: "article", images: [{ url: content.thumbnailUrl || "/og-image.png", width: 1200, height: 630 }] },
       twitter: { card: "summary_large_image", title: content.title, description: content.description || "" },
     };
   } catch { return { title: "Artikel" }; }
@@ -39,6 +39,11 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
       </Link>
 
       <div className="mb-8">
+        {content.thumbnailUrl && (
+          <div className="w-full h-48 md:h-64 rounded-2xl overflow-hidden mb-6 shadow-md">
+            <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" />
+          </div>
+        )}
         <div className="flex items-center gap-2 mb-4">
           <span className="text-xs font-bold px-3 py-1 bg-sky-50 text-sky-700 rounded-full">Artikel</span>
           <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-600 rounded-full">{(content.ageGroups || []).join(', ')} tahun</span>

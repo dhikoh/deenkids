@@ -49,6 +49,7 @@ export class EditorService {
         title: sanitizeText(dto.title),
         slug,
         description: dto.description ? sanitizeText(dto.description) : undefined,
+        thumbnailUrl: dto.thumbnailUrl ? sanitizeText(dto.thumbnailUrl) : null,
         type: dto.type,
         status: forcedStatus,
         ageGroups: dto.ageGroups || ['3-5'],
@@ -220,6 +221,7 @@ export class EditorService {
     const updateData: any = {
         title: dto.title ? sanitizeText(dto.title) : undefined,
         description: dto.description ? sanitizeText(dto.description) : dto.description,
+        thumbnailUrl: dto.thumbnailUrl !== undefined ? (dto.thumbnailUrl ? sanitizeText(dto.thumbnailUrl) : null) : undefined,
         type: dto.type,
         ageGroups: dto.ageGroups || [],
         nodeId: dto.nodeId || null,

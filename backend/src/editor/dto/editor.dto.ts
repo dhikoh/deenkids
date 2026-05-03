@@ -64,6 +64,11 @@ export class CreateContentDto {
   @IsOptional()
   metaDesc?: string;
 
+  @ApiProperty({ required: false, description: 'URL gambar thumbnail untuk card & OG image' })
+  @IsString()
+  @IsOptional()
+  thumbnailUrl?: string;
+
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
