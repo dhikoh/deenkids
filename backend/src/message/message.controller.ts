@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Put, Param, Query, Body, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { memoryStorage } from 'multer';
 import { MessageService } from './message.service';
+import { StorageService } from '../common/storage/storage.service';
 import { JwtAuthGuard } from '../common/guards/roles.guard';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 
@@ -11,7 +11,10 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagg
 @UseGuards(JwtAuthGuard)
 @Controller('admin/messages')
 export class MessageController {
-  constructor(private messageService: MessageService) {}
+  constructor(
+    private messageService: MessageService,
+    private storageService: StorageService,
+  ) {}
 
   @Get('conversations')
   @ApiOperation({ summary: 'List my conversations' })
@@ -38,25 +41,34 @@ export class MessageController {
   }
 
   @Post('send')
-  @ApiOperation({ summary: 'Send a message (text or image)' })
+  @ApiOperation({ summary: 'Send a message (text or image attachment) — images stored in MinIO' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('attachment', {
-    storage: diskStorage({
-      destination: (_req, _file, cb) => {
-        const dir = join(process.cwd(), 'uploads', 'messages');
-        if (!require('fs').existsSync(dir)) require('fs').mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-      },
-      filename: (_req, file, cb) => {
-        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `msg-${unique}${extname(file.originalname)}`);
-      },
-    }),
+    storage: memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      if (!file.mimetype.match(/^image\/(jpeg|png|webp|jpg|svg\+xml)$/)) {
+        return cb(new Error('Hanya file gambar (JPG, PNG, SVG, WebP) yang diizinkan'), false);
+      }
+      cb(null, true);
+    },
   }))
-  async sendMessage(@Req() req: any, @Body() body: { receiverId: string; text?: string }, @UploadedFile() file?: any) {
-    const attachmentUrl = file ? `/uploads/messages/${file.filename}` : undefined;
-    const attachmentType = file ? file.mimetype : undefined;
+  async sendMessage(
+    @Req() req: any,
+    @Body() body: { receiverId: string; text?: string },
+    @UploadedFile() file?: any,
+  ) {
+    let attachmentUrl: string | undefined;
+    let attachmentType: string | undefined;
+    if (file) {
+      attachmentUrl = await this.storageService.uploadFile(
+        file.buffer,
+        file.mimetype,
+        file.originalname,
+        'messages',
+      );
+      attachmentType = file.mimetype;
+    }
     return this.messageService.sendMessage(req.user.id, body.receiverId, body.text, attachmentUrl, attachmentType);
   }
 

@@ -16,6 +16,7 @@ import { RewardModule } from './reward/reward.module';
 import { MessageModule } from './message/message.module';
 import { CronModule } from './common/cron/cron.module';
 import { PageContentModule } from './page-content/page-content.module';
+import { StorageModule } from './common/storage/storage.module';
 import { SeedController } from './seed.controller';
 
 @Module({
@@ -42,6 +43,7 @@ import { SeedController } from './seed.controller';
     MessageModule,
     CronModule,
     PageContentModule,
+    StorageModule,
   ],
   controllers: [SeedController],
   providers: [

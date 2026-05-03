@@ -1,11 +1,11 @@
 import { Controller, Post, Get, Put, Delete, Body, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException, HttpCode, HttpStatus } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { memoryStorage } from 'multer';
 import { EditorService } from './editor.service';
 import { CreateContentDto, UpdateContentDto } from './dto/editor.dto';
 import { RolesGuard, JwtAuthGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { StorageService } from '../common/storage/storage.service';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('CMS Editor')
@@ -13,7 +13,10 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('editor')
 export class EditorController {
-  constructor(private readonly editorService: EditorService) {}
+  constructor(
+    private readonly editorService: EditorService,
+    private readonly storageService: StorageService,
+  ) {}
 
   @Post('content')
   @ApiOperation({ summary: 'Create new content (QnA/Article/Media) with AI Check' })
@@ -81,21 +84,12 @@ export class EditorController {
     return this.editorService.getTags();
   }
 
+  // ── Image Upload — stored in MinIO object storage ──────────────────────
   @Post('upload')
-  @ApiOperation({ summary: 'Upload image for content blocks' })
+  @ApiOperation({ summary: 'Upload image for content blocks — stored in MinIO object storage' })
   @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
   @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: (_req: any, _file: any, cb: any) => {
-        const dir = join(process.cwd(), 'uploads');
-        if (!require('fs').existsSync(dir)) require('fs').mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-      },
-      filename: (_req, file, cb) => {
-        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, unique + extname(file.originalname));
-      },
-    }),
+    storage: memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     fileFilter: (_req, file, cb) => {
       if (!file.mimetype.match(/^image\//)) {
@@ -104,12 +98,15 @@ export class EditorController {
       cb(null, true);
     },
   }))
-  async uploadFile(@UploadedFile() file: any, @Req() req: any) {
+  async uploadFile(@UploadedFile() file: any): Promise<{ url: string }> {
     if (!file) throw new BadRequestException('File tidak ditemukan');
-    // Build URL from request origin to avoid hardcoded domain
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-    const host = req.headers['x-forwarded-host'] || req.headers.host || 'api.adably.id';
-    return { url: `${protocol}://${host}/uploads/${file.filename}` };
+    const url = await this.storageService.uploadFile(
+      file.buffer,
+      file.mimetype,
+      file.originalname,
+      'content',
+    );
+    return { url };
   }
 
   // ═══════════════════════════════════════════════════════

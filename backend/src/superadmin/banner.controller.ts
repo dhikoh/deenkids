@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { memoryStorage } from 'multer';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../common/storage/storage.service';
 import { RolesGuard, JwtAuthGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -12,7 +12,10 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('superadmin/banners')
 export class BannerController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storageService: StorageService,
+  ) {}
 
   @Get()
   @Roles('SUPERADMIN')
@@ -26,19 +29,9 @@ export class BannerController {
 
   @Post()
   @Roles('SUPERADMIN')
-  @ApiOperation({ summary: 'Create a new banner with image upload' })
+  @ApiOperation({ summary: 'Create a new banner with image upload — stored in MinIO' })
   @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: (_req, _file, cb) => {
-        const dir = join(process.cwd(), 'uploads', 'banners');
-        if (!require('fs').existsSync(dir)) require('fs').mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-      },
-      filename: (_req, file, cb) => {
-        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `banner-${unique}${extname(file.originalname)}`);
-      },
-    }),
+    storage: memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
       if (!file.mimetype.match(/^image\//)) {
@@ -49,11 +42,18 @@ export class BannerController {
   }))
   async createBanner(@Body() body: any, @UploadedFile() file: any) {
     if (!file) throw new BadRequestException('Gambar wajib diupload');
-    const apiBase = process.env.API_BASE_URL || 'https://api.adably.id';
+
+    const imageUrl = await this.storageService.uploadFile(
+      file.buffer,
+      file.mimetype,
+      file.originalname,
+      'banners',
+    );
+
     const banner = await this.prisma.sponsorBanner.create({
       data: {
         title: body.title || 'Sponsor Banner',
-        imageUrl: `${apiBase}/uploads/banners/${file.filename}`,
+        imageUrl,
         linkUrl: body.linkUrl || null,
         isActive: body.isActive === 'true' || body.isActive === true,
         startDate: body.startDate ? new Date(body.startDate) : null,
@@ -78,10 +78,7 @@ export class BannerController {
     if (body.priority !== undefined) data.priority = parseInt(body.priority) || 0;
     if (body.notes !== undefined) data.notes = body.notes;
 
-    const banner = await this.prisma.sponsorBanner.update({
-      where: { id },
-      data,
-    });
+    const banner = await this.prisma.sponsorBanner.update({ where: { id }, data });
     return { data: banner };
   }
 
@@ -100,8 +97,12 @@ export class BannerController {
 
   @Delete(':id')
   @Roles('SUPERADMIN')
-  @ApiOperation({ summary: 'Delete a banner' })
+  @ApiOperation({ summary: 'Delete a banner and its image from MinIO' })
   async deleteBanner(@Param('id') id: string) {
+    const existing = await this.prisma.sponsorBanner.findUnique({ where: { id } });
+    if (existing?.imageUrl) {
+      await this.storageService.deleteFile(existing.imageUrl);
+    }
     await this.prisma.sponsorBanner.delete({ where: { id } });
     return { message: 'Banner dihapus' };
   }

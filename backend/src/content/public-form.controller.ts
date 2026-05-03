@@ -1,15 +1,13 @@
 import { Controller, Post, Get, Put, Param, Body, Query, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { memoryStorage } from 'multer';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
+import { StorageService } from '../common/storage/storage.service';
 import { JwtAuthGuard, RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { NotificationType } from '@prisma/client';
-
-const uploadDir = join(process.cwd(), 'uploads', 'proofs');
 
 @ApiTags('Public')
 @Controller('content')
@@ -17,22 +15,17 @@ export class PublicFormController {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
+    private storageService: StorageService,
   ) {}
 
   @Post('donation/submit')
   @ApiOperation({ summary: 'Submit donation with optional proof upload' })
   @UseInterceptors(FileInterceptor('proof', {
-    storage: diskStorage({
-      destination: uploadDir,
-      filename: (_req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `proof-${uniqueSuffix}${extname(file.originalname)}`);
-      },
-    }),
+    storage: memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
     fileFilter: (_req, file, cb) => {
       if (!file.mimetype.match(/^image\/(jpeg|png|webp|jpg)$/)) {
-        cb(new Error('Hanya file gambar (jpg, png, webp) yang diperbolehkan'), false);
+        return cb(new Error('Hanya file gambar (jpg, png, webp) yang diperbolehkan'), false);
       }
       cb(null, true);
     },
@@ -41,13 +34,23 @@ export class PublicFormController {
     @Body() body: { name: string; amount: string; method: string; message?: string },
     @UploadedFile() file?: any,
   ) {
+    let proofUrl: string | null = null;
+    if (file) {
+      proofUrl = await this.storageService.uploadFile(
+        file.buffer,
+        file.mimetype,
+        file.originalname,
+        'proofs',
+      );
+    }
+
     const donation = await this.prisma.donationSubmission.create({
       data: {
         name: body.name,
         amount: parseInt(body.amount) || 0,
         method: body.method,
         message: body.message,
-        proofUrl: file ? `/uploads/proofs/${file.filename}` : null,
+        proofUrl,
       },
     });
 

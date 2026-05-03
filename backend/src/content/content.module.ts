@@ -6,16 +6,12 @@ import { PublicFormController, AdminInboxController } from './public-form.contro
 import { ErrorReportPublicController, ErrorReportAdminController } from './error-report.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationModule } from '../notification/notification.module';
-import { MulterModule } from '@nestjs/platform-express';
 
 @Module({
-  imports: [
-    PrismaModule,
-    NotificationModule,
-    MulterModule.register({ dest: './uploads' }),
-  ],
+  imports: [PrismaModule, NotificationModule],
   controllers: [ContentController, HealthController, PublicFormController, AdminInboxController, ErrorReportPublicController, ErrorReportAdminController],
   providers: [ContentService],
   exports: [ContentService],
 })
 export class ContentModule {}
+

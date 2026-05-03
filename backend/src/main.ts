@@ -5,8 +5,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import * as cookieParser from 'cookie-parser';
-import { join } from 'path';
-import * as fs from 'fs';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -14,16 +12,6 @@ async function bootstrap() {
 
   // Trust reverse proxy (Coolify/Traefik) — reads real IP from X-Forwarded-For
   app.set('trust proxy', true);
-
-  // Ensure uploads directories exist
-  const uploadDirs = ['uploads/proofs', 'uploads/banners', 'uploads/messages'];
-  for (const dir of uploadDirs) {
-    const fullPath = join(process.cwd(), dir);
-    if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
-  }
-
-  // Serve uploaded files statically
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   // CORS — must be configured BEFORE helmet
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
