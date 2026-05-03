@@ -31,6 +31,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (error.name === 'ChunkLoadError' || (error.message && error.message.includes('Loading chunk'))) {
+      window.location.reload();
+      return;
+    }
     if (this.reportCount >= ErrorBoundary.MAX_REPORTS) return;
     this.reportCount++;
     submitErrorReport({
@@ -78,6 +82,10 @@ export function GlobalErrorListener() {
     const MAX_REPORTS = 10;
 
     const handleError = (event: ErrorEvent) => {
+      if (event.message && (event.message.includes('ChunkLoadError') || event.message.includes('Loading chunk'))) {
+        window.location.reload();
+        return;
+      }
       const key = `${event.message}|${event.filename}`;
       if (recentErrors.has(key)) return;
       if (reportCount >= MAX_REPORTS) return;
@@ -96,6 +104,10 @@ export function GlobalErrorListener() {
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const message = event.reason?.message || String(event.reason) || "Unhandled promise rejection";
+      if (message.includes('ChunkLoadError') || message.includes('Loading chunk')) {
+        window.location.reload();
+        return;
+      }
       const key = `promise|${message}`;
       if (recentErrors.has(key)) return;
       if (reportCount >= MAX_REPORTS) return;

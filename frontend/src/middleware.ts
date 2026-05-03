@@ -28,30 +28,19 @@ export async function middleware(request: NextRequest) {
   // Protect /admin routes
   if (request.nextUrl.pathname.startsWith('/admin')) {
     if (!token) {
-      // No token at all — try silent refresh if _rt exists
-      if (refreshToken) {
-        const refreshResult = await attemptSilentRefresh(refreshToken, request);
-        if (refreshResult) return refreshResult;
-      }
       // No tokens — redirect to login
       const loginUrl = new URL('/login', request.url);
       return NextResponse.redirect(loginUrl);
     }
 
-    // Verify JWT signature + expiry
     const isValid = await verifyToken(token);
     if (!isValid) {
-      // Token expired or invalid — try silent refresh
-      if (refreshToken) {
-        const refreshResult = await attemptSilentRefresh(refreshToken, request);
-        if (refreshResult) return refreshResult;
-      }
-
-      // Both tokens invalid — clear and redirect to login
+      // Token expired or invalid — strict logout
       const loginUrl = new URL('/login', request.url);
+      // Optional: Clear cookies here so the client knows they are logged out.
+      // We do this by creating a response that redirects and deletes cookies.
       const response = NextResponse.redirect(loginUrl);
       response.cookies.delete('_at');
-      response.cookies.delete('_rt');
       return response;
     }
   }

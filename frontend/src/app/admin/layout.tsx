@@ -15,6 +15,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [unreadMsg, setUnreadMsg] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -105,7 +106,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => clearInterval(refreshTimer);
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = async () => {
     try {
       const token = Cookies.get('_at');
       const rt = Cookies.get('_rt');
@@ -249,6 +254,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
       </main>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-5">
+              <LogOut size={28} className="text-rose-500" />
+            </div>
+            <h3 className="text-xl font-extrabold text-slate-800 text-center mb-2">Konfirmasi Logout</h3>
+            <p className="text-slate-500 text-center text-sm mb-8 leading-relaxed">
+              Apakah Anda yakin ingin mengakhiri sesi ini dan keluar? Anda harus login kembali untuk mengakses panel kontrol.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={confirmLogout}
+                className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-rose-500 hover:bg-rose-600 shadow-md transition-all active:scale-95"
+              >
+                Ya, Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
