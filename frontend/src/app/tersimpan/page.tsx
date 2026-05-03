@@ -37,8 +37,15 @@ export default function TersimpanPage() {
     setItems(items.filter(i => i.id !== id));
   };
 
-  const typeLabel = (t: string) => t === "QNA" ? "Tanya Jawab" : t === "PEMBELAJARAN" ? "Pembelajaran" : "Artikel";
-  const typeColor = (t: string) => t === "QNA" ? "bg-amber-50 text-amber-600" : t === "PEMBELAJARAN" ? "bg-emerald-50 text-emerald-600" : "bg-sky-50 text-sky-600";
+  const typeLabel = (t: string) => t === 'QNA' ? 'Tanya Jawab' : t === 'PEMBELAJARAN' ? 'Pembelajaran' : t === 'KISAH' ? 'Kisah' : 'Artikel';
+  const typeColor = (t: string) => t === 'QNA' ? 'bg-amber-50 text-amber-600' : t === 'PEMBELAJARAN' ? 'bg-emerald-50 text-emerald-600' : t === 'KISAH' ? 'bg-orange-50 text-orange-600' : 'bg-sky-50 text-sky-600';
+
+  const getUrl = (item: any) => {
+    if (item.type === 'QNA') return `/qna/${item.slug}`;
+    if (item.type === 'PEMBELAJARAN') return `/kurikulum/${item.slug}`;
+    if (item.type === 'KISAH') return `/kisah/${item.node?.slug || 'kisah'}/${item.slug}`;
+    return `/artikel/${item.slug}`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -67,7 +74,7 @@ export default function TersimpanPage() {
             {items.map(item => (
               <div key={item.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
                 <div className="flex items-start justify-between gap-4">
-                  <Link href={`/${item.type === "QNA" ? "qna" : item.type === "PEMBELAJARAN" ? "kurikulum" : "artikel"}/${item.slug}`} className="flex-1 group">
+                  <Link href={getUrl(item)} className="flex-1 group">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${typeColor(item.type)}`}>{typeLabel(item.type)}</span>
                       {(item.ageGroups || []).map((a: string) => <span key={a} className="text-[10px] font-bold px-2 py-0.5 bg-sky-50 text-sky-600 rounded">{a} thn</span>)}

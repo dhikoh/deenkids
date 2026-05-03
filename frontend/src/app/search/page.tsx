@@ -10,6 +10,7 @@ const TYPE_OPTIONS = [
   { value: "QNA", label: "Tanya Jawab" },
   { value: "PEMBELAJARAN", label: "Pembelajaran" },
   { value: "ARTICLE", label: "Artikel" },
+  { value: "KISAH", label: "Kisah" },
 ];
 
 const AGE_OPTIONS = [
@@ -50,11 +51,16 @@ function SearchContent() {
   const getTypeInfo = (r: any) => {
     if (r.type === "QNA") return { icon: <HelpCircle size={16} />, label: "Tanya Jawab", bg: "bg-amber-100 text-amber-600" };
     if (r.type === "PEMBELAJARAN") return { icon: <GraduationCap size={16} />, label: "Pembelajaran", bg: "bg-emerald-100 text-emerald-600" };
+    if (r.type === "KISAH") return { icon: <BookOpen size={16} />, label: "Kisah", bg: "bg-orange-100 text-orange-600" };
     return { icon: <BookOpen size={16} />, label: "Artikel", bg: "bg-sky-100 text-sky-600" };
   };
 
   const getContentUrl = (r: any) => {
     if (r.type === "QNA") return `/qna/${r.slug}`;
+    if (r.type === "KISAH") {
+      const nodeSlug = r.node?.slug || 'kisah';
+      return `/kisah/${nodeSlug}/${r.slug}`;
+    }
     return `/artikel/${r.slug}`;
   };
 
