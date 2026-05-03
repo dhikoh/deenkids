@@ -58,18 +58,18 @@ export class AdminController {
     return this.reviewService.unpublishContent(id, req.user.id, body.notes);
   }
 
-  // ── Content Node Structure (Kurikulum) ──
+  // ── Content Node Structure ──
   @Get('structure')
   @Roles('ADMIN', 'SUPERADMIN')
-  @ApiOperation({ summary: 'Get full content structure tree for management' })
-  async getStructure() {
-    return this.structureService.getStructure();
+  @ApiOperation({ summary: 'Get content structure tree filtered by group (PEMBELAJARAN or KISAH)' })
+  async getStructure(@Query('group') group?: string) {
+    return this.structureService.getStructure(group);
   }
 
   @Post('structure')
   @Roles('ADMIN', 'SUPERADMIN')
   @ApiOperation({ summary: 'Create a new content node' })
-  async createNode(@Body() body: { title: string; type: string; parentId?: string; ageGroups?: string[]; icon?: string; order?: number; description?: string }) {
+  async createNode(@Body() body: { title: string; type: string; parentId?: string; ageGroups?: string[]; icon?: string; order?: number; description?: string; group?: string }) {
     return this.structureService.createNode(body);
   }
 

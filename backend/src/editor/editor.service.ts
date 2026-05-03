@@ -56,7 +56,7 @@ export class EditorService {
         nodeId: dto.nodeId || null,
         authorId,
         displayAuthorName: author?.role === 'SUPERADMIN' ? sanitizeText((dto as any).displayAuthorName || '') || null : null,
-        enableAudio: dto.enableAudio || false,
+        enableAudio: dto.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio || false),
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : undefined,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : undefined,
         // Set publishedAt if SuperAdmin directly creates as PUBLISHED
@@ -94,7 +94,7 @@ export class EditorService {
           tipsBlocks: [],
         },
       });
-    } else if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN') && dto.articleDetail) {
+    } else if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN' || dto.type === 'KISAH') && dto.articleDetail) {
       const sanitized = sanitizeJsonDeep(dto.articleDetail);
       await this.prisma.articleDetail.create({
         data: {
@@ -227,7 +227,7 @@ export class EditorService {
         type: dto.type,
         ageGroups: dto.ageGroups || [],
         nodeId: dto.nodeId || null,
-        enableAudio: dto.enableAudio || false,
+        enableAudio: dto.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio ?? existing.enableAudio),
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : dto.metaTitle,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : dto.metaDesc,
         status: newStatus,
@@ -306,8 +306,8 @@ export class EditorService {
       });
     }
 
-    // Update Article Detail
-    if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN') && dto.articleDetail) {
+    // Update Article/Pembelajaran/Kisah Detail
+    if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN' || dto.type === 'KISAH') && dto.articleDetail) {
       const sanitized = sanitizeJsonDeep(dto.articleDetail);
       await this.prisma.articleDetail.upsert({
         where: { contentId },
@@ -425,11 +425,13 @@ export class EditorService {
     return { message: 'Konten berhasil diajukan untuk review' };
   }
 
-  async getNodes() {
+  async getNodes(group?: string) {
+    const where: any = { isActive: true };
+    if (group) where.group = group;
     const nodes = await this.prisma.contentNode.findMany({
-      where: { isActive: true },
+      where,
       orderBy: { order: 'asc' },
-      select: { id: true, slug: true, title: true, type: true, parentId: true, ageGroups: true },
+      select: { id: true, slug: true, title: true, type: true, parentId: true, ageGroups: true, group: true },
     });
 
     // Build nested tree for dropdown

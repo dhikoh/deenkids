@@ -123,6 +123,14 @@ export async function fetchContentTree(age?: string) {
   return apiFetch(`${API_BASE_URL}/content/tree${params}`);
 }
 
+export async function fetchKisahTree() {
+  return apiFetch(`${API_BASE_URL}/content/kisah-tree`);
+}
+
+export async function fetchKisahByNode(nodeSlug: string, page = 1, limit = 12) {
+  return apiFetch(`${API_BASE_URL}/content/kisah/${nodeSlug}?page=${page}&limit=${limit}`);
+}
+
 export async function fetchContentList(params: { sort?: string; limit?: number; age?: string; type?: string; page?: number } = {}) {
   const searchParams = new URLSearchParams();
   if (params.sort) searchParams.append('sort', params.sort);
@@ -288,8 +296,9 @@ export async function submitContentForReview(id: string, token: string) {
   });
 }
 
-export async function fetchEditorNodes(token: string) {
-  return apiFetch(`${API_BASE_URL}/editor/nodes`, {
+export async function fetchEditorNodes(token: string, group?: string) {
+  const params = group ? `?group=${group}` : '';
+  return apiFetch(`${API_BASE_URL}/editor/nodes${params}`, {
     headers: authHeaders(token),
   });
 }
@@ -332,8 +341,9 @@ export async function unpublishContent(id: string, notes: string, token: string)
   });
 }
 
-export async function fetchStructure(token: string) {
-  return apiFetch(`${API_BASE_URL}/admin/structure`, {
+export async function fetchStructure(token: string, group?: string) {
+  const params = group ? `?group=${group}` : '';
+  return apiFetch(`${API_BASE_URL}/admin/structure${params}`, {
     headers: authHeaders(token),
   });
 }

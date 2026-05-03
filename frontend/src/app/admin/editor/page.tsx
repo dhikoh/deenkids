@@ -8,7 +8,7 @@ import Cookies from "js-cookie";
 import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle, submitContentForReview, apiFetch, authHeaders, API_BASE_URL } from "@/lib/api";
 import ImageCropperModal from "@/components/ImageCropperModal";
 
-type ContentTypeOption = "PEMBELAJARAN" | "QNA" | "ARTICLE";
+type ContentTypeOption = "PEMBELAJARAN" | "QNA" | "ARTICLE" | "KISAH";
 type BlockType = "paragraph" | "quick_answer" | "dialog" | "dalil" | "analogy" | "tip" | "image" | "video";
 
 interface EditorBlock {
@@ -80,7 +80,7 @@ function EditorContent() {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
     if (token) {
-      fetchEditorNodes(token).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
+      fetchEditorNodes(token, 'PEMBELAJARAN').then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
       fetchEditorTags(token).then(r => setAvailableTags(r.data || [])).catch(() => {});
       // Fetch AI global toggle
       fetchAiToggle(token).then(r => { setAiGlobalEnabled(r.aiEnabled); if (!r.aiEnabled) setUseAi(false); }).catch(() => {});
@@ -116,8 +116,10 @@ function EditorContent() {
               setThumbnailUrl(c.thumbnailUrl || "");
               setEditStatus(c.status || null);
               setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
-              const cType = c.type === "PEMBELAJARAN" ? "PEMBELAJARAN" : c.type === "QNA" ? "QNA" : "ARTICLE";
+              const cType: ContentTypeOption = c.type === 'PEMBELAJARAN' ? 'PEMBELAJARAN' : c.type === 'QNA' ? 'QNA' : c.type === 'KISAH' ? 'KISAH' : 'ARTICLE';
               setContentType(cType);
+              // Auto-enable audio for KISAH content
+              if (c.type === 'KISAH' && c.enableAudio !== false) setEnableAudio(true);
               // Load blocks from articleDetail or qnaDetail
               const loadedBlocks: EditorBlock[] = [];
               if (c.qnaDetail) {
@@ -251,13 +253,14 @@ function EditorContent() {
     if (!title) return toast.error("Judul wajib diisi");
     if (!ageGroups || ageGroups.length === 0) return toast.error("Kelompok usia wajib dipilih minimal satu");
     if (contentType === "PEMBELAJARAN" && !nodeId) return toast.error("Kategori pembelajaran wajib dipilih");
+    if (contentType === "KISAH" && !nodeId) return toast.error("Sub-kategori kisah wajib dipilih");
     setIsSaving(true);
     const token = Cookies.get("_at");
     try {
       const payload: any = {
         title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, tags,
         thumbnailUrl: thumbnailUrl || null,
-        nodeId: contentType === "PEMBELAJARAN" ? nodeId : (nodeId || undefined),
+        nodeId: (contentType === 'PEMBELAJARAN' || contentType === 'KISAH') ? nodeId : (nodeId || undefined),
         displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
       };
       // SuperAdmin can set status directly (e.g., PUBLISHED)
@@ -471,11 +474,20 @@ function EditorContent() {
             <div className="space-y-4">
               {/* Content Type Selector */}
               <div className="flex gap-3">
-                {(["PEMBELAJARAN", "QNA", "ARTICLE"] as ContentTypeOption[]).map(t => (
-                  <button key={t} onClick={() => setContentType(t)} className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${contentType === t ? "bg-emerald-600 text-white shadow-md" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
-                    {t === "PEMBELAJARAN" ? "📚 Pembelajaran" : t === "QNA" ? "🗨️ Tanya Jawab" : "📝 Artikel"}
-                  </button>
-                ))}
+              {(["PEMBELAJARAN", "QNA", "ARTICLE", "KISAH"] as ContentTypeOption[]).map(t => (
+                <button key={t} onClick={() => {
+                  setContentType(t);
+                  if (t === 'KISAH') setEnableAudio(true);
+                  // Reload nodes for the new content type group
+                  const token = Cookies.get('_at');
+                  if (token) {
+                    const group = t === 'PEMBELAJARAN' ? 'PEMBELAJARAN' : t === 'KISAH' ? 'KISAH' : undefined;
+                    fetchEditorNodes(token, group).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
+                  }
+                }} className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${contentType === t ? "bg-emerald-600 text-white shadow-md" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+                  {t === "PEMBELAJARAN" ? "📚 Pembelajaran" : t === "QNA" ? "🗨️ Tanya Jawab" : t === "KISAH" ? "📖 Kisah" : "📝 Artikel"}
+                </button>
+              ))}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Judul</label>
@@ -535,6 +547,16 @@ function EditorContent() {
                       <option value="">— Pilih Kategori —</option>
                       {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
                     </select>
+                  </div>
+                )}
+                {contentType === "KISAH" && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Sub-Kategori Kisah <span className="text-rose-500">*</span></label>
+                    <select value={nodeId} onChange={(e) => setNodeId(e.target.value)} className="w-full border border-amber-300 rounded-lg shadow-sm p-2.5 focus:border-amber-500 focus:ring-amber-500 bg-amber-50/50">
+                      <option value="">— Pilih Sub-Kategori Kisah —</option>
+                      {nodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
+                    </select>
+                    <p className="text-xs text-amber-600 mt-1">💡 Sub-kategori dikelola di "Kelola Struktur Kisah"</p>
                   </div>
                 )}
                 <div>
@@ -606,7 +628,13 @@ function EditorContent() {
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Tambah Blok Konten</p>
             <div className="flex flex-wrap gap-2">
-              {BLOCK_TYPES.map(bt => (
+              {BLOCK_TYPES.filter(bt => {
+                // quick_answer only for QNA
+                if (bt.type === 'quick_answer' && contentType !== 'QNA') return false;
+                // dialog: only for QNA and PEMBELAJARAN (not KISAH, not ARTICLE)
+                if (bt.type === 'dialog' && (contentType === 'KISAH' || contentType === 'ARTICLE')) return false;
+                return true;
+              }).map(bt => (
                 <button key={bt.type} onClick={() => addBlock(bt.type)} className={`${bt.color} px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:opacity-80 transition-opacity border border-transparent`}>
                   {bt.icon} {bt.label}
                 </button>

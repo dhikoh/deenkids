@@ -7,8 +7,11 @@ import { sanitizeText } from '../common/utils/sanitize.util';
 export class StructureService {
   constructor(private prisma: PrismaService) {}
 
-  async getStructure() {
+  async getStructure(group?: string) {
+    const where: any = {};
+    if (group) where.group = group;
     const nodes = await this.prisma.contentNode.findMany({
+      where,
       orderBy: { order: 'asc' },
       include: {
         _count: { select: { contents: { where: { deletedAt: null } } } },
@@ -28,7 +31,7 @@ export class StructureService {
     return { data: buildTree() };
   }
 
-  async createNode(body: { title: string; type: string; parentId?: string; ageGroups?: string[]; icon?: string; order?: number; description?: string }) {
+  async createNode(body: { title: string; type: string; parentId?: string; ageGroups?: string[]; icon?: string; order?: number; description?: string; group?: string }) {
     const title = sanitizeText(body.title);
     const slug = slugify(title, { lower: true, strict: true }) + '-' + Date.now().toString(36);
     const node = await this.prisma.contentNode.create({
@@ -41,6 +44,7 @@ export class StructureService {
         icon: body.icon,
         order: body.order || 0,
         description: body.description ? sanitizeText(body.description) : undefined,
+        group: body.group || 'PEMBELAJARAN',
       },
     });
     return { data: node, message: 'Node berhasil dibuat' };

@@ -12,10 +12,16 @@ export class ContentController {
   ) {}
 
   @Get('tree')
-  @ApiOperation({ summary: 'Get Content Curriculum Tree' })
+  @ApiOperation({ summary: 'Get Pembelajaran Curriculum Tree (group=PEMBELAJARAN)' })
   @ApiQuery({ name: 'age', required: false, description: 'Filter by age group e.g. 3-5' })
   async getTree(@Query('age') age?: string) {
     return this.contentService.getTree(age);
+  }
+
+  @Get('kisah-tree')
+  @ApiOperation({ summary: 'Get Kisah sub-category tree (group=KISAH)' })
+  async getKisahTree() {
+    return this.contentService.getKisahTree();
   }
 
   @Get('list')
@@ -176,6 +182,18 @@ export class ContentController {
       orderBy: { publishedAt: 'desc' },
     });
     return { data: items };
+  }
+
+  @Get('kisah/:nodeSlug')
+  @ApiOperation({ summary: 'Get Kisah content list by sub-category node slug' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async getKisahByNode(
+    @Param('nodeSlug') nodeSlug: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.contentService.getKisahByNode(nodeSlug, parseInt(page || '1'), parseInt(limit || '12'));
   }
 
   @Get(':slug')

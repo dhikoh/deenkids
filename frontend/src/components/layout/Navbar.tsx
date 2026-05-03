@@ -48,6 +48,7 @@ export function Navbar() {
     { name: "Beranda", href: "/" },
     { name: "Pembelajaran", href: "/kurikulum" },
     { name: "Tanya Jawab", href: "/qna" },
+    { name: "Kisah", href: "/kisah" },
     { name: "Artikel", href: "/artikel" },
     { name: "Tentang Kami", href: "/tentang-kami" },
   ];

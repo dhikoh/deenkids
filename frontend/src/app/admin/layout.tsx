@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image, AlertTriangle, Trash2 } from "lucide-react";
+import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image, AlertTriangle, Trash2, BookOpen } from "lucide-react";
 import Cookies from "js-cookie";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -151,6 +151,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       { name: "Review Konten", icon: <CheckCircle size={20} />, href: "/admin/review", show: isAdminOrSuper },
       { name: "Kelola Konten", icon: <FileText size={20} />, href: "/admin/content-management", show: isAdminOrSuper },
       { name: "Kelola Struktur", icon: <FolderTree size={20} />, href: "/admin/structure", show: isAdminOrSuper },
+      { name: "Kelola Struktur Kisah", icon: <BookOpen size={20} />, href: "/admin/kisah-structure", show: isAdminOrSuper },
       { name: "Manajemen User", icon: <Users size={20} />, href: "/admin/users", show: isAdminOrSuper },
     ]},
     { label: "SuperAdmin", items: [

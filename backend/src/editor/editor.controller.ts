@@ -71,10 +71,11 @@ export class EditorController {
   }
 
   @Get('nodes')
-  @ApiOperation({ summary: 'Get all content nodes for dropdown selection' })
+  @ApiOperation({ summary: 'Get content nodes for dropdown — filter by group (PEMBELAJARAN or KISAH)' })
+  @ApiQuery({ name: 'group', required: false })
   @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
-  async getNodes() {
-    return this.editorService.getNodes();
+  async getNodes(@Query('group') group?: string) {
+    return this.editorService.getNodes(group);
   }
 
   @Get('tags')

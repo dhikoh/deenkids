@@ -5,32 +5,105 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ContentService {
   constructor(private prisma: PrismaService) {}
 
+  // ─── Pembelajaran Tree (group = PEMBELAJARAN) ────────────────────────────────
   async getTree(age?: string) {
-    // 1. Get all active nodes
     const nodes = await this.prisma.contentNode.findMany({
-      where: { isActive: true },
+      where: { isActive: true, group: 'PEMBELAJARAN' },
       orderBy: { order: 'asc' },
     });
 
-    // 2. Filter by age if provided
-    let filteredNodes = nodes;
-    if (age) {
-      filteredNodes = nodes.filter(node => node.ageGroups.includes(age));
-    }
+    let filtered = nodes;
+    if (age) filtered = nodes.filter(n => n.ageGroups.includes(age));
 
-    // 3. Build tree
-    const buildTree = (parentId: string | null = null) => {
-      return filteredNodes
-        .filter(node => node.parentId === parentId)
-        .map(node => ({
-          ...node,
-          children: buildTree(node.id),
-        }));
-    };
+    const buildTree = (parentId: string | null = null): any[] =>
+      filtered
+        .filter(n => n.parentId === parentId)
+        .map(n => ({ ...n, children: buildTree(n.id) }));
 
     return buildTree();
   }
 
+  // ─── Kisah Tree (group = KISAH) ───────────────────────────────────────────────
+  async getKisahTree() {
+    const nodes = await this.prisma.contentNode.findMany({
+      where: { isActive: true, group: 'KISAH' },
+      orderBy: { order: 'asc' },
+      include: {
+        _count: { select: { contents: { where: { status: 'PUBLISHED', deletedAt: null } } } },
+      },
+    });
+
+    const buildTree = (parentId: string | null = null): any[] =>
+      nodes
+        .filter(n => n.parentId === parentId)
+        .map(n => ({
+          ...n,
+          contentCount: n._count.contents,
+          children: buildTree(n.id),
+        }));
+
+    return buildTree();
+  }
+
+  // ─── Kisah listing by sub-category node ──────────────────────────────────────
+  async getKisahByNode(nodeSlug: string, page = 1, limit = 12) {
+    const node = await this.prisma.contentNode.findFirst({
+      where: { slug: nodeSlug, isActive: true, group: 'KISAH' },
+    });
+    if (!node) throw new NotFoundException(`Sub-kategori Kisah tidak ditemukan: ${nodeSlug}`);
+
+    // Collect all descendant node IDs (node + children + grandchildren)
+    const allNodes = await this.prisma.contentNode.findMany({
+      where: { isActive: true, group: 'KISAH' },
+    });
+    const getDescendantIds = (parentId: string): string[] => {
+      const children = allNodes.filter(n => n.parentId === parentId);
+      return [parentId, ...children.flatMap(c => getDescendantIds(c.id))];
+    };
+    const nodeIds = getDescendantIds(node.id);
+
+    const skip = (page - 1) * limit;
+    const where = { nodeId: { in: nodeIds }, type: 'KISAH' as any, status: 'PUBLISHED' as any, deletedAt: null };
+
+    const [data, total] = await Promise.all([
+      this.prisma.contentItem.findMany({
+        where,
+        orderBy: { publishedAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          thumbnailUrl: true,
+          ageGroups: true,
+          enableAudio: true,
+          viewCount: true,
+          likeCount: true,
+          avgRating: true,
+          ratingCount: true,
+          publishedAt: true,
+          displayAuthorName: true,
+          author: { select: { name: true } },
+          node: { select: { title: true, slug: true } },
+          tags: { include: { tag: { select: { name: true, slug: true } } } },
+        },
+      }),
+      this.prisma.contentItem.count({ where }),
+    ]);
+
+    return {
+      node: { id: node.id, title: node.title, slug: node.slug, description: node.description, icon: node.icon },
+      data: data.map(item => ({
+        ...item,
+        authorName: item.displayAuthorName || item.author?.name || 'Anonim',
+      })),
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  // ─── Content Detail ───────────────────────────────────────────────────────────
   async getContentDetail(slug: string) {
     const content = await this.prisma.contentItem.findUnique({
       where: { slug, status: 'PUBLISHED', deletedAt: null },
@@ -43,14 +116,10 @@ export class ContentService {
       },
     });
 
-    if (!content) {
-      throw new NotFoundException('Konten tidak ditemukan');
-    }
+    if (!content) throw new NotFoundException('Konten tidak ditemukan');
 
-    // Process related content
     const related = await this.getRelatedContent(content.id, content.nodeId);
 
-    // Return with resolved author name (alias takes priority)
     return {
       ...content,
       authorName: content.displayAuthorName || content.author?.name || 'Anonim',
@@ -60,108 +129,51 @@ export class ContentService {
 
   private async getRelatedContent(contentId: string, nodeId: string | null) {
     if (!nodeId) return [];
-    const sameNode = await this.prisma.contentItem.findMany({
-      where: {
-        nodeId,
-        id: { not: contentId },
-        status: 'PUBLISHED',
-        deletedAt: null,
-      },
+    return this.prisma.contentItem.findMany({
+      where: { nodeId, id: { not: contentId }, status: 'PUBLISHED', deletedAt: null },
       take: 5,
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        type: true,
-        viewCount: true,
-      },
+      select: { id: true, title: true, slug: true, type: true, viewCount: true, thumbnailUrl: true, enableAudio: true },
     });
-
-    return sameNode;
   }
 
+  // ─── General Content List ─────────────────────────────────────────────────────
   async getList(query: { age?: string; sort?: string; page?: any; limit?: any; type?: string; search?: string }) {
-    const age = query.age;
-    const sort = query.sort || 'newest';
-    const type = query.type;
-    const search = query.search;
+    const { age, sort = 'newest', type, search } = query;
     const page = Math.max(1, parseInt(query.page) || 1);
     const limit = Math.max(1, parseInt(query.limit) || 10);
     const skip = (page - 1) * limit;
 
     let orderBy: any = { publishedAt: 'desc' };
-    
     switch (sort) {
-      case 'most_read':
-        orderBy = { viewCount: 'desc' };
-        break;
-      case 'most_liked':
-        orderBy = { likeCount: 'desc' };
-        break;
-      case 'top_rated':
-        orderBy = { avgRating: 'desc' };
-        break;
-      case 'popular':
-        orderBy = [
-          { likeCount: 'desc' },
-          { avgRating: 'desc' },
-          { viewCount: 'desc' }
-        ];
-        break;
-      default:
-        orderBy = { publishedAt: 'desc' };
+      case 'most_read': orderBy = { viewCount: 'desc' }; break;
+      case 'most_liked': orderBy = { likeCount: 'desc' }; break;
+      case 'top_rated': orderBy = { avgRating: 'desc' }; break;
+      case 'popular': orderBy = [{ likeCount: 'desc' }, { avgRating: 'desc' }, { viewCount: 'desc' }]; break;
     }
 
     const where: any = { status: 'PUBLISHED', deletedAt: null };
     const conditions: any[] = [];
-    if (age && age !== 'Semua') {
-      conditions.push({ ageGroups: { has: age } });
-    }
-    if (search) {
-      conditions.push({ OR: [{ title: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }] });
-    }
+    if (age && age !== 'Semua') conditions.push({ ageGroups: { has: age } });
+    if (search) conditions.push({ OR: [{ title: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }] });
     if (conditions.length > 0) where.AND = conditions;
-    if (type) {
-      where.type = type;
-    }
+    if (type) where.type = type;
 
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({
-        where,
-        orderBy,
-        skip,
-        take: Number(limit),
+        where, orderBy, skip, take: Number(limit),
         select: {
-          id: true,
-          title: true,
-          slug: true,
-          type: true,
-          ageGroups: true,
-          viewCount: true,
-          likeCount: true,
-          shareCount: true,
-          avgRating: true,
-          ratingCount: true,
-          publishedAt: true,
-          description: true,
-          thumbnailUrl: true,
-          displayAuthorName: true,
+          id: true, title: true, slug: true, type: true, ageGroups: true,
+          viewCount: true, likeCount: true, shareCount: true, avgRating: true,
+          ratingCount: true, publishedAt: true, description: true, thumbnailUrl: true,
+          enableAudio: true, displayAuthorName: true,
           author: { select: { name: true } },
           node: { select: { title: true } },
           tags: { include: { tag: { select: { name: true, slug: true } } } },
-        }
+        },
       }),
-      this.prisma.contentItem.count({ where })
+      this.prisma.contentItem.count({ where }),
     ]);
 
-    return {
-      data,
-      meta: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / limit)
-      }
-    };
+    return { data, meta: { total, page: Number(page), limit: Number(limit), totalPages: Math.ceil(total / limit) } };
   }
 }

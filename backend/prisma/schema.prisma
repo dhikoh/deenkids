@@ -70,6 +70,7 @@ model ContentNode {
   ageGroups   String[] // e.g., ["3-5", "5-7", "7-10"]
   order       Int           @default(0)
   icon        String?
+  group       String    @default("PEMBELAJARAN") // 'PEMBELAJARAN' | 'KISAH'
   isActive    Boolean       @default(true)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -90,6 +91,7 @@ enum ContentType {
   QNA
   ARTICLE
   PEMBELAJARAN
+  KISAH
 }
 
 model ContentItem {

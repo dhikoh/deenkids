@@ -10,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: baseUrl, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
     { url: `${baseUrl}/qna`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/artikel`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
+    { url: `${baseUrl}/kisah`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/kurikulum`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/tentang-kami`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/search`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
@@ -19,16 +20,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic content pages
   let dynamicPages: MetadataRoute.Sitemap = [];
   try {
-    const res = await fetch(`${API_BASE}/content/list?limit=200`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${API_BASE}/content/list?limit=500`, { next: { revalidate: 3600 } });
     if (res.ok) {
       const json = await res.json();
-      const items = json.data || [];
-      dynamicPages = items.map((item: any) => ({
-        url: `${baseUrl}/${item.type === 'QNA' ? 'qna' : 'artikel'}/${item.slug}`,
-        lastModified: item.publishedAt ? new Date(item.publishedAt) : new Date(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-      }));
+      const items: any[] = json.data || [];
+      dynamicPages = items
+        .filter((item: any) => item.slug && item.type)
+        .map((item: any) => {
+          let url = `${baseUrl}/artikel/${item.slug}`;
+          if (item.type === 'QNA') url = `${baseUrl}/qna/${item.slug}`;
+          else if (item.type === 'KISAH') {
+            // Kisah URL needs nodeSlug — fetch via /content/:slug if needed,
+            // but for sitemap we use a simplified path: /kisah/[nodeSlug]/[slug]
+            // We can approximate by using node info if available
+            const nodeSlug = item.node?.slug || 'kisah';
+            url = `${baseUrl}/kisah/${nodeSlug}/${item.slug}`;
+          } else if (item.type === 'PEMBELAJARAN') {
+            url = `${baseUrl}/kurikulum/${item.slug}`;
+          }
+          return {
+            url,
+            lastModified: item.publishedAt ? new Date(item.publishedAt) : new Date(),
+            changeFrequency: 'weekly' as const,
+            priority: item.type === 'KISAH' ? 0.8 : 0.7,
+          };
+        });
     }
   } catch {
     // Silently fail — static pages still work
