@@ -229,22 +229,21 @@ async function main() {
         create: {
           question: 'Apakah Allah melihat saat aku bersembunyi di bawah selimut?',
           answerQuick: 'Tentu! Allah Maha Melihat (Al-Bashiir). Tidak ada satu pun yang tersembunyi dari-Nya.',
-          dialogBlocks: [
-            { role: 'anak', text: 'Ummi, kalau aku makan coklat diam-diam di bawah meja, ada yang lihat nggak?' },
-            { role: 'ortu', text: 'Mungkin Ummi tidak lihat. Tapi ada Yang selalu melihat, bahkan di tempat gelap sekalipun.' },
-            { role: 'anak', text: 'Siapa, Ummi?' },
-            { role: 'ortu', text: 'Allah Ta\'ala. Salah satu nama Allah adalah Al-Bashiir, artinya Maha Melihat. Allah melihat semut hitam, di atas batu hitam, di malam yang gelap.' },
-          ],
-          dalilBlocks: [
-            { text: 'Sesungguhnya Allah mengetahui apa yang ghaib di langit dan di bumi. Dan Allah Maha Melihat apa yang kamu kerjakan.', source: 'QS. Al-Hujurat: 18' },
-            { text: 'Dia mengetahui (pandangan) mata yang khianat dan apa yang disembunyikan oleh hati.', source: 'QS. Ghafir: 19' },
-          ],
-          analogyBlocks: [
-            { title: 'Lampu Senter Super', text: 'Bayangkan lampu senter paling terang di dunia. Allah melihat jauh lebih hebat dari itu — menembus dinding, gunung, bahkan kegelapan malam!' },
-          ],
-          tipsBlocks: [
-            { text: 'Sampaikan dengan nada lembut dan senyuman agar anak merasa diawasi dengan cinta, bukan takut.' },
-            { text: 'Ajak anak berdoa: "Ya Allah, jadikan aku anak yang jujur karena Engkau selalu melihatku."' },
+          dialogBlocks: [], dalilBlocks: [], analogyBlocks: [], tipsBlocks: [],
+          blocks: [
+            { type: 'dialog', lines: [
+              { role: 'anak', text: 'Ummi, kalau aku makan coklat diam-diam di bawah meja, ada yang lihat nggak?' },
+              { role: 'ortu', text: 'Mungkin Ummi tidak lihat. Tapi ada Yang selalu melihat, bahkan di tempat gelap sekalipun.' },
+              { role: 'anak', text: 'Siapa, Ummi?' },
+              { role: 'ortu', text: "Allah Ta'ala. Salah satu nama Allah adalah Al-Bashiir, artinya Maha Melihat. Allah melihat semut hitam, di atas batu hitam, di malam yang gelap." },
+            ]},
+            { type: 'dalil', entries: [
+              { arabic: '', translation: 'Sesungguhnya Allah mengetahui apa yang ghaib di langit dan di bumi. Dan Allah Maha Melihat apa yang kamu kerjakan.', source: 'QS. Al-Hujurat: 18', sourceUrl: '' },
+              { arabic: '', translation: 'Dia mengetahui (pandangan) mata yang khianat dan apa yang disembunyikan oleh hati.', source: 'QS. Ghafir: 19', sourceUrl: '' },
+            ]},
+            { type: 'analogy', title: 'Lampu Senter Super', text: 'Bayangkan lampu senter paling terang di dunia. Allah melihat jauh lebih hebat dari itu — menembus dinding, gunung, bahkan kegelapan malam!' },
+            { type: 'tip', text: 'Sampaikan dengan nada lembut dan senyuman agar anak merasa diawasi dengan cinta, bukan takut.', referenceUrl: '' },
+            { type: 'tip', text: 'Ajak anak berdoa: "Ya Allah, jadikan aku anak yang jujur karena Engkau selalu melihatku."', referenceUrl: '' },
           ],
         },
       },
@@ -266,21 +265,20 @@ async function main() {
         create: {
           question: 'Di mana Allah? Apakah Allah ada di mana-mana?',
           answerQuick: 'Allah berada di atas Arsy (singgasana-Nya) yang berada di atas langit ketujuh, sesuai yang Allah kabarkan sendiri.',
-          dialogBlocks: [
-            { role: 'anak', text: 'Abi, Allah itu ada di mana sih?' },
-            { role: 'ortu', text: 'Allah berada di atas, Nak. Di atas langit ketujuh, di atas singgasana-Nya yang disebut Arsy.' },
-            { role: 'anak', text: 'Kalau Allah di atas, berarti Allah jauh dong?' },
-            { role: 'ortu', text: 'Allah memang tinggi di atas sana, tapi ilmu dan penglihatan Allah meliputi segalanya. Jadi doa kita pasti sampai!' },
-          ],
-          dalilBlocks: [
-            { text: '(Yaitu) Ar-Rahman (Yang Maha Pemurah), yang bersemayam di atas Arsy.', source: 'QS. Thaha: 5' },
-            { text: 'Rasulullah ﷺ bertanya kepada seorang budak perempuan: "Di mana Allah?" Ia menjawab: "Di atas langit." Beliau berkata: "Merdekakanlah ia, karena dia adalah seorang mukminah."', source: 'HR. Muslim no. 537' },
-          ],
-          analogyBlocks: [
-            { title: 'Raja di Istananya', text: 'Seperti raja yang duduk di istananya yang sangat tinggi, tapi perintahnya sampai ke seluruh negeri. Allah di atas Arsy, tapi ilmu-Nya meliputi seluruh alam.' },
-          ],
-          tipsBlocks: [
-            { text: 'Ini adalah aqidah yang diajarkan Rasulullah ﷺ dan dipahami para Sahabat. Ajarkan kepada anak sejak kecil.' },
+          dialogBlocks: [], dalilBlocks: [], analogyBlocks: [], tipsBlocks: [],
+          blocks: [
+            { type: 'dialog', lines: [
+              { role: 'anak', text: 'Abi, Allah itu ada di mana sih?' },
+              { role: 'ortu', text: 'Allah berada di atas, Nak. Di atas langit ketujuh, di atas singgasana-Nya yang disebut Arsy.' },
+              { role: 'anak', text: 'Kalau Allah di atas, berarti Allah jauh dong?' },
+              { role: 'ortu', text: 'Allah memang tinggi di atas sana, tapi ilmu dan penglihatan Allah meliputi segalanya. Jadi doa kita pasti sampai!' },
+            ]},
+            { type: 'dalil', entries: [
+              { arabic: '', translation: '(Yaitu) Ar-Rahman (Yang Maha Pemurah), yang bersemayam di atas Arsy.', source: 'QS. Thaha: 5', sourceUrl: '' },
+              { arabic: '', translation: 'Rasulullah ﷺ bertanya kepada seorang budak perempuan: "Di mana Allah?" Ia menjawab: "Di atas langit." Beliau berkata: "Merdekakanlah ia, karena dia adalah seorang mukminah."', source: 'HR. Muslim no. 537', sourceUrl: '' },
+            ]},
+            { type: 'analogy', title: 'Raja di Istananya', text: 'Seperti raja yang duduk di istananya yang sangat tinggi, tapi perintahnya sampai ke seluruh negeri. Allah di atas Arsy, tapi ilmu-Nya meliputi seluruh alam.' },
+            { type: 'tip', text: 'Ini adalah aqidah yang diajarkan Rasulullah ﷺ dan dipahami para Sahabat. Ajarkan kepada anak sejak kecil.', referenceUrl: '' },
           ],
         },
       },
@@ -302,21 +300,20 @@ async function main() {
         create: {
           question: 'Kenapa sih kita harus shalat setiap hari?',
           answerQuick: 'Karena shalat adalah perintah Allah yang paling utama. Shalat adalah cara kita berbicara dan dekat dengan Allah.',
-          dialogBlocks: [
-            { role: 'anak', text: 'Ummi, kenapa kita harus shalat terus? Kan capek...' },
-            { role: 'ortu', text: 'Hmm, kamu kan suka ngobrol sama Ummi dan Abi? Nah, shalat itu kayak ngobrol sama Allah!' },
-            { role: 'anak', text: 'Tapi kok Allah nggak jawab?' },
-            { role: 'ortu', text: 'Allah menjawab, Nak! Setiap kita baca Al-Fatihah, Allah menjawab setiap ayatnya. Kita yang belum bisa dengar saja.' },
-          ],
-          dalilBlocks: [
-            { text: 'Dan dirikanlah shalat. Sesungguhnya shalat itu mencegah dari perbuatan keji dan mungkar.', source: 'QS. Al-Ankabut: 45' },
-            { text: 'Rasulullah ﷺ bersabda: "Perintahkanlah anak-anak kalian untuk shalat ketika berusia tujuh tahun."', source: 'HR. Abu Dawud no. 495, dishahihkan Al-Albani' },
-          ],
-          analogyBlocks: [
-            { title: 'Mengisi Daya Baterai', text: 'Seperti HP yang harus di-charge 5x sehari agar tidak mati, hati kita juga butuh "di-charge" dengan shalat 5 waktu agar tetap kuat dan bahagia.' },
-          ],
-          tipsBlocks: [
-            { text: 'Ajak anak shalat berjamaah sejak usia 7 tahun. Buat suasana shalat menyenangkan, bukan memaksa.' },
+          dialogBlocks: [], dalilBlocks: [], analogyBlocks: [], tipsBlocks: [],
+          blocks: [
+            { type: 'dialog', lines: [
+              { role: 'anak', text: 'Ummi, kenapa kita harus shalat terus? Kan capek...' },
+              { role: 'ortu', text: 'Hmm, kamu kan suka ngobrol sama Ummi dan Abi? Nah, shalat itu kayak ngobrol sama Allah!' },
+              { role: 'anak', text: 'Tapi kok Allah nggak jawab?' },
+              { role: 'ortu', text: 'Allah menjawab, Nak! Setiap kita baca Al-Fatihah, Allah menjawab setiap ayatnya. Kita yang belum bisa dengar saja.' },
+            ]},
+            { type: 'dalil', entries: [
+              { arabic: '', translation: 'Dan dirikanlah shalat. Sesungguhnya shalat itu mencegah dari perbuatan keji dan mungkar.', source: 'QS. Al-Ankabut: 45', sourceUrl: '' },
+              { arabic: '', translation: 'Rasulullah ﷺ bersabda: "Perintahkanlah anak-anak kalian untuk shalat ketika berusia tujuh tahun."', source: 'HR. Abu Dawud no. 495, dishahihkan Al-Albani', sourceUrl: '' },
+            ]},
+            { type: 'analogy', title: 'Mengisi Daya Baterai', text: 'Seperti HP yang harus di-charge 5x sehari agar tidak mati, hati kita juga butuh "di-charge" dengan shalat 5 waktu agar tetap kuat dan bahagia.' },
+            { type: 'tip', text: 'Ajak anak shalat berjamaah sejak usia 7 tahun. Buat suasana shalat menyenangkan, bukan memaksa.', referenceUrl: '' },
           ],
         },
       },
@@ -389,22 +386,21 @@ async function main() {
         create: {
           question: 'Apa itu syirik? Kenapa kata Ustadz itu dosa paling besar?',
           answerQuick: 'Syirik adalah menyembah atau meminta tolong kepada selain Allah dalam perkara yang hanya Allah yang mampu. Ini dosa terbesar karena Allah tidak mengampuninya jika pelakunya tidak bertaubat.',
-          dialogBlocks: [
-            { role: 'anak', text: 'Abi, kata Ustadz syirik itu dosa paling besar. Memangnya apa sih syirik?' },
-            { role: 'ortu', text: 'Syirik itu artinya menyekutukan Allah. Misalnya, berdoa kepada selain Allah, atau percaya ada yang bisa memberi rezeki selain Allah.' },
-            { role: 'anak', text: 'Kalau pakai jimat biar nggak sakit, itu syirik?' },
-            { role: 'ortu', text: 'Benar sekali, Nak. Yang menyembuhkan hanya Allah. Jimat tidak punya kekuatan apa-apa. Rasulullah ﷺ melarang memakai jimat.' },
-          ],
-          dalilBlocks: [
-            { text: 'Sesungguhnya Allah tidak mengampuni dosa syirik, dan Dia mengampuni dosa selain itu bagi siapa yang Dia kehendaki.', source: 'QS. An-Nisa: 48' },
-            { text: 'Rasulullah ﷺ bersabda: "Barangsiapa menggantungkan jimat, maka dia telah berbuat syirik."', source: 'HR. Ahmad, dishahihkan Al-Albani' },
-          ],
-          analogyBlocks: [
-            { title: 'Remote TV', text: 'Bayangkan kamu minta remote TV untuk memasak nasi. Bisa nggak? Tentu tidak! Nah, meminta tolong kepada batu, pohon, atau makhluk dalam urusan yang hanya Allah mampu itu sama anehnya!' },
-          ],
-          tipsBlocks: [
-            { text: 'Jelaskan dengan lembut bahwa syirik bukan hanya menyembah patung, tapi juga percaya kepada jimat, dukun, dan ramalan bintang.' },
-            { text: 'Ajarkan anak selalu berdoa langsung kepada Allah tanpa perantara.' },
+          dialogBlocks: [], dalilBlocks: [], analogyBlocks: [], tipsBlocks: [],
+          blocks: [
+            { type: 'dialog', lines: [
+              { role: 'anak', text: 'Abi, kata Ustadz syirik itu dosa paling besar. Memangnya apa sih syirik?' },
+              { role: 'ortu', text: 'Syirik itu artinya menyekutukan Allah. Misalnya, berdoa kepada selain Allah, atau percaya ada yang bisa memberi rezeki selain Allah.' },
+              { role: 'anak', text: 'Kalau pakai jimat biar nggak sakit, itu syirik?' },
+              { role: 'ortu', text: 'Benar sekali, Nak. Yang menyembuhkan hanya Allah. Jimat tidak punya kekuatan apa-apa. Rasulullah ﷺ melarang memakai jimat.' },
+            ]},
+            { type: 'dalil', entries: [
+              { arabic: '', translation: 'Sesungguhnya Allah tidak mengampuni dosa syirik, dan Dia mengampuni dosa selain itu bagi siapa yang Dia kehendaki.', source: 'QS. An-Nisa: 48', sourceUrl: '' },
+              { arabic: '', translation: 'Rasulullah ﷺ bersabda: "Barangsiapa menggantungkan jimat, maka dia telah berbuat syirik."', source: 'HR. Ahmad, dishahihkan Al-Albani', sourceUrl: '' },
+            ]},
+            { type: 'analogy', title: 'Remote TV', text: 'Bayangkan kamu minta remote TV untuk memasak nasi. Bisa nggak? Tentu tidak! Nah, meminta tolong kepada batu, pohon, atau makhluk dalam urusan yang hanya Allah mampu itu sama anehnya!' },
+            { type: 'tip', text: 'Jelaskan dengan lembut bahwa syirik bukan hanya menyembah patung, tapi juga percaya kepada jimat, dukun, dan ramalan bintang.', referenceUrl: '' },
+            { type: 'tip', text: 'Ajarkan anak selalu berdoa langsung kepada Allah tanpa perantara.', referenceUrl: '' },
           ],
         },
       },
@@ -426,20 +422,19 @@ async function main() {
         create: {
           question: 'Ummi, siapa yang bikin langit? Siapa yang bikin kucing?',
           answerQuick: 'Allah yang menciptakan semuanya! Langit, bumi, gunung, kucing, bunga — semuanya ciptaan Allah.',
-          dialogBlocks: [
-            { role: 'anak', text: 'Ummi, siapa yang bikin bulan?' },
-            { role: 'ortu', text: 'Allah yang membuatnya, Sayang. Allah yang membuat bulan, bintang, matahari, semuanya!' },
-            { role: 'anak', text: 'Kalau kucing? Siapa yang bikin kucing?' },
-            { role: 'ortu', text: 'Allah juga! Allah menciptakan semua hewan — kucing, burung, ikan, semut. Hebat kan Allah?' },
-          ],
-          dalilBlocks: [
-            { text: 'Allah-lah yang menciptakan langit dan bumi dan apa yang ada di antara keduanya dalam enam masa.', source: 'QS. As-Sajdah: 4' },
-          ],
-          analogyBlocks: [
-            { title: 'Siapa yang Buat Kue?', text: 'Kalau ada kue di meja, pasti ada yang membuatnya kan? Nah, langit dan bumi ini jauh lebih hebat dari kue — pasti ada yang membuatnya, yaitu Allah!' },
-          ],
-          tipsBlocks: [
-            { text: 'Ajak anak jalan-jalan ke taman dan tunjukkan ciptaan Allah: pohon, bunga, burung. Katakan "Subhanallah, ini ciptaan Allah!"' },
+          dialogBlocks: [], dalilBlocks: [], analogyBlocks: [], tipsBlocks: [],
+          blocks: [
+            { type: 'dialog', lines: [
+              { role: 'anak', text: 'Ummi, siapa yang bikin bulan?' },
+              { role: 'ortu', text: 'Allah yang membuatnya, Sayang. Allah yang membuat bulan, bintang, matahari, semuanya!' },
+              { role: 'anak', text: 'Kalau kucing? Siapa yang bikin kucing?' },
+              { role: 'ortu', text: 'Allah juga! Allah menciptakan semua hewan — kucing, burung, ikan, semut. Hebat kan Allah?' },
+            ]},
+            { type: 'dalil', entries: [
+              { arabic: '', translation: 'Allah-lah yang menciptakan langit dan bumi dan apa yang ada di antara keduanya dalam enam masa.', source: 'QS. As-Sajdah: 4', sourceUrl: '' },
+            ]},
+            { type: 'analogy', title: 'Siapa yang Buat Kue?', text: 'Kalau ada kue di meja, pasti ada yang membuatnya kan? Nah, langit dan bumi ini jauh lebih hebat dari kue — pasti ada yang membuatnya, yaitu Allah!' },
+            { type: 'tip', text: 'Ajak anak jalan-jalan ke taman dan tunjukkan ciptaan Allah: pohon, bunga, burung. Katakan "Subhanallah, ini ciptaan Allah!"', referenceUrl: '' },
           ],
         },
       },
@@ -461,22 +456,21 @@ async function main() {
         create: {
           question: 'Bagaimana cara wudhu yang benar seperti Rasulullah ﷺ?',
           answerQuick: 'Wudhu dimulai dengan niat, lalu cuci tangan, kumur, hidung, muka, tangan sampai siku, usap kepala, dan terakhir cuci kaki.',
-          dialogBlocks: [
-            { role: 'anak', text: 'Abi, aku mau belajar wudhu. Gimana caranya?' },
-            { role: 'ortu', text: 'Bagus sekali! Pertama, niatkan dalam hati untuk berwudhu karena Allah. Lalu baca Bismillah.' },
-            { role: 'anak', text: 'Terus cuci apa dulu?' },
-            { role: 'ortu', text: 'Cuci kedua telapak tangan 3 kali, kumur-kumur 3 kali, lalu masukkan air ke hidung dan keluarkan 3 kali. Setelah itu cuci muka 3 kali.' },
-          ],
-          dalilBlocks: [
-            { text: 'Wahai orang-orang yang beriman, apabila kamu hendak mengerjakan shalat, maka basuhlah mukamu dan tanganmu sampai ke siku, dan sapulah kepalamu dan (basuh) kakimu sampai kedua mata kaki.', source: 'QS. Al-Maidah: 6' },
-            { text: 'Rasulullah ﷺ berwudhu dengan membasuh setiap anggota wudhu tiga kali.', source: 'HR. Bukhari no. 159' },
-          ],
-          analogyBlocks: [
-            { title: 'Mandi Sebelum ke Pesta', text: 'Sebelum ke pesta, kita mandi dulu biar bersih dan wangi kan? Nah, sebelum bertemu Allah di shalat, kita wudhu dulu biar suci dan siap!' },
-          ],
-          tipsBlocks: [
-            { text: 'Praktikkan bersama anak di depan wastafel. Biarkan anak menirukan gerakan Anda step by step.' },
-            { text: 'Jangan lupa ajarkan doa setelah wudhu: "Asyhadu an laa ilaaha illallah wa asyhadu anna Muhammadan abduhu wa rasuuluh"' },
+          dialogBlocks: [], dalilBlocks: [], analogyBlocks: [], tipsBlocks: [],
+          blocks: [
+            { type: 'dialog', lines: [
+              { role: 'anak', text: 'Abi, aku mau belajar wudhu. Gimana caranya?' },
+              { role: 'ortu', text: 'Bagus sekali! Pertama, niatkan dalam hati untuk berwudhu karena Allah. Lalu baca Bismillah.' },
+              { role: 'anak', text: 'Terus cuci apa dulu?' },
+              { role: 'ortu', text: 'Cuci kedua telapak tangan 3 kali, kumur-kumur 3 kali, lalu masukkan air ke hidung dan keluarkan 3 kali. Setelah itu cuci muka 3 kali.' },
+            ]},
+            { type: 'dalil', entries: [
+              { arabic: '', translation: 'Wahai orang-orang yang beriman, apabila kamu hendak mengerjakan shalat, maka basuhlah mukamu dan tanganmu sampai ke siku, dan sapulah kepalamu dan (basuh) kakimu sampai kedua mata kaki.', source: 'QS. Al-Maidah: 6', sourceUrl: '' },
+              { arabic: '', translation: 'Rasulullah ﷺ berwudhu dengan membasuh setiap anggota wudhu tiga kali.', source: 'HR. Bukhari no. 159', sourceUrl: '' },
+            ]},
+            { type: 'analogy', title: 'Mandi Sebelum ke Pesta', text: 'Sebelum ke pesta, kita mandi dulu biar bersih dan wangi kan? Nah, sebelum bertemu Allah di shalat, kita wudhu dulu biar suci dan siap!' },
+            { type: 'tip', text: 'Praktikkan bersama anak di depan wastafel. Biarkan anak menirukan gerakan Anda step by step.', referenceUrl: '' },
+            { type: 'tip', text: 'Jangan lupa ajarkan doa setelah wudhu: "Asyhadu an laa ilaaha illallah wa asyhadu anna Muhammadan abduhu wa rasuuluh"', referenceUrl: '' },
           ],
         },
       },

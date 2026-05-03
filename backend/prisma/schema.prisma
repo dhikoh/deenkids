@@ -144,11 +144,13 @@ model QnaDetail {
   content                 ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
   question                String
   answerQuick             String
-  answerQuickReferenceUrl String? // Reference URL for the quick answer
-  dialogBlocks            Json // array of dialog objects
-  dalilBlocks             Json // array of dalil objects
-  analogyBlocks           Json // array of analogy objects
-  tipsBlocks              Json // array of tips objects
+  answerQuickReferenceUrl String?     // Reference URL for the quick answer
+  blocks                  Json        @default("[]") // unified block array (paragraph, dialog, dalil, analogy, tip, image, video)
+  // Legacy fields — kept for dual-phase migration safety, will be removed after Phase 2 cleanup
+  dialogBlocks            Json        @default("[]")
+  dalilBlocks             Json        @default("[]")
+  analogyBlocks           Json        @default("[]")
+  tipsBlocks              Json        @default("[]")
 }
 
 model ArticleDetail {

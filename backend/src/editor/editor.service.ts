@@ -86,10 +86,12 @@ export class EditorService {
           question: sanitized.question || sanitizeText(dto.title),
           answerQuick: sanitized.answerQuick || '',
           answerQuickReferenceUrl: sanitized.answerQuickReferenceUrl || null,
-          dialogBlocks: sanitized.dialogBlocks || [],
-          dalilBlocks: sanitized.dalilBlocks || [],
-          analogyBlocks: sanitized.analogyBlocks || [],
-          tipsBlocks: sanitized.tipsBlocks || [],
+          blocks: sanitized.blocks || [],
+          // Legacy fields — kept empty during dual-phase migration
+          dialogBlocks: [],
+          dalilBlocks: [],
+          analogyBlocks: [],
+          tipsBlocks: [],
         },
       });
     } else if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN') && dto.articleDetail) {
@@ -282,20 +284,24 @@ export class EditorService {
           question: sanitized.question,
           answerQuick: sanitized.answerQuick,
           answerQuickReferenceUrl: sanitized.answerQuickReferenceUrl || null,
-          dialogBlocks: sanitized.dialogBlocks || [],
-          dalilBlocks: sanitized.dalilBlocks || [],
-          analogyBlocks: sanitized.analogyBlocks || [],
-          tipsBlocks: sanitized.tipsBlocks || [],
+          blocks: sanitized.blocks || [],
+          // Legacy fields — kept empty during dual-phase migration
+          dialogBlocks: [],
+          dalilBlocks: [],
+          analogyBlocks: [],
+          tipsBlocks: [],
         },
         create: {
           contentId,
           question: sanitized.question || sanitizeText(dto.title || ''),
           answerQuick: sanitized.answerQuick || '',
           answerQuickReferenceUrl: sanitized.answerQuickReferenceUrl || null,
-          dialogBlocks: sanitized.dialogBlocks || [],
-          dalilBlocks: sanitized.dalilBlocks || [],
-          analogyBlocks: sanitized.analogyBlocks || [],
-          tipsBlocks: sanitized.tipsBlocks || [],
+          blocks: sanitized.blocks || [],
+          // Legacy fields — kept empty during dual-phase migration
+          dialogBlocks: [],
+          dalilBlocks: [],
+          analogyBlocks: [],
+          tipsBlocks: [],
         },
       });
     }

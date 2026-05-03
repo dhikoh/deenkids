@@ -67,131 +67,122 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
 
       {qna && (
         <div className="space-y-8">
+          {/* Audio Player — unified blocks for TTS */}
           <AudioPlayerWrapper blocks={[
             ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
-            ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
-            ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
-            ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
-            ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+            ...((Array.isArray(qna.blocks) && qna.blocks.length > 0 ? qna.blocks : [
+              ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
+              ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
+              ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
+              ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+            ]) as any[]),
           ]} enableAudio={content.enableAudio} contentType={content.type} />
-          {/* Paragraph Blocks */}
-          {qna.paragraphBlocks && qna.paragraphBlocks.length > 0 && (
-            <div className="space-y-4">
-              {(qna.paragraphBlocks as any[]).map((block: any, i: number) => (
-                <div key={i}>
-                  <p className="text-slate-700 leading-relaxed">{block.text}</p>
-                  {block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-1 inline-block">📎 Sumber referensi ↗</a>}
-                </div>
-              ))}
-            </div>
-          )}
 
-          {/* Image Blocks */}
-          {qna.imageBlocks && qna.imageBlocks.length > 0 && (
-            <div className="space-y-4">
-              {(qna.imageBlocks as any[]).map((block: any, i: number) => (
-                block.url && (
-                  <figure key={i}>
-                    <img src={block.url} alt={block.caption || ''} className="rounded-2xl w-full border border-slate-200" />
-                    {block.caption && <figcaption className="text-xs text-slate-400 text-center mt-2">{block.caption}</figcaption>}
-                  </figure>
-                )
-              ))}
-            </div>
-          )}
-
-          {/* Video Blocks */}
-          {qna.videoBlocks && qna.videoBlocks.length > 0 && (
-            <div className="space-y-4">
-              {(qna.videoBlocks as any[]).map((block: any, i: number) => {
-                if (!block.url) return null;
-                const ytMatch = block.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-                if (ytMatch) return (
-                  <figure key={i}>
-                    <div className="aspect-video rounded-2xl overflow-hidden">
-                      <iframe src={`https://www.youtube.com/embed/${ytMatch[1]}`} className="w-full h-full" allowFullScreen />
-                    </div>
-                    {block.caption && <figcaption className="text-xs text-slate-400 text-center mt-2">{block.caption}</figcaption>}
-                  </figure>
-                );
-                return <a key={i} href={block.url} target="_blank" rel="noopener noreferrer" className="block bg-slate-100 rounded-xl p-4 text-emerald-600 font-bold hover:underline">🎬 {block.caption || block.url}</a>;
-              })}
-            </div>
-          )}
-
+          {/* Quick Answer Card — always shown first */}
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
             <h2 className="font-bold text-emerald-800 mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5" /> Jawaban Ringkas</h2>
             <p className="text-emerald-900 font-medium leading-relaxed">{qna.answerQuick}</p>
             {qna.answerQuickReferenceUrl && <a href={qna.answerQuickReferenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-2 inline-block">📎 Sumber referensi ↗</a>}
           </div>
 
-          {qna.dialogBlocks && qna.dialogBlocks.length > 0 && (
-            <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><MessageCircle className="h-5 w-5 text-emerald-600" /> Contoh Dialog</h2>
-              <div className="space-y-3">
-                {(qna.dialogBlocks as any[]).map((block: any, i: number) => {
-                  const lines = block.lines || [{ role: block.role || 'anak', text: block.text || '' }];
-                  return lines.map((line: any, j: number) => {
-                    const cfg = ROLE_CONFIG[line.role] || ROLE_CONFIG.anak;
+          {/* Universal Block Renderer — reads from qna.blocks[] (new) or legacy fields */}
+          {(() => {
+            const blockList: any[] = Array.isArray(qna.blocks) && qna.blocks.length > 0
+              ? qna.blocks
+              : [
+                  ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
+                  ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
+                  ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
+                  ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+                ];
+
+            if (blockList.length === 0) return null;
+
+            return (
+              <div className="space-y-6">
+                {blockList.map((block: any, i: number) => {
+                  if (block.type === 'paragraph') return (
+                    <div key={i}>
+                      <p className="text-slate-700 leading-relaxed">{block.text}</p>
+                      {block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-1 inline-block">📎 Sumber referensi ↗</a>}
+                    </div>
+                  );
+
+                  if (block.type === 'dialog') {
+                    const lines = block.lines || [{ role: block.role || 'anak', text: block.text || '' }];
                     return (
-                      <div key={`${i}-${j}`} className={`flex ${cfg.align}`}>
-                        <div className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm font-medium ${cfg.chatBg}`}>
-                          <p className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-60">{cfg.label}</p>
-                          {line.text}
+                      <div key={i}>
+                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mb-3"><MessageCircle className="h-3.5 w-3.5" /> Dialog</h3>
+                        <div className="space-y-3">
+                          {lines.map((line: any, j: number) => {
+                            const cfg = ROLE_CONFIG[line.role] || ROLE_CONFIG.anak;
+                            return (
+                              <div key={j} className={`flex ${cfg.align}`}>
+                                <div className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm font-medium ${cfg.chatBg}`}>
+                                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-60">{cfg.label}</p>
+                                  {line.text}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
-                  });
+                  }
+
+                  if (block.type === 'dalil') {
+                    const entries = block.entries || [block];
+                    return (
+                      <div key={i} className="space-y-3">
+                        {entries.map((dalil: any, j: number) => (
+                          <blockquote key={j} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
+                            {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
+                            <p className="text-slate-700 italic font-medium leading-relaxed">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
+                            <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">
+                              — {dalil.sourceUrl ? <a href={dalil.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900 transition-colors">{dalil.source} ↗</a> : dalil.source}
+                            </cite>
+                          </blockquote>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  if (block.type === 'analogy') return (
+                    <div key={i} className="bg-teal-50 border border-teal-200 rounded-2xl p-6">
+                      {block.title && <h3 className="font-bold text-teal-800 mb-2">{block.title}</h3>}
+                      <p className="text-teal-700 font-medium">{block.text}</p>
+                    </div>
+                  );
+
+                  if (block.type === 'tip') return (
+                    <div key={i} className="bg-slate-50 rounded-2xl p-5 border border-slate-200">
+                      <p className="text-sm text-slate-700 font-medium flex gap-2"><span className="text-emerald-500 font-bold">•</span><span>{block.text}{block.referenceUrl && <> — <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 underline hover:text-emerald-800 text-xs">Sumber ↗</a></>}</span></p>
+                    </div>
+                  );
+
+                  if (block.type === 'image' && block.url) return (
+                    <figure key={i}>
+                      <img src={block.url} alt={block.caption || ''} className="rounded-2xl w-full border border-slate-200" />
+                      {block.caption && <figcaption className="text-xs text-slate-400 text-center mt-2">{block.caption}</figcaption>}
+                    </figure>
+                  );
+
+                  if (block.type === 'video' && block.url) {
+                    const ytMatch = block.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+                    if (ytMatch) return (
+                      <figure key={i}>
+                        <div className="aspect-video rounded-2xl overflow-hidden"><iframe src={`https://www.youtube.com/embed/${ytMatch[1]}`} className="w-full h-full" allowFullScreen /></div>
+                        {block.caption && <figcaption className="text-xs text-slate-400 text-center mt-2">{block.caption}</figcaption>}
+                      </figure>
+                    );
+                    return <a key={i} href={block.url} target="_blank" rel="noopener noreferrer" className="block bg-slate-100 rounded-xl p-4 text-emerald-600 font-bold hover:underline">🎬 {block.caption || block.url}</a>;
+                  }
+
+                  return null;
                 })}
               </div>
-            </div>
-          )}
-
-          {qna.dalilBlocks && qna.dalilBlocks.length > 0 && (
-            <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><BookOpen className="h-5 w-5 text-amber-600" /> Dalil & Sumber</h2>
-              <div className="space-y-4">
-                {(qna.dalilBlocks as any[]).map((dalilBlock: any, i: number) => {
-                  const entries = dalilBlock.entries || [dalilBlock];
-                  return entries.map((dalil: any, j: number) => (
-                    <blockquote key={`${i}-${j}`} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
-                      {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
-                      <p className="text-slate-700 italic font-medium leading-relaxed">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
-                      <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">
-                        — {dalil.sourceUrl ? <a href={dalil.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900 transition-colors">{dalil.source} ↗</a> : dalil.source}
-                      </cite>
-                    </blockquote>
-                  ));
-                })}
-              </div>
-            </div>
-          )}
-
-          {qna.analogyBlocks && qna.analogyBlocks.length > 0 && (
-            <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><Quote className="h-5 w-5 text-teal-600" /> Analogi untuk Anak</h2>
-              {(qna.analogyBlocks as any[]).map((a: any, i: number) => (
-                <div key={i} className="bg-teal-50 border border-teal-200 rounded-2xl p-6">
-                  <h3 className="font-bold text-teal-800 mb-2">{a.title}</h3>
-                  <p className="text-teal-700 font-medium">{a.text}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {qna.tipsBlocks && qna.tipsBlocks.length > 0 && (
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-              <h2 className="font-bold text-slate-800 mb-3">💡 Tips untuk Orang Tua</h2>
-              <ul className="space-y-2">
-                {(qna.tipsBlocks as any[]).map((tip: any, i: number) => (
-                  <li key={i} className="text-sm text-slate-600 font-medium flex gap-2">
-                    <span className="text-emerald-500 font-bold">•</span>
-                    <span>{tip.text}{tip.referenceUrl && <> — <a href={tip.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 underline hover:text-emerald-800 text-xs">Sumber ↗</a></>}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
 

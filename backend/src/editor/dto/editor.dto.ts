@@ -10,10 +10,8 @@ import { Prisma } from '@prisma/client';
 export interface QnaDetail {
   question?: string;
   answerQuick?: string;
-  dialogBlocks?: Prisma.InputJsonValue;
-  dalilBlocks?: Prisma.InputJsonValue;
-  analogyBlocks?: Prisma.InputJsonValue;
-  tipsBlocks?: Prisma.InputJsonValue;
+  answerQuickReferenceUrl?: string;
+  blocks?: Prisma.InputJsonValue; // unified: [{ type, ...data }]
 }
 
 export interface ArticleDetail {
