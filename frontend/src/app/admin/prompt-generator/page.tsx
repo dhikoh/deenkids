@@ -176,7 +176,12 @@ TIPS:
   return prompt;
 }
 
-function generateImagePrompt(title: string, style: string, options: Record<string, boolean>): string {
+function generateImagePrompt(
+  title: string,
+  style: string,
+  options: Record<string, boolean>,
+  extras: { expression: string; activity: string; setting: string; colorPalette: string }
+): string {
   let prompt = `Tolong buatkan gambar (image generation) untuk thumbnail artikel edukasi anak Islami.
 
 Konteks Judul: "${title}"
@@ -186,6 +191,14 @@ Spesifikasi Wajib:
 - Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat (warm lighting)
 - Aspek Rasio: Widescreen 16:9 (Sangat Penting!)`;
 
+  if (extras.setting.trim()) {
+    prompt += `\n- Latar/Setting: ${extras.setting.trim()}`;
+  }
+
+  if (extras.colorPalette.trim()) {
+    prompt += `\n- Palet Warna Dominan: ${extras.colorPalette.trim()}`;
+  }
+
   if (options.noLivingBeings) {
     prompt += `\n- Karakter: TANPA makhluk bernyawa (manusia/hewan utuh). Gunakan siluet, objek benda mati, pemandangan, atau simbol islami (masjid, Al-Quran, dll).`;
   } else {
@@ -194,6 +207,14 @@ Spesifikasi Wajib:
   * Ibu: Mengenakan hijab syar'i yang menjulur panjang.
   * Anak Laki-laki: Mengenakan peci/kopiah.
   * Anak Perempuan: Mengenakan hijab.`;
+
+    if (extras.expression.trim()) {
+      prompt += `\n- Ekspresi/Suasana Hati: ${extras.expression.trim()} (gambarkan melalui bahasa tubuh, postur, dan gesture — bukan wajah).`;
+    }
+
+    if (extras.activity.trim()) {
+      prompt += `\n- Aktivitas/Tindakan yang Digambarkan: ${extras.activity.trim()}.`;
+    }
   }
 
   if (options.includeText) {
@@ -202,10 +223,15 @@ Spesifikasi Wajib:
     prompt += `\n- Aturan Ketat: TIDAK BOLEH ADA TEKS, HURUF, ATAU TULISAN APAPUN di dalam gambar (kami akan menambahkan teks secara manual). Berikan "Negative Space" (ruang kosong) agar kami bisa menaruh teks nanti.`;
   }
 
+  const engActivity = extras.activity.trim() ? `, performing: ${extras.activity.trim()}` : "";
+  const engExpression = extras.expression.trim() && !options.noLivingBeings ? `, mood/expression shown through body language: ${extras.expression.trim()}` : "";
+  const engSetting = extras.setting.trim() ? `, set in: ${extras.setting.trim()}` : "";
+  const engColors = extras.colorPalette.trim() ? `, dominant color palette: ${extras.colorPalette.trim()}` : "";
+
   prompt += `
 
 (Prompt for Engine / English Translation reference):
-"A high quality illustration for Islamic kids education titled ${title}. Style: ${style}. ${options.noLivingBeings ? "No living beings, no humans, no animals, focus on objects/environment." : "FACELESS characters (strictly NO eyes, NO nose, NO mouth, completely blank faces). Muslim father with beard, muslim mother with long hijab, muslim boy with kufi, muslim girl with hijab."} Warm lighting, vibrant colors. ${options.includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, clean composition with negative space."} --ar 16:9"`;
+"A high quality illustration for Islamic kids education titled ${title}. Style: ${style}. ${options.noLivingBeings ? "No living beings, no humans, no animals, focus on objects/environment." : `FACELESS characters (strictly NO eyes, NO nose, NO mouth, completely blank faces). Muslim father with beard, muslim mother with long hijab, muslim boy with kufi, muslim girl with hijab${engActivity}${engExpression}`}${engSetting}${engColors}. Warm lighting, vibrant colors. ${options.includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, clean composition with negative space."} --ar 16:9"`;
 
   return prompt;
 }
@@ -227,6 +253,12 @@ export default function PromptGeneratorPage() {
   const [imageOptions, setImageOptions] = useState({
     noLivingBeings: false,
     includeText: false,
+  });
+  const [imageExtras, setImageExtras] = useState({
+    expression: "",
+    activity: "",
+    setting: "",
+    colorPalette: "",
   });
 
   const [generatedPrompt, setGeneratedPrompt] = useState("");
@@ -250,7 +282,7 @@ export default function PromptGeneratorPage() {
     if (mode === "CONTENT") {
       prompt = generatePrompt(type, title.trim(), ages, options);
     } else {
-      prompt = generateImagePrompt(title.trim(), imageStyle, imageOptions);
+      prompt = generateImagePrompt(title.trim(), imageStyle, imageOptions, imageExtras);
       historyType = "IMAGE_PROMPT";
     }
     
@@ -435,6 +467,64 @@ export default function PromptGeneratorPage() {
                       <p className="text-xs mt-0.5 opacity-80">Gambar hanya akan menampilkan siluet, objek benda mati, atau pemandangan untuk mematuhi syariat.</p>
                     </div>
                   </label>
+                </div>
+              </div>
+
+              {/* Konteks Tambahan */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-1">4. Konteks Tambahan <span className="text-xs font-normal text-slate-400">(opsional — semakin detail semakin baik)</span></label>
+                <p className="text-xs text-slate-400 mb-4">Isi salah satu atau semua field di bawah untuk menghasilkan prompt yang lebih kaya dan spesifik.</p>
+                <div className="space-y-3">
+                  {/* Aktivitas */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">⚡ Aktivitas / Tindakan</label>
+                    <input
+                      type="text"
+                      value={imageExtras.activity}
+                      onChange={e => setImageExtras({ ...imageExtras, activity: e.target.value })}
+                      placeholder="misal: Sholat berjamaah, Memasukkan koin sedekah, Membaca Al-Quran bersama"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400 focus:ring-purple-400"
+                    />
+                  </div>
+
+                  {/* Ekspresi — disembunyikan jika noLivingBeings aktif */}
+                  {!imageOptions.noLivingBeings && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1">😊 Ekspresi / Suasana Hati</label>
+                      <input
+                        type="text"
+                        value={imageExtras.expression}
+                        onChange={e => setImageExtras({ ...imageExtras, expression: e.target.value })}
+                        placeholder="misal: Bahagia & khusyuk, Penasaran, Semangat, Tenang"
+                        className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400 focus:ring-purple-400"
+                      />
+                      <p className="text-[11px] text-slate-400 mt-1">Karena karakter faceless, ekspresi akan digambarkan lewat bahasa tubuh & postur.</p>
+                    </div>
+                  )}
+
+                  {/* Latar */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">🏡 Latar / Setting</label>
+                    <input
+                      type="text"
+                      value={imageExtras.setting}
+                      onChange={e => setImageExtras({ ...imageExtras, setting: e.target.value })}
+                      placeholder="misal: Masjid, Ruang keluarga, Taman islami, Sekolah"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400 focus:ring-purple-400"
+                    />
+                  </div>
+
+                  {/* Palet Warna */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">🎨 Palet Warna Dominan</label>
+                    <input
+                      type="text"
+                      value={imageExtras.colorPalette}
+                      onChange={e => setImageExtras({ ...imageExtras, colorPalette: e.target.value })}
+                      placeholder="misal: Hijau & Emas, Biru Langit & Putih, Netral Hangat"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:border-purple-400 focus:ring-purple-400"
+                    />
+                  </div>
                 </div>
               </div>
             </>

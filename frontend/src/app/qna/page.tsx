@@ -85,7 +85,7 @@ export default function QnaPage() {
               className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full overflow-hidden"
             >
               {item.thumbnailUrl && (
-                <div className="w-full h-40 overflow-hidden">
+                <div className="w-full aspect-video overflow-hidden">
                   <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
               )}

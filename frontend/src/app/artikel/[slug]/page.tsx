@@ -40,8 +40,8 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
 
       <div className="mb-8">
         {content.thumbnailUrl && (
-          <div className="w-full h-48 md:h-64 rounded-2xl overflow-hidden mb-6 shadow-md">
-            <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" />
+          <div className="w-full aspect-video rounded-2xl overflow-hidden mb-6 shadow-md bg-slate-100">
+            <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-contain" />
           </div>
         )}
         <div className="flex items-center gap-2 mb-4">

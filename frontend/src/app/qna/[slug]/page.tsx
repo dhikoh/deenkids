@@ -48,8 +48,8 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
 
       <div className="mb-8">
         {content.thumbnailUrl && (
-          <div className="w-full h-48 md:h-64 rounded-2xl overflow-hidden mb-6 shadow-md">
-            <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" />
+          <div className="w-full aspect-video rounded-2xl overflow-hidden mb-6 shadow-md bg-slate-100">
+            <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-contain" />
           </div>
         )}
         <div className="flex items-center gap-2 mb-4">
@@ -74,6 +74,51 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
             ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
             ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
           ]} enableAudio={content.enableAudio} contentType={content.type} />
+          {/* Paragraph Blocks */}
+          {qna.paragraphBlocks && qna.paragraphBlocks.length > 0 && (
+            <div className="space-y-4">
+              {(qna.paragraphBlocks as any[]).map((block: any, i: number) => (
+                <div key={i}>
+                  <p className="text-slate-700 leading-relaxed">{block.text}</p>
+                  {block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-1 inline-block">📎 Sumber referensi ↗</a>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Image Blocks */}
+          {qna.imageBlocks && qna.imageBlocks.length > 0 && (
+            <div className="space-y-4">
+              {(qna.imageBlocks as any[]).map((block: any, i: number) => (
+                block.url && (
+                  <figure key={i}>
+                    <img src={block.url} alt={block.caption || ''} className="rounded-2xl w-full border border-slate-200" />
+                    {block.caption && <figcaption className="text-xs text-slate-400 text-center mt-2">{block.caption}</figcaption>}
+                  </figure>
+                )
+              ))}
+            </div>
+          )}
+
+          {/* Video Blocks */}
+          {qna.videoBlocks && qna.videoBlocks.length > 0 && (
+            <div className="space-y-4">
+              {(qna.videoBlocks as any[]).map((block: any, i: number) => {
+                if (!block.url) return null;
+                const ytMatch = block.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+                if (ytMatch) return (
+                  <figure key={i}>
+                    <div className="aspect-video rounded-2xl overflow-hidden">
+                      <iframe src={`https://www.youtube.com/embed/${ytMatch[1]}`} className="w-full h-full" allowFullScreen />
+                    </div>
+                    {block.caption && <figcaption className="text-xs text-slate-400 text-center mt-2">{block.caption}</figcaption>}
+                  </figure>
+                );
+                return <a key={i} href={block.url} target="_blank" rel="noopener noreferrer" className="block bg-slate-100 rounded-xl p-4 text-emerald-600 font-bold hover:underline">🎬 {block.caption || block.url}</a>;
+              })}
+            </div>
+          )}
+
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
             <h2 className="font-bold text-emerald-800 mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5" /> Jawaban Ringkas</h2>
             <p className="text-emerald-900 font-medium leading-relaxed">{qna.answerQuick}</p>
