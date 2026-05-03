@@ -5,7 +5,7 @@ import { Wand2, Copy, Check, PenLine, Clock, Trash2, ChevronDown, ChevronUp } fr
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-type ContentType = "QNA" | "PEMBELAJARAN" | "ARTIKEL";
+type ContentType = "QNA" | "PEMBELAJARAN" | "ARTIKEL" | "IMAGE_PROMPT";
 
 const HISTORY_KEY = "adably_prompt_history";
 const MAX_HISTORY = 5;
@@ -176,7 +176,38 @@ TIPS:
   return prompt;
 }
 
+function generateImagePrompt(title: string, style: string, options: Record<string, boolean>): string {
+  let prompt = `Tolong buatkan gambar (image generation) untuk thumbnail artikel edukasi anak Islami.
+
+Konteks Judul: "${title}"
+
+Spesifikasi Wajib:
+- Gaya Visual: ${style}
+- Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat (warm lighting)
+- Aspek Rasio: Widescreen 16:9 (Sangat Penting!)`;
+
+  if (options.noLivingBeings) {
+    prompt += `\n- Karakter: TANPA makhluk bernyawa (manusia/hewan utuh). Gunakan siluet, objek benda mati, pemandangan, atau simbol islami (masjid, Al-Quran, dll).`;
+  } else {
+    prompt += `\n- Karakter: Jika menampilkan orang, pastikan sopan. Anak muslim mengenakan peci/baju koko, dan anak perempuan mengenakan hijab.`;
+  }
+
+  if (options.includeText) {
+    prompt += `\n- Tipografi/Teks: Tambahkan teks judul "${title}" di dalam gambar dengan tipografi tebal (bold), mudah dibaca, dan letakkan di tengah atau area yang kosong. PASTIKAN EJAAN BENAR 100%.`;
+  } else {
+    prompt += `\n- Aturan Ketat: TIDAK BOLEH ADA TEKS, HURUF, ATAU TULISAN APAPUN di dalam gambar (kami akan menambahkan teks secara manual). Berikan "Negative Space" (ruang kosong) agar kami bisa menaruh teks nanti.`;
+  }
+
+  prompt += `
+
+(Prompt for Engine / English Translation reference):
+"A high quality illustration for Islamic kids education titled ${title}. Style: ${style}. ${options.noLivingBeings ? "No living beings, no faces, focus on objects/environment." : "Muslim boy wearing kufi, muslim girl wearing hijab."} Warm lighting, vibrant colors. ${options.includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, clean composition with negative space."} --ar 16:9"`;
+
+  return prompt;
+}
+
 export default function PromptGeneratorPage() {
+  const [mode, setMode] = useState<"CONTENT" | "IMAGE">("CONTENT");
   const [type, setType] = useState<ContentType>("QNA");
   const [title, setTitle] = useState("");
   const [ages, setAges] = useState<string[]>(["5-7"]);
@@ -187,6 +218,13 @@ export default function PromptGeneratorPage() {
     tips: true,
     perbedaanPendapat: false,
   });
+
+  const [imageStyle, setImageStyle] = useState<string>("Animasi 3D (Pixar/Disney)");
+  const [imageOptions, setImageOptions] = useState({
+    noLivingBeings: false,
+    includeText: false,
+  });
+
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<{ title: string; type: ContentType; prompt: string; date: string }[]>([]);
@@ -201,12 +239,22 @@ export default function PromptGeneratorPage() {
 
   const handleGenerate = () => {
     if (!title.trim()) return toast.error("Judul/topik wajib diisi");
-    const prompt = generatePrompt(type, title.trim(), ages, options);
+    
+    let prompt = "";
+    let historyType: ContentType = type;
+    
+    if (mode === "CONTENT") {
+      prompt = generatePrompt(type, title.trim(), ages, options);
+    } else {
+      prompt = generateImagePrompt(title.trim(), imageStyle, imageOptions);
+      historyType = "IMAGE_PROMPT";
+    }
+    
     setGeneratedPrompt(prompt);
 
     // Save to history
-    const entry = { title: title.trim(), type, prompt, date: new Date().toISOString() };
-    const updated = [entry, ...history.filter(h => h.title !== title.trim())].slice(0, MAX_HISTORY);
+    const entry = { title: title.trim(), type: historyType, prompt, date: new Date().toISOString() };
+    const updated = [entry, ...history.filter(h => h.title !== title.trim() || h.type !== historyType)].slice(0, MAX_HISTORY);
     setHistory(updated);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
     toast.success("Prompt berhasil di-generate!");
@@ -221,7 +269,12 @@ export default function PromptGeneratorPage() {
 
   const loadHistory = (h: typeof history[0]) => {
     setTitle(h.title);
-    setType(h.type);
+    if (h.type === "IMAGE_PROMPT") {
+      setMode("IMAGE");
+    } else {
+      setMode("CONTENT");
+      setType(h.type);
+    }
     setGeneratedPrompt(h.prompt);
   };
 
@@ -246,18 +299,43 @@ export default function PromptGeneratorPage() {
     { value: "ARTIKEL", label: "Artikel", icon: "📝", desc: "Prosa + dalil + analogi" },
   ];
 
+  const imageStyles = [
+    { value: "Animasi 3D (Pixar/Disney)", label: "Animasi 3D", icon: "🪄", desc: "Karakter 3D lucu" },
+    { value: "Ilustrasi Vektor 2D", label: "Vektor Flat", icon: "🎨", desc: "Desain 2D kekinian" },
+    { value: "Buku Cerita Anak (Watercolor)", label: "Watercolor", icon: "🖌️", desc: "Lembut & klasik" },
+    { value: "Fotografi Realistis", label: "Realistis", icon: "📸", desc: "Nyata & tajam" },
+  ];
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Wand2 className="h-6 w-6 text-purple-600" /> Prompt Generator</h1>
-        <p className="text-slate-500 mt-1">Buat prompt AI yang sesuai format editor & koridor Al-Quran dan Sunnah.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Wand2 className="h-6 w-6 text-purple-600" /> Prompt Generator</h1>
+          <p className="text-slate-500 mt-1">Buat prompt AI yang sesuai format editor & koridor Al-Quran dan Sunnah.</p>
+        </div>
+        <div className="flex bg-slate-200/50 p-1 rounded-xl w-full md:w-auto">
+          <button 
+            onClick={() => { setMode("CONTENT"); setGeneratedPrompt(""); }} 
+            className={`flex-1 md:px-6 py-2 text-sm font-bold rounded-lg transition-all ${mode === "CONTENT" ? "bg-white shadow-sm text-purple-700" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            📝 Teks Konten
+          </button>
+          <button 
+            onClick={() => { setMode("IMAGE"); setGeneratedPrompt(""); }} 
+            className={`flex-1 md:px-6 py-2 text-sm font-bold rounded-lg transition-all ${mode === "IMAGE" ? "bg-white shadow-sm text-purple-700" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            🖼️ Thumbnail
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Tipe Konten */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          {mode === "CONTENT" ? (
+            <>
+              {/* Tipe Konten */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <label className="block text-sm font-bold text-slate-700 mb-3">1. Pilih Tujuan Konten</label>
             <div className="grid grid-cols-3 gap-3">
               {typeConfigs.map(t => (
@@ -268,16 +346,16 @@ export default function PromptGeneratorPage() {
                 </button>
               ))}
             </div>
-          </div>
+              </div>
 
-          {/* Judul */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <label className="block text-sm font-bold text-slate-700 mb-2">2. Judul / Topik Konten</label>
-            <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Contoh: Mengapa Kita Harus Sholat 5 Waktu?" className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500" />
-          </div>
+              {/* Judul */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-2">2. Judul / Topik Konten</label>
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Contoh: Mengapa Kita Harus Sholat 5 Waktu?" className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500" />
+              </div>
 
-          {/* Usia */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+              {/* Usia */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <label className="block text-sm font-bold text-slate-700 mb-2">3. Target Usia</label>
             <div className="flex flex-wrap gap-2">
               {["3-5", "5-7", "7-10", "10-13", "Semua Usia"].map(age => (
@@ -287,10 +365,10 @@ export default function PromptGeneratorPage() {
                 </label>
               ))}
             </div>
-          </div>
+              </div>
 
-          {/* Opsi */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+              {/* Opsi */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <label className="block text-sm font-bold text-slate-700 mb-3">4. Opsi Tambahan</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
@@ -309,7 +387,54 @@ export default function PromptGeneratorPage() {
                 );
               })}
             </div>
-          </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Gaya Visual */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-3">1. Pilih Gaya Visual</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {imageStyles.map(t => (
+                    <button key={t.value} onClick={() => setImageStyle(t.value)} className={`p-4 rounded-xl text-left border-2 transition-all ${imageStyle === t.value ? "border-purple-500 bg-purple-50 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}>
+                      <span className="text-2xl">{t.icon}</span>
+                      <p className="font-bold text-sm text-slate-800 mt-1">{t.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{t.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Judul */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-2">2. Konteks Judul Artikel</label>
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Contoh: Mengapa Kita Harus Sholat 5 Waktu?" className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500" />
+                <p className="text-xs text-slate-400 mt-2">AI akan menggambar elemen yang relevan dengan topik ini.</p>
+              </div>
+
+              {/* Opsi */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-3">3. Aturan Pembuatan</label>
+                <div className="space-y-3">
+                  <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${imageOptions.includeText ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                    <input type="checkbox" checked={imageOptions.includeText} onChange={e => setImageOptions({ ...imageOptions, includeText: e.target.checked })} className="w-4 h-4 mt-0.5 text-amber-600 rounded" />
+                    <div>
+                      <p className="font-bold">Sertakan Teks Judul di Gambar</p>
+                      <p className="text-xs mt-0.5 opacity-80">Catatan: AI sering *typo*. Direkomendasikan dimatikan jika Anda ingin menambahkan teks secara manual via Canva.</p>
+                    </div>
+                  </label>
+                  
+                  <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${imageOptions.noLivingBeings ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                    <input type="checkbox" checked={imageOptions.noLivingBeings} onChange={e => setImageOptions({ ...imageOptions, noLivingBeings: e.target.checked })} className="w-4 h-4 mt-0.5 text-emerald-600 rounded" />
+                    <div>
+                      <p className="font-bold">Tanpa Makhluk Bernyawa (Hanya Objek)</p>
+                      <p className="text-xs mt-0.5 opacity-80">Gambar hanya akan menampilkan siluet, objek benda mati, atau pemandangan untuk mematuhi syariat.</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Generate Button */}
           <button onClick={handleGenerate} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2">
@@ -365,16 +490,28 @@ export default function PromptGeneratorPage() {
 
           {/* Guide */}
           <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-5 rounded-2xl border border-purple-100">
-            <h3 className="font-bold text-purple-800 text-sm mb-2">📋 Cara Pakai</h3>
-            <ol className="text-xs text-purple-700 space-y-1.5 list-decimal list-inside">
-              <li>Pilih tujuan konten</li>
-              <li>Isi judul/topik</li>
-              <li>Pilih usia target</li>
-              <li>Centang opsi yang diinginkan</li>
-              <li>Klik <strong>Generate Prompt</strong></li>
-              <li>Klik <strong>Salin</strong> → paste ke ChatGPT/Gemini</li>
-              <li>Copy output AI → paste ke <strong>Tulis Konten</strong></li>
-            </ol>
+            <h3 className="font-bold text-purple-800 text-sm mb-2">📋 Cara Pakai ({mode === "CONTENT" ? "Teks" : "Thumbnail"})</h3>
+            {mode === "CONTENT" ? (
+              <ol className="text-xs text-purple-700 space-y-1.5 list-decimal list-inside">
+                <li>Pilih tujuan konten</li>
+                <li>Isi judul/topik</li>
+                <li>Pilih usia target</li>
+                <li>Centang opsi yang diinginkan</li>
+                <li>Klik <strong>Generate Prompt</strong></li>
+                <li>Klik <strong>Salin</strong> → paste ke ChatGPT/Gemini</li>
+                <li>Copy output AI → paste ke <strong>Tulis Konten</strong> di Editor</li>
+              </ol>
+            ) : (
+              <ol className="text-xs text-purple-700 space-y-1.5 list-decimal list-inside">
+                <li>Pilih gaya visual gambar</li>
+                <li>Isi judul/topik artikel untuk konteks</li>
+                <li>Pilih aturan gambar (misal tanpa makhluk bernyawa)</li>
+                <li>Klik <strong>Generate Prompt</strong></li>
+                <li>Klik <strong>Salin</strong> → paste ke DALL-E 3, Midjourney, atau Bing</li>
+                <li>Download hasil gambarnya</li>
+                <li>Upload ke bagian <strong>Thumbnail</strong> di Editor</li>
+              </ol>
+            )}
           </div>
         </div>
       </div>
