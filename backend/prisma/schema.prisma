@@ -508,7 +508,7 @@ model PageContent {
 model SocialAccount {
   id                String             @id @default(uuid())
   userId            String
-  user              User               @relation(fields: [userId], references: [id])
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   platform          String             @default("META") // 'META' = FB + IG
   pageName          String
   pageId            String             @unique
@@ -531,7 +531,7 @@ model SocialPublishLog {
   contentId       String
   content         ContentItem   @relation(fields: [contentId], references: [id])
   socialAccountId String
-  socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id])
+  socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
   platform        String        // 'INSTAGRAM' | 'FACEBOOK'
   postId          String?
   postUrl         String?
