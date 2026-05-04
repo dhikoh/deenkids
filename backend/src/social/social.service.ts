@@ -251,13 +251,17 @@ export class SocialService {
       throw new Error(`IG container: ${containerData.error.message}`);
     }
 
-    // Step 2: Publish container
+    // Step 2: Wait for container to be ready (IG needs time to process the image)
+    const containerId = containerData.id;
+    await this.waitForContainerReady(containerId, pageToken);
+
+    // Step 3: Publish container
     const publishUrl = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
     const publishRes = await fetch(publishUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        creation_id: containerData.id,
+        creation_id: containerId,
         access_token: pageToken,
       }),
     });
@@ -266,7 +270,7 @@ export class SocialService {
       throw new Error(`IG publish: ${publishData.error.message}`);
     }
 
-    // Step 3: Get permalink
+    // Step 4: Get permalink
     const permalinkUrl = `https://graph.facebook.com/v19.0/${publishData.id}?fields=permalink&access_token=${pageToken}`;
     const permalinkRes = await fetch(permalinkUrl);
     const permalinkData = await permalinkRes.json();
@@ -275,6 +279,36 @@ export class SocialService {
       postId: publishData.id,
       postUrl: permalinkData.permalink || `https://www.instagram.com/`,
     };
+  }
+
+  /**
+   * Poll IG container status until it's FINISHED or timeout.
+   * Instagram takes 5-30s to process uploaded images before they can be published.
+   */
+  private async waitForContainerReady(containerId: string, pageToken: string, maxWaitMs = 30000): Promise<void> {
+    const pollInterval = 2000; // 2 seconds between checks
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitMs) {
+      const statusUrl = `https://graph.facebook.com/v19.0/${containerId}?fields=status_code&access_token=${pageToken}`;
+      const res = await fetch(statusUrl);
+      const data = await res.json();
+
+      if (data.status_code === 'FINISHED') {
+        this.logger.log(`📸 IG container ${containerId} ready`);
+        return;
+      }
+
+      if (data.status_code === 'ERROR') {
+        throw new Error(`IG container processing failed: ${data.status || 'unknown error'}`);
+      }
+
+      // IN_PROGRESS — wait and retry
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    }
+
+    // Timeout — try publish anyway (sometimes status_code isn't returned but container is ready)
+    this.logger.warn(`⚠️ IG container ${containerId} — timeout waiting for FINISHED status, attempting publish anyway`);
   }
 
   // ─── Facebook API ──────────────────────────────────────────────

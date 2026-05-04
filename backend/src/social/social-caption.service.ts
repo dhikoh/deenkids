@@ -39,6 +39,9 @@ export class SocialCaptionService {
 
     // ─── FOOTER (always at the bottom, fixed order) ─────────
 
+    // Mark where footer starts (so trimToLimit knows what to protect)
+    const footerStartIndex = sections.length;
+
     // 4. SUMBER — collected references from dalil/doa
     if (sources.length > 0) {
       const sourceLines = sources.map(s => `• ${s}`).join('\n');
@@ -61,7 +64,8 @@ export class SocialCaptionService {
 
     // VALIDATE — IG max 2200 chars
     if (caption.length > 2200) {
-      caption = this.trimToLimit(sections, 2200);
+      const footerCount = sections.length - footerStartIndex;
+      caption = this.trimToLimit(sections, 2200, footerCount);
     }
 
     return caption;
@@ -218,15 +222,15 @@ export class SocialCaptionService {
 
   /**
    * Trim caption to fit IG 2200 char limit by removing content blocks from bottom up.
-   * Footer (sumber, link, hashtag = last 3 sections) is always preserved.
+   * Footer items (sumber/link/hashtag) are always preserved.
+   * @param footerCount — dynamic count of footer items (2 if no sources, 3 if sources exist)
    */
-  private trimToLimit(sections: string[], limit: number): string {
+  private trimToLimit(sections: string[], limit: number, footerCount: number): string {
     let remaining = [...sections];
 
     // Remove content blocks from bottom up, but never remove:
     // - index 0 (hook)
-    // - last 3 items (sumber/link/hashtag footer)
-    const footerCount = 3;
+    // - last N items (footer: sumber/link/hashtag)
     while (remaining.join('\n\n').length > limit && remaining.length > footerCount + 1) {
       // Remove the last content block (just before footer)
       const removeIdx = remaining.length - footerCount - 1;
