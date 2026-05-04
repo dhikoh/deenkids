@@ -30,6 +30,7 @@ function SearchContent() {
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState("");
   const [age, setAge] = useState("");
+  const [pov, setPov] = useState(""); // POV filter — only for ARTICLE type
 
   const search = async (searchQ?: string) => {
     const sq = searchQ ?? query;
@@ -39,6 +40,7 @@ function SearchContent() {
       const p = new URLSearchParams({ q: sq });
       if (type) p.set("type", type);
       if (age) p.set("age", age);
+      if (pov && type === 'ARTICLE') p.set("pov", pov);
       const r = await fetch(`${API_BASE_URL}/content/search?${p}`);
       const data = await r.json();
       setResults(data.data || []); setTotal(data.meta?.total || 0);
@@ -46,9 +48,11 @@ function SearchContent() {
   };
 
   useEffect(() => { if (q) { setQuery(q); search(q); } }, [q]);
-  useEffect(() => { if (query) search(); }, [type, age]);
+  useEffect(() => { if (query) search(); }, [type, age, pov]);
   // Reset age filter when KISAH is selected (KISAH is universal for all ages)
   useEffect(() => { if (type === 'KISAH') setAge(''); }, [type]);
+  // Reset pov filter when type changes away from ARTICLE
+  useEffect(() => { if (type !== 'ARTICLE') setPov(''); }, [type]);
 
   const getTypeInfo = (r: any) => {
     if (r.type === "QNA") return { icon: <HelpCircle size={16} />, label: "Tanya Jawab", bg: "bg-amber-100 text-amber-600" };
@@ -87,6 +91,13 @@ function SearchContent() {
         {type === 'KISAH' && (
           <span className="self-center text-xs text-amber-600 font-medium">📖 Kisah tersedia untuk semua usia</span>
         )}
+        {type === 'ARTICLE' && (
+          <select value={pov} onChange={e => setPov(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">👥 Semua Pembaca</option>
+            <option value="ORTU">👨‍👩‍👧 Orang Tua</option>
+            <option value="ANAK">👦 Anak</option>
+          </select>
+        )}
         {total > 0 && <span className="self-center text-sm text-slate-500 ml-auto">{total} hasil ditemukan</span>}
       </div>
 
@@ -110,6 +121,8 @@ function SearchContent() {
                   <span className="flex items-center gap-1"><Heart size={12} /> {r.likeCount}</span>
                   <span className="flex items-center gap-1"><Star size={12} /> {r.avgRating?.toFixed(1)}</span>
                   {r.ageGroups?.length > 0 && <span className="bg-slate-100 px-2 py-0.5 rounded">{r.ageGroups.join(', ')} thn</span>}
+                  {r.type === 'ARTICLE' && r.pov === 'ORTU' && <span className="bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded text-[10px] font-bold">👨‍👩‍👧 Orang Tua</span>}
+                  {r.type === 'ARTICLE' && r.pov === 'ANAK' && <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-bold">👦 Anak</span>}
                 </div>
               </div>
             </div>

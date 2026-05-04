@@ -147,8 +147,8 @@ export class ContentService {
   }
 
   // ─── General Content List ─────────────────────────────────────────────────────
-  async getList(query: { age?: string; sort?: string; page?: any; limit?: any; type?: string; search?: string }) {
-    const { age, sort = 'newest', type, search } = query;
+  async getList(query: { age?: string; sort?: string; page?: any; limit?: any; type?: string; search?: string; pov?: string }) {
+    const { age, sort = 'newest', type, search, pov } = query;
     const page = Math.max(1, parseInt(query.page) || 1);
     const limit = Math.max(1, parseInt(query.limit) || 10);
     const skip = (page - 1) * limit;
@@ -167,6 +167,7 @@ export class ContentService {
     if (search) conditions.push({ OR: [{ title: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }] });
     if (conditions.length > 0) where.AND = conditions;
     if (type) where.type = type;
+    if (pov) where.pov = pov;
 
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({
@@ -175,7 +176,7 @@ export class ContentService {
           id: true, title: true, slug: true, type: true, ageGroups: true,
           viewCount: true, likeCount: true, shareCount: true, avgRating: true,
           ratingCount: true, publishedAt: true, description: true, thumbnailUrl: true,
-          enableAudio: true, displayAuthorName: true,
+          enableAudio: true, displayAuthorName: true, pov: true,
           author: { select: { name: true } },
           node: { select: { title: true } },
           tags: { include: { tag: { select: { name: true, slug: true } } } },

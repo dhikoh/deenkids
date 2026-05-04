@@ -13,7 +13,169 @@ type SingleCharType = "ayah" | "ibu" | "anakLaki" | "anakPerempuan";
 const HISTORY_KEY = "adably_prompt_history";
 const MAX_HISTORY = 5;
 
-function generateKisahPrompt(subType: KisahSubType, title: string, options: Record<string, boolean>): string {
+// ─── THINKING MODES DATA ────────────────────────────────────────────────────
+// recommendedFor: icons muncul sebagai badge rekomendasi pada UI thinker
+// '🗨️' = QNA, '📚' = PEMBELAJARAN, '📝' = ARTIKEL, '📖' = KISAH
+const THINKING_MODES = [
+  {
+    id: "SISTEMATIS",
+    label: "Kerangka Berpikir Sistematis & Fundamental",
+    emoji: "🔬",
+    colorBg: "bg-blue-50",
+    colorBorder: "border-blue-200",
+    colorText: "text-blue-800",
+    colorCheck: "text-blue-600",
+    thinkers: [
+      {
+        id: "aristotle",
+        name: "Aristotle",
+        desc: "Logika dasar, kategorisasi, sebab-akibat",
+        detail: "Bangun setiap argumen dengan logika sebab-akibat yang solid dan kategorisasi yang jelas. Gunakan struktur silogisme: premis besar → premis kecil → kesimpulan.",
+        recommend: "🗨️📚📝📖",
+        recommendLabel: "Semua tipe",
+      },
+      {
+        id: "descartes",
+        name: "René Descartes",
+        desc: "Berpikir dari nol, first principles",
+        detail: "Mulai dari pertanyaan paling mendasar sebelum membangun penjelasan. Ragukan asumsi umum, lalu bangun argumen dari fondasi yang paling fundamental.",
+        recommend: "🗨️📚📝",
+        recommendLabel: "QNA, Pembelajaran, Artikel",
+      },
+      {
+        id: "musk",
+        name: "Elon Musk",
+        desc: "First-principles thinking versi modern",
+        detail: "Pecah masalah ke elemen paling dasar, singkirkan asumsi konvensional, lalu bangun ulang solusi dari fondasi logis yang benar.",
+        recommend: "📝📚",
+        recommendLabel: "Artikel, Pembelajaran",
+      },
+    ],
+  },
+  {
+    id: "ANALOGI",
+    label: "Analogi Cerdas & Penyederhanaan Kompleks",
+    emoji: "💡",
+    colorBg: "bg-amber-50",
+    colorBorder: "border-amber-200",
+    colorText: "text-amber-800",
+    colorCheck: "text-amber-600",
+    thinkers: [
+      {
+        id: "feynman",
+        name: "Richard Feynman",
+        desc: "Menjelaskan rumit jadi sederhana",
+        detail: "Sederhanakan konsep serumit apapun sehingga bisa dipahami oleh anak kelas 1 SD. Gunakan analogi konkret dari benda atau pengalaman sehari-hari yang dekat dengan anak.",
+        recommend: "🗨️📚📝📖",
+        recommendLabel: "Semua tipe — terutama analogi",
+      },
+      {
+        id: "sagan",
+        name: "Carl Sagan",
+        desc: "Analogi luas, perspektif besar & reflektif",
+        detail: "Gunakan perumpamaan dari skala luas (alam semesta, waktu, kehidupan) untuk memberi perspektif yang mengagumkan. Buat pembaca merasa kecil namun bermakna.",
+        recommend: "📝📖📚",
+        recommendLabel: "Artikel, Kisah, Pembelajaran",
+      },
+    ],
+  },
+  {
+    id: "STRATEGI",
+    label: "Strategi & Problem Solving",
+    emoji: "♟️",
+    colorBg: "bg-violet-50",
+    colorBorder: "border-violet-200",
+    colorText: "text-violet-800",
+    colorCheck: "text-violet-600",
+    thinkers: [
+      {
+        id: "suntzu",
+        name: "Sun Tzu",
+        desc: "Strategi kompetitif, antisipasi tantangan",
+        detail: "Susun argumen secara strategis. Antisipasi keberatan pembaca sebelum muncul. Identifikasi leverage point dan sampaikan pesan pada momen yang paling efektif.",
+        recommend: "📝📚",
+        recommendLabel: "Artikel, Pembelajaran",
+      },
+      {
+        id: "thiel",
+        name: "Peter Thiel",
+        desc: "Berpikir unik, berlawanan dari asumsi umum",
+        detail: "Temukan sudut pandang yang mengejutkan dan berlawanan dari asumsi mayoritas. Pertanyakan 'apa yang semua orang percaya tapi salah?' dalam topik ini.",
+        recommend: "📝",
+        recommendLabel: "Artikel",
+      },
+      {
+        id: "grove",
+        name: "Andrew Grove",
+        desc: "Manajemen krisis, inflection point",
+        detail: "Identifikasi momen perubahan kritis dalam topik. Bangun solusi yang scalable dan tahan terhadap tekanan. Fokus pada eksekusi dan hasil nyata.",
+        recommend: "📝📚",
+        recommendLabel: "Artikel, Pembelajaran",
+      },
+    ],
+  },
+  {
+    id: "NARASI",
+    label: "Narasi Publik, Edukasi & Sosial",
+    emoji: "🎙️",
+    colorBg: "bg-emerald-50",
+    colorBorder: "border-emerald-200",
+    colorText: "text-emerald-800",
+    colorCheck: "text-emerald-600",
+    thinkers: [
+      {
+        id: "anies",
+        name: "Anies Baswedan",
+        desc: "Narasi edukatif, terstruktur, relatable",
+        detail: "Susun narasi yang menyentuh hati, dekat kehidupan sehari-hari, dan mudah dipahami semua kalangan. Mulai dengan konteks yang relatable, bangun emosi, akhiri dengan harapan.",
+        recommend: "📚📝🗨️",
+        recommendLabel: "Pembelajaran, Artikel, QNA",
+      },
+      {
+        id: "nadiem",
+        name: "Nadiem Makarim",
+        desc: "Inovasi pendidikan, berpusat pada peserta didik",
+        detail: "Dekati pembelajaran dengan cara yang segar dan membebaskan. Fokus pada kebutuhan nyata anak sebagai subjek belajar, bukan objek. Gunakan pendekatan project-based dan kontekstual.",
+        recommend: "📚📝",
+        recommendLabel: "Pembelajaran, Artikel",
+      },
+      {
+        id: "gladwell",
+        name: "Malcolm Gladwell",
+        desc: "Storytelling berbasis insight sosial",
+        detail: "Bangun narasi melalui anekdot yang kuat dan insight mengejutkan dari observasi perilaku manusia. Mulai dengan cerita kecil yang konkret, lalu tarik ke pelajaran universal yang besar.",
+        recommend: "📝📖",
+        recommendLabel: "Artikel, Kisah",
+      },
+    ],
+  },
+] as const;
+
+// ─── INTELLECTUAL FRAMEWORK GENERATOR ───────────────────────────────────────
+function generateIntellectualFramework(selectedIds: string[], forKisah = false): string {
+  const allThinkers = THINKING_MODES.flatMap(m => m.thinkers as unknown as { id: string; name: string; detail: string }[]);
+  const chosen = allThinkers.filter(t => selectedIds.includes(t.id));
+  if (chosen.length === 0) return "";
+
+  let section = `\n\n══════════════════════════════════════════
+KERANGKA BERPIKIR (INTELLECTUAL PERSONA)
+══════════════════════════════════════════
+Gunakan STRUKTUR BERPIKIR dari tokoh-tokoh berikut — bukan gaya bahasa atau kepribadiannya:
+
+`;
+  chosen.forEach(t => {
+    section += `• ${t.name} → ${t.detail}\n`;
+  });
+  section += `
+Catatan Penting: Gabungkan framework ini menjadi reasoning yang seimbang dan saling melengkapi. Ambil logika dan cara berpikir mereka — BUKAN cara berbicara atau kepribadiannya.`;
+  if (forKisah) {
+    section += `
+⚠️ Untuk Kisah: Terapkan hanya pada struktur narasi, plot, kualitas analogi, dan penyajian hikmah. JANGAN gunakan untuk menambah atau memodifikasi fakta sejarah. Aturan sumber Sirah/Teladan tetap berlaku penuh.`;
+  }
+  return section;
+}
+
+function generateKisahPrompt(subType: KisahSubType, title: string, options: Record<string, boolean>, selectedThinkers: string[]): string {
   const TARGET_USIA = "3–10 tahun";
   const subTypeLabel = subType === "SIRAH" ? "Sirah Nabawiyah" : subType === "TELADAN" ? "Teladan Sahabat/Ulama" : "Cerita Fiksi Islami";
 
@@ -139,12 +301,15 @@ PANDUAN PENULISAN — GAYA PENCERITA
 ❌ JANGAN terlalu singkat — ini bukan ringkasan, ini KISAH LENGKAP
 ❌ JANGAN menggurui atau berceramah langsung kepada pembaca`;
 
+  // Inject intellectual framework if thinkers selected
+  const framework = generateIntellectualFramework(selectedThinkers, true);
+  if (framework) prompt += framework;
+
   return prompt;
 }
 
-
-function generatePrompt(type: ContentType, title: string, ages: string[], options: Record<string, boolean>, kisahSubType?: KisahSubType): string {
-  if (type === "KISAH") return generateKisahPrompt(kisahSubType || "SIRAH", title, options);
+function generatePrompt(type: ContentType, title: string, ages: string[], options: Record<string, boolean>, kisahSubType?: KisahSubType, selectedThinkers: string[] = [], artikelPov: string = ""): string {
+  if (type === "KISAH") return generateKisahPrompt(kisahSubType || "SIRAH", title, options, selectedThinkers);
   const ageLabel = ages.length ? ages.map(a => a === "Semua Usia" ? "semua usia" : `${a} tahun`).join(", ") : "semua usia";
 
   const typeLabel = type === "QNA" ? "Tanya Jawab" : type === "PEMBELAJARAN" ? "Pembelajaran" : "Artikel";
@@ -174,7 +339,17 @@ KORIDOR KONTEN YANG WAJIB DIIKUTI:
 TUGAS:
 Buatkan konten "${typeLabel}" dengan judul: "${title}"
 Target pembaca: anak usia ${ageLabel}
-═══════════════════════════════════════
+`;
+
+  // Inject POV for ARTIKEL type
+  if (type === "ARTIKEL" && artikelPov) {
+    const povDesc = artikelPov === "ORTU"
+      ? "Sudut Pandang: ORANG TUA → Tulis untuk orang tua yang ingin mendidik anak. Gunakan bahasa orang dewasa yang reflektif, empatis, dan actionable (bisa langsung dipraktikkan). Fokus pada tips, panduan parenting, dan insight mendidik."
+      : "Sudut Pandang: ANAK → Tulis dari perspektif anak atau untuk anak yang lebih dewasa (10-13 tahun). Gunakan bahasa yang relatable, segar, dan memotivasi. Fokus pada pengalaman, rasa ingin tahu, dan pembentukan karakter anak.";
+    prompt += `${povDesc}\n`;
+  }
+
+  prompt += `═══════════════════════════════════════
 
 `;
 
@@ -307,6 +482,10 @@ TIPS:
 - Buat konten yang menarik, tidak membosankan, dan membuat anak ingin terus membaca
 - Jangan terlalu panjang — cukup padat dan bermakna`;
 
+  // Inject intellectual framework if thinkers selected
+  const framework = generateIntellectualFramework(selectedThinkers, false);
+  if (framework) prompt += framework;
+
   return prompt;
 }
 
@@ -427,6 +606,12 @@ export default function PromptGeneratorPage() {
   const [history, setHistory] = useState<{ title: string; type: ContentType; prompt: string; date: string }[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
+  // Intellectual Persona states
+  const [selectedThinkers, setSelectedThinkers] = useState<string[]>([]);
+  const [openModes, setOpenModes] = useState<string[]>([]);
+  // POV for ARTIKEL type
+  const [artikelPov, setArtikelPov] = useState<string>("");
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(HISTORY_KEY);
@@ -434,12 +619,15 @@ export default function PromptGeneratorPage() {
     } catch {}
   }, []);
 
+  // Reset artikelPov when type changes away from ARTIKEL
+  useEffect(() => { if (type !== "ARTIKEL") setArtikelPov(""); }, [type]);
+
   const handleGenerate = () => {
     if (!title.trim()) return toast.error("Judul/topik wajib diisi");
     let prompt = "";
     let historyType: ContentType = type;
     if (mode === "CONTENT") {
-      prompt = generatePrompt(type, title.trim(), ages, options, kisahSubType);
+      prompt = generatePrompt(type, title.trim(), ages, options, kisahSubType, selectedThinkers, artikelPov);
     } else {
       prompt = generateImagePrompt(title.trim(), imageStyle, scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, imageExtras, includeText);
       historyType = "IMAGE_PROMPT";
@@ -629,6 +817,100 @@ export default function PromptGeneratorPage() {
                 </>
               )}
             </div>
+              </div>
+
+              {/* ══ POV Artikel ══ tampil hanya untuk ARTIKEL */}
+              {type === "ARTIKEL" && (
+                <div className="bg-teal-50 p-5 rounded-2xl border border-teal-200 shadow-sm">
+                  <label className="block text-sm font-bold text-teal-800 mb-3">4b. Sudut Pandang Artikel (POV)</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { value: "", label: "Semua Pembaca", icon: "👥", desc: "Universal, semua kalangan" },
+                      { value: "ORTU", label: "Orang Tua", icon: "👨‍👩‍👧", desc: "Tips parenting & mendidik" },
+                      { value: "ANAK", label: "Anak", icon: "👦", desc: "Untuk & dari perspektif anak" },
+                    ].map(opt => (
+                      <button key={opt.value} type="button" onClick={() => setArtikelPov(opt.value)}
+                        className={`p-3 rounded-xl text-left border-2 transition-all ${artikelPov === opt.value ? "border-teal-500 bg-teal-100 shadow-sm" : "border-teal-200 hover:border-teal-300 bg-white"}`}>
+                        <span className="text-xl">{opt.icon}</span>
+                        <p className="font-bold text-sm text-slate-800 mt-1">{opt.label}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                  {artikelPov && (
+                    <p className="text-xs text-teal-700 mt-3 font-medium">
+                      {artikelPov === "ORTU" ? "✅ Prompt akan ditulis untuk Orang Tua — bahasa reflektif, actionable, fokus pada parenting." : "✅ Prompt akan ditulis dari perspektif Anak — bahasa segar, relatable, fokus karakter anak."}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ══ Intellectual Persona ══ tersedia untuk semua tipe CONTENT */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-bold text-slate-700">
+                    5. Mode Berpikir — Intellectual Persona
+                    {selectedThinkers.length > 0 && (
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold">{selectedThinkers.length} dipilih</span>
+                    )}
+                  </label>
+                  {selectedThinkers.length > 0 && (
+                    <button onClick={() => setSelectedThinkers([])} className="text-xs text-slate-400 hover:text-rose-500 transition-colors">Reset</button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mb-4">Pilih tokoh untuk menyuntikkan STRUKTUR BERPIKIR mereka ke dalam prompt. Bukan gaya bahasa — melainkan cara bernalar. Bisa pilih lebih dari 1.</p>
+                <div className="space-y-3">
+                  {THINKING_MODES.map(modeItem => {
+                    const selectedInMode = modeItem.thinkers.filter(t => selectedThinkers.includes(t.id)).length;
+                    const isOpen = openModes.includes(modeItem.id);
+                    return (
+                      <div key={modeItem.id} className={`rounded-xl border-2 overflow-hidden transition-all ${isOpen ? `${modeItem.colorBorder} ${modeItem.colorBg}` : "border-slate-200"}`}>
+                        <button type="button"
+                          onClick={() => setOpenModes(prev => prev.includes(modeItem.id) ? prev.filter(m => m !== modeItem.id) : [...prev, modeItem.id])}
+                          className={`w-full flex items-center justify-between px-4 py-3 ${isOpen ? modeItem.colorBg : "bg-slate-50 hover:bg-slate-100"} transition-all`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{modeItem.emoji}</span>
+                            <span className={`text-sm font-bold ${isOpen ? modeItem.colorText : "text-slate-700"}`}>{modeItem.label}</span>
+                            {selectedInMode > 0 && (
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-white ${modeItem.colorText}`}>{selectedInMode}/{modeItem.thinkers.length}</span>
+                            )}
+                          </div>
+                          {isOpen ? <ChevronUp size={16} className={modeItem.colorText} /> : <ChevronDown size={16} className="text-slate-400" />}
+                        </button>
+                        {isOpen && (
+                          <div className="px-4 pb-4 pt-2 space-y-2">
+                            {modeItem.thinkers.map(thinker => {
+                              const isSelected = selectedThinkers.includes(thinker.id);
+                              return (
+                                <label key={thinker.id}
+                                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? `${modeItem.colorBorder} bg-white shadow-sm` : "border-transparent hover:border-slate-200 hover:bg-white/50"}`}>
+                                  <input type="checkbox" checked={isSelected}
+                                    onChange={() => setSelectedThinkers(prev => prev.includes(thinker.id) ? prev.filter(id => id !== thinker.id) : [...prev, thinker.id])}
+                                    className={`w-4 h-4 mt-0.5 ${modeItem.colorCheck} rounded flex-shrink-0`}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={`text-sm font-bold ${isSelected ? modeItem.colorText : "text-slate-800"}`}>{thinker.name}</span>
+                                      <span title={thinker.recommendLabel} className="text-[12px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded font-medium cursor-help">{thinker.recommend}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-0.5">{thinker.desc}</p>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {selectedThinkers.length > 0 && (
+                  <div className="mt-3 p-3 bg-purple-50 border border-purple-100 rounded-xl">
+                    <p className="text-xs text-purple-700 font-medium">🧠 Framework dari {selectedThinkers.length} tokoh akan diinjeksikan ke dalam prompt sebagai instruksi reasoning AI.</p>
+                    {type === "KISAH" && <p className="text-xs text-amber-600 mt-1">⚠️ Untuk Kisah: hanya berlaku pada narasi, analogi & hikmah — tidak pada fakta sejarah.</p>}
+                  </div>
+                )}
               </div>
             </>
           ) : (

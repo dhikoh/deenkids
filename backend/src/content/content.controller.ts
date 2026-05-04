@@ -32,6 +32,7 @@ export class ContentController {
   @ApiQuery({ name: 'type', required: false })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'pov', required: false, description: 'Filter by POV: ORTU | ANAK (only for ARTICLE type)' })
   async getList(
     @Query('age') age?: string,
     @Query('sort') sort?: string,
@@ -39,8 +40,9 @@ export class ContentController {
     @Query('type') type?: string,
     @Query('search') search?: string,
     @Query('limit') limit?: number,
+    @Query('pov') pov?: string,
   ) {
-    return this.contentService.getList({ age, sort, page, type, search, limit });
+    return this.contentService.getList({ age, sort, page, type, search, limit, pov });
   }
 
   @Get('tags')
@@ -59,11 +61,13 @@ export class ContentController {
   @ApiQuery({ name: 'type', required: false })
   @ApiQuery({ name: 'age', required: false })
   @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'pov', required: false, description: 'Filter by POV: ORTU | ANAK (only for ARTICLE type)' })
   async search(
     @Query('q') q: string,
     @Query('type') type?: string,
     @Query('age') age?: string,
     @Query('page') page?: string,
+    @Query('pov') pov?: string,
   ) {
     if (!q || q.length < 2) return { data: [], meta: { total: 0 } };
     const take = 20;
@@ -81,13 +85,14 @@ export class ContentController {
     if (age) {
       conditions.push({ ageGroups: { has: age } });
     }
+    if (pov) where.pov = pov;
     if (conditions.length > 0) where.AND = conditions;
 
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({
         where, take, skip,
         orderBy: { publishedAt: 'desc' },
-        select: { id: true, title: true, slug: true, description: true, type: true, nodeId: true, ageGroups: true, viewCount: true, likeCount: true, avgRating: true, publishedAt: true, node: { select: { slug: true, title: true } } },
+        select: { id: true, title: true, slug: true, description: true, type: true, nodeId: true, ageGroups: true, viewCount: true, likeCount: true, avgRating: true, publishedAt: true, pov: true, node: { select: { slug: true, title: true } } },
       }),
       this.prisma.contentItem.count({ where }),
     ]);
@@ -178,7 +183,7 @@ export class ContentController {
     if (!body.ids || body.ids.length === 0) return { data: [] };
     const items = await this.prisma.contentItem.findMany({
       where: { id: { in: body.ids.slice(0, 50) }, status: 'PUBLISHED', deletedAt: null },
-      select: { id: true, title: true, slug: true, description: true, type: true, ageGroups: true, viewCount: true, likeCount: true, avgRating: true, publishedAt: true, node: { select: { slug: true, title: true } } },
+      select: { id: true, title: true, slug: true, description: true, type: true, ageGroups: true, viewCount: true, likeCount: true, avgRating: true, publishedAt: true, pov: true, node: { select: { slug: true, title: true } } },
       orderBy: { publishedAt: 'desc' },
     });
     return { data: items };

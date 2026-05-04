@@ -46,6 +46,8 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
         )}
         <div className="flex items-center gap-2 mb-4">
           <span className="text-xs font-bold px-3 py-1 bg-sky-50 text-sky-700 rounded-full">Artikel</span>
+          {content.pov === 'ORTU' && <span className="text-xs font-bold px-3 py-1 bg-teal-50 text-teal-700 border border-teal-200 rounded-full">👨‍👩‍👧 Orang Tua</span>}
+          {content.pov === 'ANAK' && <span className="text-xs font-bold px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full">👦 Anak</span>}
           <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-600 rounded-full">{(content.ageGroups || []).join(', ')} tahun</span>
         </div>
         <h1 className="text-3xl font-extrabold text-slate-800 mb-3">{content.title}</h1>

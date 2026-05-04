@@ -94,6 +94,10 @@ export class CreateContentDto {
   @IsString({ each: true })
   @IsOptional()
   tags?: string[];
-}
 
+  @ApiProperty({ required: false, description: "POV artikel: 'ORTU' | 'ANAK' (hanya untuk type ARTICLE)" })
+  @IsString()
+  @IsOptional()
+  pov?: string;
+}
 export class UpdateContentDto extends PartialType(CreateContentDto) {}

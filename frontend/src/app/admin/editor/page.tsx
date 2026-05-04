@@ -60,6 +60,7 @@ function EditorContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [displayAuthorName, setDisplayAuthorName] = useState("");
   const [enableAudio, setEnableAudio] = useState(false);
+  const [pov, setPov] = useState(""); // 'ORTU' | 'ANAK' | '' — hanya untuk ARTICLE
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [cropperSrc, setCropperSrc] = useState<string | null>(null);
@@ -121,6 +122,7 @@ function EditorContent() {
               setContentType(cType);
               // Auto-enable audio for KISAH content
               if (c.type === 'KISAH' && c.enableAudio !== false) setEnableAudio(true);
+              if (c.type === 'ARTICLE' && c.pov) setPov(c.pov);
               // Load blocks from articleDetail or qnaDetail
               const loadedBlocks: EditorBlock[] = [];
               if (c.qnaDetail) {
@@ -163,6 +165,7 @@ function EditorContent() {
   // Auto-set semua usia saat tipe diubah ke KISAH (KISAH selalu universal 3-13 thn)
   useEffect(() => {
     if (contentType === 'KISAH') setAgeGroups([...ALL_AGE_GROUPS]);
+    if (contentType !== 'ARTICLE') setPov(''); // reset pov jika bukan ARTICLE
   }, [contentType]);
 
   const flattenNodes = (tree: any[], prefix = ""): any[] => {
@@ -182,13 +185,13 @@ function EditorContent() {
     if (editId) return; // Don't auto-save when editing existing content
     const timer = setInterval(() => {
       if (title || blocks.length > 0) {
-        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, thumbnailUrl, savedAt: new Date().toISOString() };
+        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, thumbnailUrl, pov, savedAt: new Date().toISOString() };
         localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft));
         setLastAutoSave(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
       }
     }, 30000);
     return () => clearInterval(timer);
-  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, thumbnailUrl, editId]);
+  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, thumbnailUrl, pov, editId]);
 
   const recoverDraft = () => {
     try {
@@ -205,6 +208,7 @@ function EditorContent() {
         if (d.displayAuthorName) setDisplayAuthorName(d.displayAuthorName);
         if (d.enableAudio !== undefined) setEnableAudio(d.enableAudio);
         if (d.thumbnailUrl) setThumbnailUrl(d.thumbnailUrl);
+        if (d.pov && d.contentType === 'ARTICLE') setPov(d.pov);
         toast.success("Draft berhasil dipulihkan!");
       }
     } catch {} finally { setShowRecovery(false); }
@@ -268,6 +272,7 @@ function EditorContent() {
         thumbnailUrl: thumbnailUrl || null,
         nodeId: (contentType === 'PEMBELAJARAN' || contentType === 'KISAH') ? nodeId : (nodeId || undefined),
         displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
+        pov: contentType === 'ARTICLE' ? (pov || null) : undefined,
       };
       // SuperAdmin can set status directly (e.g., PUBLISHED)
       if (isSuperAdmin && targetStatus) {
@@ -608,6 +613,34 @@ function EditorContent() {
                   <p className="text-xs text-slate-400 mt-1">Alias ini akan ditampilkan di halaman publik menggantikan nama asli Anda.</p>
                 </div>
               )}
+              {/* POV Artikel — hanya tampil untuk tipe ARTICLE */}
+              {contentType === "ARTICLE" && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Sudut Pandang Artikel (POV)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: "", label: "Semua Pembaca", icon: "👥", desc: "Tampil di semua filter" },
+                      { value: "ORTU", label: "Orang Tua", icon: "👨‍👩‍👧", desc: "Tips & panduan parenting" },
+                      { value: "ANAK", label: "Anak", icon: "👦", desc: "Dari & untuk anak" },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setPov(opt.value)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-bold transition-all ${
+                          pov === opt.value
+                            ? "border-teal-500 bg-teal-50 text-teal-700"
+                            : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span>{opt.icon}</span>
+                        <span>{opt.label}</span>
+                        <span className="text-xs font-normal opacity-70">{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {/* Tags */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Tag</label>
@@ -645,8 +678,8 @@ function EditorContent() {
               {BLOCK_TYPES.filter(bt => {
                 // quick_answer only for QNA
                 if (bt.type === 'quick_answer' && contentType !== 'QNA') return false;
-                // dialog: only for QNA and PEMBELAJARAN (not KISAH, not ARTICLE)
-                if (bt.type === 'dialog' && (contentType === 'KISAH' || contentType === 'ARTICLE')) return false;
+                // dialog only for QNA (structured dialog is Q&A specific)
+                if (bt.type === 'dialog' && contentType !== 'QNA') return false;
                 return true;
               }).map(bt => (
                 <button key={bt.type} onClick={() => addBlock(bt.type)} className={`${bt.color} px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:opacity-80 transition-opacity border border-transparent`}>

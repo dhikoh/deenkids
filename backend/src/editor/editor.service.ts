@@ -57,6 +57,7 @@ export class EditorService {
         authorId,
         displayAuthorName: author?.role === 'SUPERADMIN' ? sanitizeText((dto as any).displayAuthorName || '') || null : null,
         enableAudio: dto.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio || false),
+        pov: dto.type === 'ARTICLE' ? (dto.pov || null) : null,
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : undefined,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : undefined,
         // Set publishedAt if SuperAdmin directly creates as PUBLISHED
@@ -230,6 +231,7 @@ export class EditorService {
         enableAudio: dto.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio ?? existing.enableAudio),
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : dto.metaTitle,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : dto.metaDesc,
+        pov: dto.type === 'ARTICLE' ? (dto.pov !== undefined ? (dto.pov || null) : existing.pov) : null,
         status: newStatus,
     };
 
