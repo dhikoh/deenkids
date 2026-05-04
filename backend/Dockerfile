@@ -26,5 +26,6 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -qO- http://localhost:4000/api/content/tags || exit 1
 
+# Auto-sync database schema on startup (creates new tables if missing)
 CMD ["sh", "-c", "npx prisma db push --skip-generate && npm run start:prod"]
 
