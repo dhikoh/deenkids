@@ -9,6 +9,13 @@ type ContentType = "QNA" | "PEMBELAJARAN" | "ARTIKEL" | "KISAH" | "IMAGE_PROMPT"
 type KisahSubType = "SIRAH" | "QASHASH" | "TELADAN" | "CERITA_FIKSI";
 type ScenePreset = "KELUARGA" | "NABI_SAHABAT" | "KELOMPOK_ANAK" | "TUNGGAL" | "TANPA_MAKHLUK";
 type SingleCharType = "ayah" | "ibu" | "anakLaki" | "anakPerempuan";
+type AspectRatio = "16:9" | "1:1" | "4:5";
+
+const ASPECT_RATIO_OPTIONS: { value: AspectRatio; label: string; icon: string; desc: string; size: string; arFlag: string }[] = [
+  { value: "16:9", label: "Website Thumbnail", icon: "🖥️", desc: "Thumbnail konten di website", size: "1280×720", arFlag: "--ar 16:9" },
+  { value: "1:1", label: "IG Feed / FB Post", icon: "📱", desc: "Instagram Feed & Facebook Post", size: "1080×1080", arFlag: "--ar 1:1" },
+  { value: "4:5", label: "IG Post Optimal", icon: "📲", desc: "Instagram Post engagement terbaik", size: "1080×1350", arFlag: "--ar 4:5" },
+];
 
 const HISTORY_KEY = "adably_prompt_history";
 const MAX_HISTORY = 5;
@@ -641,10 +648,13 @@ function generateImagePrompt(
   singleChar: SingleCharType,
   extras: { expression: string; activity: string; setting: string; colorPalette: string },
   includeText: boolean,
+  aspectRatio: AspectRatio = "16:9",
 ): string {
+  const arOption = ASPECT_RATIO_OPTIONS.find(a => a.value === aspectRatio) || ASPECT_RATIO_OPTIONS[0];
+  const arLabel = aspectRatio === "16:9" ? "Widescreen 16:9" : aspectRatio === "1:1" ? "Square 1:1 (1080×1080)" : "Portrait 4:5 (1080×1350)";
   const charSpec = buildCharacterSpec(scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar);
   const hasLiving = scenePreset !== "TANPA_MAKHLUK";
-  let prompt = `Tolong buatkan gambar (image generation) untuk thumbnail konten edukasi anak Islami.\n\nKonteks Judul: "${title}"\n\nSpesifikasi Wajib:\n- Gaya Visual: ${style}\n- Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat (warm lighting)\n- Aspek Rasio: Widescreen 16:9 (Sangat Penting!)\n- ${charSpec.id}`;
+  let prompt = `Tolong buatkan gambar (image generation) untuk thumbnail konten edukasi anak Islami.\n\nKonteks Judul: "${title}"\n\nSpesifikasi Wajib:\n- Gaya Visual: ${style}\n- Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat (warm lighting)\n- Aspek Rasio: ${arLabel} (Sangat Penting!)\n- Resolusi Target: ${arOption.size}\n- ${charSpec.id}`;
   if (hasLiving && scenePreset !== "NABI_SAHABAT" && extras.expression.trim()) {
     prompt += `\n- Ekspresi/Suasana Hati: ${extras.expression.trim()} (gambarkan lewat bahasa tubuh & postur — BUKAN wajah).`;
   }
@@ -656,10 +666,13 @@ function generateImagePrompt(
   } else {
     prompt += `\n- ATURAN KETAT: TIDAK BOLEH ADA TEKS, HURUF, ATAU TULISAN APAPUN. Sediakan Negative Space untuk penambahan teks manual.`;
   }
+  if (aspectRatio !== "16:9") {
+    prompt += `\n\n⚠️ PENTING — ASPEK RASIO ${arLabel}:\nKomposisi gambar HARUS sesuai ${aspectRatio}. ${aspectRatio === "1:1" ? "Gambar harus persegi sempurna — tidak boleh landscape." : "Gambar harus portrait/tegak — tidak boleh landscape."}\nPastikan elemen visual terpusat dan seimbang untuk format ${aspectRatio}.`;
+  }
   const engActivity = extras.activity.trim() ? `, performing: ${extras.activity.trim()}` : "";
   const engSetting = extras.setting.trim() ? `, set in: ${extras.setting.trim()}` : "";
   const engColors = extras.colorPalette.trim() ? `, dominant colors: ${extras.colorPalette.trim()}` : "";
-  prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${style}. ${charSpec.en}${engActivity}${engSetting}${engColors}. Warm lighting, vibrant child-friendly colors. ${includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, negative space for manual text."} --ar 16:9"`;
+  prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${style}. ${charSpec.en}${engActivity}${engSetting}${engColors}. Warm lighting, vibrant child-friendly colors. Resolution: ${arOption.size}. ${includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, negative space for manual text."} ${arOption.arFlag}"`;
   return prompt;
 }
 
@@ -686,6 +699,7 @@ export default function PromptGeneratorPage() {
   const [childGender, setChildGender] = useState<"laki" | "perempuan" | "campur">("campur");
   const [singleChar, setSingleChar] = useState<SingleCharType>("anakLaki");
   const [includeText, setIncludeText] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [imageExtras, setImageExtras] = useState({ expression: "", activity: "", setting: "", colorPalette: "" });
 
   const [generatedPrompt, setGeneratedPrompt] = useState("");
@@ -716,7 +730,7 @@ export default function PromptGeneratorPage() {
     if (mode === "CONTENT") {
       prompt = generatePrompt(type, title.trim(), ages, options, kisahSubType, selectedThinkers, artikelPov);
     } else {
-      prompt = generateImagePrompt(title.trim(), imageStyle, scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, imageExtras, includeText);
+      prompt = generateImagePrompt(title.trim(), imageStyle, scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, imageExtras, includeText, aspectRatio);
       historyType = "IMAGE_PROMPT";
     }
     setGeneratedPrompt(prompt);
@@ -1015,6 +1029,26 @@ export default function PromptGeneratorPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Aspect Ratio */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-3">1b. Aspek Rasio Gambar</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {ASPECT_RATIO_OPTIONS.map(ar => (
+                    <button key={ar.value} onClick={() => setAspectRatio(ar.value)} className={`p-4 rounded-xl text-left border-2 transition-all ${aspectRatio === ar.value ? "border-purple-500 bg-purple-50 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}>
+                      <span className="text-2xl">{ar.icon}</span>
+                      <p className="font-bold text-sm text-slate-800 mt-1">{ar.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{ar.desc}</p>
+                      <p className="text-[10px] text-purple-600 font-bold mt-1">{ar.size} · {ar.value}</p>
+                    </button>
+                  ))}
+                </div>
+                {aspectRatio !== "16:9" && (
+                  <p className="text-xs text-purple-700 mt-3 font-medium bg-purple-50 p-2 rounded-lg">
+                    📱 Prompt akan dioptimalkan untuk format {aspectRatio === "1:1" ? "persegi (Instagram Feed / Facebook Post)" : "portrait 4:5 (Instagram Post engagement terbaik)"}.
+                  </p>
+                )}
               </div>
 
               {/* Judul */}
