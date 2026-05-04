@@ -56,6 +56,14 @@ export function Footer() {
               </li>
               <li><Link href="/tersimpan" className="hover:text-emerald-400 transition-colors">🔖 Konten Tersimpan</Link></li>
             </ul>
+
+            <h4 className="font-bold text-white mt-6 mb-3">Legal</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/kebijakan-privasi" className="hover:text-emerald-400 transition-colors">Kebijakan Privasi</Link></li>
+              <li><Link href="/ketentuan-layanan" className="hover:text-emerald-400 transition-colors">Ketentuan Layanan</Link></li>
+              <li><Link href="/penghapusan-data" className="hover:text-emerald-400 transition-colors">Penghapusan Data</Link></li>
+            </ul>
+
             <p className="text-xs mt-6 text-slate-500">
               Konten disusun oleh kontributor dan telah melalui proses peninjauan tim redaksi. Pembaca dianjurkan merujuk langsung pada sumber asli (Al-Qur&apos;an, Hadits, dan pendapat ulama) untuk memastikan keakuratan.
             </p>
