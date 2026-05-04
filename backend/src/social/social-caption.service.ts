@@ -84,48 +84,48 @@ export class SocialCaptionService {
       case 'quick_answer':
         return null;
 
-      // Paragraph — plain text content
+      // Paragraph — full text content
       case 'paragraph':
-        if (block.text) return this.truncate(block.text, 200);
+        if (block.text) return this.cleanText(block.text);
         return null;
 
-      // Dalil — quote without source (source collected to footer)
+      // Dalil — full quote (source collected to footer)
       case 'dalil': {
         const entries = block.entries || [block];
         const parts: string[] = [];
         for (const entry of entries) {
           if (entry.translation) {
-            parts.push(`📖 "${this.truncate(entry.translation, 150)}"`);
+            parts.push(`📖 "${this.cleanText(entry.translation)}"`);
             if (entry.source) sources.push(entry.source);
           }
         }
         return parts.length > 0 ? parts.join('\n') : null;
       }
 
-      // Doa — prayer quote without source (source collected to footer)
+      // Doa — full prayer quote (source collected to footer)
       case 'doa':
         if (block.translation) {
-          const doaText = `🤲 "${this.truncate(block.translation, 150)}"`;
+          const doaText = `🤲 "${this.cleanText(block.translation)}"`;
           if (block.source) sources.push(block.source);
           return doaText;
         }
         return null;
 
-      // Hikmah — key takeaway
+      // Hikmah — full key takeaway
       case 'hikmah':
-        if (block.text) return `✨ ${this.truncate(block.text, 150)}`;
+        if (block.text) return `✨ ${this.cleanText(block.text)}`;
         return null;
 
-      // Analogy — simplified comparison
+      // Analogy — full comparison text
       case 'analogy': {
         if (!block.text) return null;
         const title = block.title ? `${block.title}: ` : '';
-        return `🧩 ${title}${this.truncate(block.text, 150)}`;
+        return `🧩 ${title}${this.cleanText(block.text)}`;
       }
 
-      // Tip — practical advice
+      // Tip — full practical advice
       case 'tip':
-        if (block.text) return `ℹ️ ${this.truncate(block.text, 150)}`;
+        if (block.text) return `ℹ️ ${this.cleanText(block.text)}`;
         return null;
 
       // Image — include caption text only (not URL)
@@ -159,14 +159,14 @@ export class SocialCaptionService {
   // ─── Body Builder ──────────────────────────────────────────
 
   private buildBody(content: any): string {
-    // QNA: use answerQuick as primary body
+    // QNA: use answerQuick as primary body (full text)
     if (content.type === 'QNA' && content.qnaDetail?.answerQuick) {
-      return this.truncate(content.qnaDetail.answerQuick, 300);
+      return this.cleanText(content.qnaDetail.answerQuick);
     }
 
-    // All types: use description if available
+    // All types: use description if available (full text)
     if (content.description) {
-      return this.truncate(content.description, 300);
+      return this.cleanText(content.description);
     }
 
     return '';
@@ -207,11 +207,13 @@ export class SocialCaptionService {
 
   // ─── Text Utilities ────────────────────────────────────────
 
-  private truncate(text: string, maxLen: number): string {
+  /**
+   * Clean text — remove excessive newlines, trim whitespace.
+   * No character limit — text is shown in full.
+   */
+  private cleanText(text: string): string {
     if (!text) return '';
-    const clean = text.replace(/\n+/g, ' ').trim();
-    if (clean.length <= maxLen) return clean;
-    return clean.substring(0, maxLen - 3) + '...';
+    return text.replace(/\n{3,}/g, '\n\n').trim();
   }
 
   /**
