@@ -11,6 +11,7 @@ export class SocialTokenService {
   private readonly appId: string;
   private readonly appSecret: string;
   private readonly redirectUri: string;
+  private readonly configId: string;
   private readonly encryptionKey: string;
   private readonly graphBaseUrl = 'https://graph.facebook.com/v19.0';
 
@@ -18,22 +19,22 @@ export class SocialTokenService {
     this.appId = this.config.get<string>('META_APP_ID') || '';
     this.appSecret = this.config.get<string>('META_APP_SECRET') || '';
     this.redirectUri = this.config.get<string>('META_REDIRECT_URI') || '';
+    this.configId = this.config.get<string>('META_CONFIG_ID') || '';
     this.encryptionKey = this.config.get<string>('SOCIAL_ENCRYPTION_KEY') || '';
   }
 
   /**
-   * Generate the OAuth login URL for Facebook.
+   * Generate the OAuth login URL for Facebook Login for Business.
+   * Uses config_id (configured in Meta Developer Console) instead of individual scopes.
+   * This is required for apps registered under a Business Portfolio.
    */
   getAuthUrl(csrfState: string): string {
-    const scopes = [
-      'pages_manage_posts',
-      'pages_read_engagement',
-      'pages_show_list',
-      'instagram_basic',
-      'instagram_content_publish',
-    ].join(',');
+    if (!this.configId) {
+      this.logger.error('META_CONFIG_ID is not set — Facebook Login for Business requires a config_id');
+      throw new Error('META_CONFIG_ID belum dikonfigurasi. Hubungi administrator.');
+    }
 
-    return `https://www.facebook.com/v19.0/dialog/oauth?client_id=${this.appId}&redirect_uri=${encodeURIComponent(this.redirectUri)}&scope=${scopes}&state=${csrfState}&response_type=code`;
+    return `https://www.facebook.com/v19.0/dialog/oauth?client_id=${this.appId}&redirect_uri=${encodeURIComponent(this.redirectUri)}&config_id=${this.configId}&state=${csrfState}&response_type=code&override_default_response_type=true`;
   }
 
   /**
