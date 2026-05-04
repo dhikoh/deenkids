@@ -422,4 +422,97 @@ export class SocialService {
     if (!content) throw new NotFoundException('Konten tidak ditemukan');
     return content;
   }
+
+  // ─── Cron Settings ────────────────────────────────────────────
+
+  private readonly CRON_KEYS = {
+    publishEnabled: 'social_cron_publish_enabled',
+    publishInterval: 'social_cron_publish_interval',
+    publishLastRun: 'social_cron_publish_last_run',
+    validateEnabled: 'social_cron_validate_enabled',
+    validateInterval: 'social_cron_validate_interval',
+    validateLastRun: 'social_cron_validate_last_run',
+  };
+
+  async getCronSettings() {
+    const keys = Object.values(this.CRON_KEYS);
+    const settings = await this.prisma.setting.findMany({
+      where: { key: { in: keys } },
+    });
+    const get = (k: string) => settings.find(s => s.key === k)?.value;
+
+    return {
+      publishEnabled: get(this.CRON_KEYS.publishEnabled) !== 'false', // default true
+      publishInterval: parseInt(get(this.CRON_KEYS.publishInterval) || '1', 10),
+      publishLastRun: get(this.CRON_KEYS.publishLastRun) || null,
+      validateEnabled: get(this.CRON_KEYS.validateEnabled) !== 'false', // default true
+      validateInterval: parseInt(get(this.CRON_KEYS.validateInterval) || '24', 10),
+      validateLastRun: get(this.CRON_KEYS.validateLastRun) || null,
+    };
+  }
+
+  async updateCronSettings(data: {
+    publishEnabled?: boolean;
+    publishInterval?: number;
+    validateEnabled?: boolean;
+    validateInterval?: number;
+  }) {
+    const upsert = (key: string, value: string) =>
+      this.prisma.setting.upsert({
+        where: { key },
+        update: { value },
+        create: { key, value, group: 'social_cron' },
+      });
+
+    const ops: Promise<any>[] = [];
+    if (data.publishEnabled !== undefined) ops.push(upsert(this.CRON_KEYS.publishEnabled, String(data.publishEnabled)));
+    if (data.publishInterval !== undefined) ops.push(upsert(this.CRON_KEYS.publishInterval, String(data.publishInterval)));
+    if (data.validateEnabled !== undefined) ops.push(upsert(this.CRON_KEYS.validateEnabled, String(data.validateEnabled)));
+    if (data.validateInterval !== undefined) ops.push(upsert(this.CRON_KEYS.validateInterval, String(data.validateInterval)));
+
+    await Promise.all(ops);
+    this.logger.log(`⚙️ Social cron settings updated`);
+    return { message: 'Pengaturan otomasi berhasil disimpan' };
+  }
+
+  /**
+   * Check if a specific cron job should run now.
+   * Returns true if enabled AND enough time has passed since last run.
+   * Also updates lastRun timestamp when returning true.
+   */
+  async shouldCronRun(type: 'publish' | 'validate'): Promise<boolean> {
+    const enabledKey = type === 'publish' ? this.CRON_KEYS.publishEnabled : this.CRON_KEYS.validateEnabled;
+    const intervalKey = type === 'publish' ? this.CRON_KEYS.publishInterval : this.CRON_KEYS.validateInterval;
+    const lastRunKey = type === 'publish' ? this.CRON_KEYS.publishLastRun : this.CRON_KEYS.validateLastRun;
+
+    const [enabledSetting, intervalSetting, lastRunSetting] = await Promise.all([
+      this.prisma.setting.findUnique({ where: { key: enabledKey } }),
+      this.prisma.setting.findUnique({ where: { key: intervalKey } }),
+      this.prisma.setting.findUnique({ where: { key: lastRunKey } }),
+    ]);
+
+    // Check enabled (default: true if no setting exists)
+    if (enabledSetting?.value === 'false') return false;
+
+    // Check interval
+    const interval = parseInt(intervalSetting?.value || (type === 'publish' ? '1' : '24'), 10);
+    const lastRun = lastRunSetting?.value ? new Date(lastRunSetting.value) : null;
+
+    if (lastRun) {
+      const intervalMs = type === 'publish'
+        ? interval * 60 * 1000        // minutes → ms
+        : interval * 60 * 60 * 1000;  // hours → ms
+      const elapsed = Date.now() - lastRun.getTime();
+      if (elapsed < intervalMs) return false;
+    }
+
+    // Update lastRun timestamp
+    await this.prisma.setting.upsert({
+      where: { key: lastRunKey },
+      update: { value: new Date().toISOString() },
+      create: { key: lastRunKey, value: new Date().toISOString(), group: 'social_cron' },
+    });
+
+    return true;
+  }
 }

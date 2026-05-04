@@ -270,15 +270,21 @@ export class CronService {
   @Cron(CronExpression.EVERY_MINUTE)
   async processScheduledSocialPosts() {
     try {
+      const shouldRun = await this.socialService.shouldCronRun('publish');
+      if (!shouldRun) return;
+      this.logger.log('📱 Running scheduled social post processing...');
       await this.socialService.processScheduledPosts();
     } catch (err) {
       this.logger.error(`Social scheduled post processing failed: ${err.message}`);
     }
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  @Cron(CronExpression.EVERY_MINUTE)
   async validateSocialTokens() {
     try {
+      const shouldRun = await this.socialService.shouldCronRun('validate');
+      if (!shouldRun) return;
+      this.logger.log('🔐 Running social token validation...');
       await this.socialService.validateAllTokens();
     } catch (err) {
       this.logger.error(`Social token validation failed: ${err.message}`);

@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { getSocialAuthUrl, connectSocialAccount, fetchSocialAccounts, disconnectSocialAccount, updateSocialDefaults, fetchSocialLogs, retrySocialPublish, cancelSocialScheduled } from "@/lib/api";
-import { Share2, Link2, Unlink, Instagram, Facebook, RefreshCw, X, CheckCircle, Clock, AlertTriangle, ExternalLink, Settings } from "lucide-react";
+import { getSocialAuthUrl, connectSocialAccount, fetchSocialAccounts, disconnectSocialAccount, updateSocialDefaults, fetchSocialLogs, retrySocialPublish, cancelSocialScheduled, fetchSocialCronSettings, updateSocialCronSettings } from "@/lib/api";
+import { Share2, Link2, Unlink, Instagram, Facebook, RefreshCw, X, CheckCircle, Clock, AlertTriangle, ExternalLink, Settings, Zap, ShieldCheck } from "lucide-react";
 
 export default function SocialSettingsPage() {
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -13,6 +13,14 @@ export default function SocialSettingsPage() {
   const [editingDefaults, setEditingDefaults] = useState<string | null>(null);
   const [hashtagInput, setHashtagInput] = useState("");
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // Cron settings state
+  const [cronSettings, setCronSettings] = useState({
+    publishEnabled: true, publishInterval: 1, publishLastRun: null as string | null,
+    validateEnabled: true, validateInterval: 24, validateLastRun: null as string | null,
+  });
+  const [cronLoading, setCronLoading] = useState(false);
+  const [cronSaving, setCronSaving] = useState(false);
 
   const token = Cookies.get("_at") || "";
 
@@ -36,10 +44,42 @@ export default function SocialSettingsPage() {
     } catch { setLogs([]); }
   };
 
+  const loadCronSettings = async () => {
+    setCronLoading(true);
+    try {
+      const res = await fetchSocialCronSettings(token);
+      setCronSettings({
+        publishEnabled: res.publishEnabled ?? true,
+        publishInterval: res.publishInterval ?? 1,
+        publishLastRun: res.publishLastRun || null,
+        validateEnabled: res.validateEnabled ?? true,
+        validateInterval: res.validateInterval ?? 24,
+        validateLastRun: res.validateLastRun || null,
+      });
+    } catch {}
+    setCronLoading(false);
+  };
+
+  const handleSaveCronSettings = async () => {
+    setCronSaving(true);
+    try {
+      await updateSocialCronSettings({
+        publishEnabled: cronSettings.publishEnabled,
+        publishInterval: cronSettings.publishInterval,
+        validateEnabled: cronSettings.validateEnabled,
+        validateInterval: cronSettings.validateInterval,
+      }, token);
+      showToast("success", "Pengaturan otomasi berhasil disimpan");
+    } catch (err: any) {
+      showToast("error", err.message || "Gagal menyimpan pengaturan");
+    }
+    setCronSaving(false);
+  };
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await Promise.all([loadAccounts(), loadLogs()]);
+      await Promise.all([loadAccounts(), loadLogs(), loadCronSettings()]);
       setLoading(false);
 
       // Handle OAuth callback
@@ -218,6 +258,80 @@ export default function SocialSettingsPage() {
           </div>
         </div>
       )}
+
+      {/* Pengaturan Otomasi */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <h2 className="text-lg font-semibold text-slate-800 mb-1 flex items-center gap-2">⚙️ Pengaturan Otomasi</h2>
+        <p className="text-sm text-slate-400 mb-5">Atur jadwal cron jobs untuk publish otomatis dan validasi token</p>
+
+        <div className="space-y-5">
+          {/* Scheduled Publish Cron */}
+          <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+              <Zap size={20} className="text-indigo-600" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-medium text-slate-700">Jadwal Publish Otomatis</h3>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={cronSettings.publishEnabled} onChange={(e) => setCronSettings(prev => ({ ...prev, publishEnabled: e.target.checked }))} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-indigo-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                </label>
+              </div>
+              <p className="text-xs text-slate-400 mb-3">Cek dan publish post yang dijadwalkan secara otomatis</p>
+              <div className="flex items-center gap-3">
+                <label className="text-xs text-slate-500">Interval:</label>
+                <select value={cronSettings.publishInterval} onChange={(e) => setCronSettings(prev => ({ ...prev, publishInterval: parseInt(e.target.value) }))} className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:border-indigo-500 focus:ring-indigo-500">
+                  <option value={1}>Setiap 1 menit</option>
+                  <option value={2}>Setiap 2 menit</option>
+                  <option value={5}>Setiap 5 menit</option>
+                  <option value={10}>Setiap 10 menit</option>
+                  <option value={15}>Setiap 15 menit</option>
+                  <option value={30}>Setiap 30 menit</option>
+                </select>
+              </div>
+              {cronSettings.publishLastRun && (
+                <p className="text-xs text-slate-400 mt-2">🕐 Terakhir jalan: {new Date(cronSettings.publishLastRun).toLocaleString("id-ID")}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Token Validation Cron */}
+          <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <ShieldCheck size={20} className="text-emerald-600" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-medium text-slate-700">Validasi Token Sosial Media</h3>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={cronSettings.validateEnabled} onChange={(e) => setCronSettings(prev => ({ ...prev, validateEnabled: e.target.checked }))} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-emerald-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                </label>
+              </div>
+              <p className="text-xs text-slate-400 mb-3">Validasi apakah token Facebook/Instagram masih berlaku</p>
+              <div className="flex items-center gap-3">
+                <label className="text-xs text-slate-500">Interval:</label>
+                <select value={cronSettings.validateInterval} onChange={(e) => setCronSettings(prev => ({ ...prev, validateInterval: parseInt(e.target.value) }))} className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:border-indigo-500 focus:ring-indigo-500">
+                  <option value={6}>Setiap 6 jam</option>
+                  <option value={12}>Setiap 12 jam</option>
+                  <option value={24}>Setiap 24 jam</option>
+                  <option value={48}>Setiap 48 jam</option>
+                </select>
+              </div>
+              {cronSettings.validateLastRun && (
+                <p className="text-xs text-slate-400 mt-2">🕐 Terakhir jalan: {new Date(cronSettings.validateLastRun).toLocaleString("id-ID")}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-5">
+          <button onClick={handleSaveCronSettings} disabled={cronSaving} className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+            {cronSaving ? "Menyimpan..." : "Simpan Pengaturan"}
+          </button>
+        </div>
+      </div>
 
       {/* Publish History */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">

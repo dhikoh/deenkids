@@ -187,4 +187,32 @@ export class SocialController {
     const userId = (req as any).user.id;
     return this.socialService.cancelScheduled(logId, userId);
   }
+
+  // ─── Cron Settings ─────────────────────────────────────────────
+
+  /**
+   * GET /social/cron-settings — Get social cron job configuration
+   */
+  @Get('cron-settings')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  async getCronSettings() {
+    return this.socialService.getCronSettings();
+  }
+
+  /**
+   * PUT /social/cron-settings — Update social cron job configuration
+   */
+  @Put('cron-settings')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @HttpCode(200)
+  async updateCronSettings(@Body() body: {
+    publishEnabled?: boolean;
+    publishInterval?: number;
+    validateEnabled?: boolean;
+    validateInterval?: number;
+  }) {
+    return this.socialService.updateCronSettings(body);
+  }
 }

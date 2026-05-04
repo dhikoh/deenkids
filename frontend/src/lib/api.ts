@@ -851,3 +851,22 @@ export async function cancelSocialScheduled(logId: string, token: string) {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+export async function fetchSocialCronSettings(token: string) {
+  return apiFetch(`${API_BASE_URL}/social/cron-settings`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function updateSocialCronSettings(data: {
+  publishEnabled?: boolean;
+  publishInterval?: number;
+  validateEnabled?: boolean;
+  validateInterval?: number;
+}, token: string) {
+  return apiFetch(`${API_BASE_URL}/social/cron-settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
