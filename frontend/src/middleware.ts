@@ -105,12 +105,12 @@ async function attemptSilentRefresh(refreshToken: string, request: NextRequest):
       const data = await refreshRes.json();
       if (data.accessToken) {
         const response = NextResponse.next();
-        // Set new _at cookie (JS-accessible, 15 min)
+        // Set new _at cookie (JS-accessible, 2 hours)
         response.cookies.set('_at', data.accessToken, {
           httpOnly: false,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
-          maxAge: 15 * 60, // 15 minutes
+          maxAge: 2 * 60 * 60, // 2 hours — consistent with client-side refresh in api.ts
           path: '/',
         });
         // Set new _rt cookie (JS-accessible, 7 days)

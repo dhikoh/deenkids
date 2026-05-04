@@ -62,7 +62,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
+      maxAge: 2 * 60 * 60 * 1000, // 2 hours — consistent with JWT expiry & login cookie
       path: '/',
     });
 

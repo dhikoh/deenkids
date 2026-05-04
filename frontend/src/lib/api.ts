@@ -61,12 +61,28 @@ async function tryRefreshToken(): Promise<string | false> {
   return refreshPromise as any;
 }
 
-function redirectToLogin() {
+async function redirectToLogin() {
   if (typeof window !== 'undefined') {
-    import('js-cookie').then(({ default: Cookies }) => {
+    try {
+      const Cookies = (await import('js-cookie')).default;
+      const token = Cookies.get('_at');
+      const rt = Cookies.get('_rt');
+      // Invalidate refresh token in backend DB before clearing cookies
+      if (token && rt) {
+        await fetch(`${API_BASE_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ refreshToken: rt }),
+        }).catch(() => {}); // Best-effort — don't block logout on network failure
+      }
       Cookies.remove('_at', { path: '/' });
       Cookies.remove('_rt', { path: '/' });
-    }).catch(() => {});
+    } catch {
+      // Fallback: clear cookies even if import fails
+    }
     localStorage.removeItem('user');
     window.location.href = '/login';
   }
@@ -523,11 +539,12 @@ export async function updateAnnouncementAdmin(data: any, token: string) {
 // SEARCH
 // ═══════════════════════════════════════
 
-export async function searchContent(q: string, type?: string, age?: string, page?: number) {
+export async function searchContent(q: string, type?: string, age?: string, page?: number, pov?: string) {
   const params = new URLSearchParams({ q });
   if (type) params.set('type', type);
   if (age) params.set('age', age);
   if (page) params.set('page', String(page));
+  if (pov) params.set('pov', pov);
   return apiFetch(`${API_BASE_URL}/content/search?${params}`);
 }
 

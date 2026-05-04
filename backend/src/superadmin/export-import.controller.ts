@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Res, UseGuards, UseInterceptors, UploadedFile, Body, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Res, UseGuards, UseInterceptors, UploadedFile, Body, Query, Param, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
@@ -144,7 +144,7 @@ export class ExportImportController {
 
   @Get('backup/download/:filename')
   @ApiOperation({ summary: 'Download a backup file' })
-  async downloadBackup(@Res() res: Response, @Query('filename') filename: string) {
+  async downloadBackup(@Res() res: Response, @Param('filename') filename: string) {
     // Validate filename to prevent path traversal attacks
     if (!filename || !/^[\w\-\.]+\.sql$/.test(filename)) {
       throw new BadRequestException('Nama file tidak valid');
