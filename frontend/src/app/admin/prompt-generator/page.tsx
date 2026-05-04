@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 
 type ContentType = "QNA" | "PEMBELAJARAN" | "ARTIKEL" | "KISAH" | "IMAGE_PROMPT";
-type KisahSubType = "SIRAH" | "TELADAN" | "CERITA_FIKSI";
+type KisahSubType = "SIRAH" | "QASHASH" | "TELADAN" | "CERITA_FIKSI";
 type ScenePreset = "KELUARGA" | "NABI_SAHABAT" | "KELOMPOK_ANAK" | "TUNGGAL" | "TANPA_MAKHLUK";
 type SingleCharType = "ayah" | "ibu" | "anakLaki" | "anakPerempuan";
 
@@ -170,30 +170,47 @@ Gunakan STRUKTUR BERPIKIR dari tokoh-tokoh berikut — bukan gaya bahasa atau ke
 Catatan Penting: Gabungkan framework ini menjadi reasoning yang seimbang dan saling melengkapi. Ambil logika dan cara berpikir mereka — BUKAN cara berbicara atau kepribadiannya.`;
   if (forKisah) {
     section += `
-⚠️ Untuk Kisah: Terapkan hanya pada struktur narasi, plot, kualitas analogi, dan penyajian hikmah. JANGAN gunakan untuk menambah atau memodifikasi fakta sejarah. Aturan sumber Sirah/Teladan tetap berlaku penuh.`;
+⚠️ Untuk Kisah: Terapkan hanya pada struktur narasi, plot, kualitas analogi, dan penyajian hikmah. JANGAN gunakan untuk menambah atau memodifikasi fakta sejarah. Aturan sumber Sirah/Qashash/Teladan tetap berlaku penuh.`;
   }
   return section;
 }
 
 function generateKisahPrompt(subType: KisahSubType, title: string, options: Record<string, boolean>, selectedThinkers: string[]): string {
   const TARGET_USIA = "3–10 tahun";
-  const subTypeLabel = subType === "SIRAH" ? "Sirah Nabawiyah" : subType === "TELADAN" ? "Teladan Sahabat/Ulama" : "Cerita Fiksi Islami";
+  const subTypeLabel = subType === "SIRAH" ? "Sirah Nabawiyah (Nabi Muhammad ﻿)" : subType === "QASHASH" ? "Qashashul Anbiya' (Kisah Para Nabi)" : subType === "TELADAN" ? "Teladan Sahabat & Ulama" : "Cerita Fiksi Islami";
 
   let prompt = `Kamu adalah PENULIS KISAH ISLAMI untuk platform edukasi anak "Adably". Tugasmu membuat naskah kisah yang PANJANG, KAYA DETAIL, dan MENGALIR seperti seorang pencerita ulung — bukan sekadar ringkasan. Konten ini akan DIBACAKAN melalui fitur audio, sehingga setiap kalimat harus terasa hidup, hangat, dan memikat.\n\n`;
 
   if (subType === "SIRAH") {
     prompt += `══════════════════════════════════════════
-ATURAN WAJIB — SIRAH NABAWIYAH
+ATURAN WAJIB — SIRAH NABAWIYAH (Khusus Nabi Muhammad ﻿)
 ══════════════════════════════════════════
-1. Ikuti HANYA fakta dari kitab Sirah mu'tabar:
+1. Sub-tipe ini KHUSUS untuk kisah perjalanan hidup Nabi Muhammad ﻿ saja.
+2. Ikuti HANYA fakta dari kitab Sirah mu'tabar:
    • Ibnu Hisyam (Sirah Nabawiyah)
    • Ar-Rahiqul Makhtum (Shafiyyurrahman Al-Mubarakfuri)
    • Sirah Ibnu Katsir (Al-Bidayah Wan Nihayah)
-2. Dialog/percakapan BOLEH dimuat dalam narasi HANYA jika bersumber dari riwayat shahih.
+3. Dialog/percakapan BOLEH dimuat dalam narasi HANYA jika bersumber dari riwayat shahih.
    Cantumkan sumbernya dalam tanda kurung setelah dialog.
    Contoh: "Wahai Ibrahim, apakah kamu percaya?" (HR. Bukhari no. 1234)
-3. JANGAN gambarkan wajah, warna mata, atau ciri fisik detail Nabi. Cukup sebut kemuliaan dan sifat agungnya.
-4. JANGAN tambahkan kejadian, dialog, atau detail yang tidak ada dalam riwayat.\n\n`;
+4. JANGAN gambarkan wajah, warna mata, atau ciri fisik detail Nabi. Cukup sebut kemuliaan dan sifat agungnya.
+5. JANGAN tambahkan kejadian, dialog, atau detail yang tidak ada dalam riwayat.\n\n`;
+  } else if (subType === "QASHASH") {
+    prompt += `══════════════════════════════════════════
+ATURAN WAJIB — QASHASHUL ANBIYA' (Kisah Para Nabi)
+══════════════════════════════════════════
+1. Sub-tipe ini untuk kisah para nabi SELAIN Nabi Muhammad ﻿ (Ibrahim, Musa, Yusuf, Nuh, Isa, dll.).
+2. Ikuti HANYA fakta dari sumber berikut:
+   • Al-Quran (kisah langsung dari ayat — sumber utama)
+   • Tafsir Ibnu Katsir
+   • Qashashul Anbiya' karya Ibnu Katsir
+   • Tafsir Ath-Thabari
+   • Al-Bidayah wan Nihayah (Ibnu Katsir)
+3. Dialog/percakapan BOLEH dimuat dalam narasi HANYA jika bersumber dari ayat Al-Quran atau riwayat shahih.
+   Cantumkan sumbernya. Contoh: "Ya Tuhanku, tunjukkanlah kepadaku..." (QS. Al-Baqarah: 260)
+4. JANGAN gambarkan wajah atau ciri fisik detail nabi — cukup sebut sifat, akhlak, dan kemuliaan.
+5. JANGAN tambahkan kejadian atau detail yang tidak ada dalam Al-Quran atau riwayat mu'tabar.
+6. Jika kisah nabi tersebut disebutkan di beberapa surah, gabungkan secara kronologis dengan menyebut sumber ayat masing-masing.\n\n`;
   } else if (subType === "TELADAN") {
     prompt += `══════════════════════════════════════════
 ATURAN WAJIB — TELADAN SAHABAT / ULAMA
@@ -279,7 +296,7 @@ Tulis 3–4 poin hikmah praktis, hangat, dan memotivasi — BUKAN ceramah.
 Format per poin:
 • 💡 [poin hikmah yang singkat namun bermakna]\n\n`;
 
-  if ((subType === "SIRAH" || subType === "TELADAN") && options.referensi) {
+  if ((subType === "SIRAH" || subType === "QASHASH" || subType === "TELADAN") && options.referensi) {
     prompt += `━━━ 📚 REFERENSI SUMBER (dalil — tipe referensi) ━━━
 Cantumkan sumber kitab utama rujukan kisah ini.
 Format:
@@ -300,6 +317,41 @@ PANDUAN PENULISAN — GAYA PENCERITA
 ✅ Akhiri dengan kehangatan, rasa syukur, atau motivasi yang menyentuh
 ❌ JANGAN terlalu singkat — ini bukan ringkasan, ini KISAH LENGKAP
 ❌ JANGAN menggurui atau berceramah langsung kepada pembaca`;
+
+  // === BLOK HIKMAH (semua sub-type kisah) ===
+  prompt += `\n\n━━━ ✨ BLOK HIKMAH / PELAJARAN (hikmah) ━━━
+Pelajaran utama yang dapat dipetik dari kisah ini.
+Tulis hikmah yang menyentuh hati, relevan bagi anak, dan menginspirasi kebaikan.
+Gunakan nada hangat dan penuh harapan — bukan menggurui.
+Format:
+• Hikmah: [1–3 paragraf refleksi yang bermakna]\n`;
+
+  // === BLOK DOA (SIRAH, QASHASH, TELADAN = wajib shahih; CERITA_FIKSI = boleh narasi) ===
+  if (subType !== "CERITA_FIKSI") {
+    prompt += `\n━━━ 🤲 BLOK DOA (doa) ━━━
+Doa yang relevan dengan tema kisah ini.
+
+⚠️ ATURAN KETAT DOA:
+1. WAJIB bersumber dari Al-Quran atau Hadits SHAHIH SAJA.
+2. DILARANG KERAS mencantumkan doa dari hadits dha'if, maudhu' (palsu), atau munkar.
+3. Setiap doa WAJIB disertai sumber yang jelas dan dapat diverifikasi.
+4. Jika tidak ada doa shahih spesifik untuk kisah ini, gunakan doa umum dari Al-Quran yang relevan.
+
+Format per doa:
+• Judul : [nama doa singkat]
+• Arab  : [teks arab doa]
+• Terjemah: [terjemahan bahasa Indonesia]
+• Sumber: [QS. ... atau HR. Bukhari/Muslim No. ...]\n`;
+  } else {
+    prompt += `\n━━━ 🤲 BLOK DOA (doa) — Opsional ━━━
+Boleh menyisipkan doa sederhana dalam narasi cerita.
+Jika ingin mencantumkan doa spesifik dengan sumber, WAJIB dari Al-Quran/Hadits Shahih saja.
+Format (jika digunakan):
+• Judul : [nama doa singkat]
+• Arab  : [teks arab doa]
+• Terjemah: [terjemahan]
+• Sumber: [sumber shahih]\n`;
+  }
 
   // Inject intellectual framework if thinkers selected
   const framework = generateIntellectualFramework(selectedThinkers, true);
@@ -448,6 +500,41 @@ TIPS:
 
 `;
   }
+
+  // === BLOK HIKMAH ===
+  prompt += `✨ BLOK: HIKMAH / PELAJARAN (hikmah)
+Pelajaran utama atau refleksi mendalam dari topik ini.
+Tulis 1–3 poin hikmah yang menyentuh hati dan relevan dengan kehidupan anak/orang tua.
+Gunakan bahasa yang reflektif, hangat, dan memotivasi — BUKAN menggurui.
+
+Format:
+---
+HIKMAH:
+"Dari pembahasan ini kita belajar bahwa..."
+---
+
+`;
+
+  // === BLOK DOA ===
+  prompt += `🤲 BLOK: DOA (doa)
+Doa yang relevan dengan topik pembahasan.
+
+⚠️ ATURAN KETAT DOA:
+1. WAJIB bersumber dari Al-Quran atau Hadits SHAHIH SAJA.
+2. DILARANG KERAS mencantumkan doa dari hadits dha'if, maudhu' (palsu), atau munkar — meskipun populer di masyarakat.
+3. Setiap doa WAJIB disertai sumber yang jelas dan dapat diverifikasi.
+4. Jika tidak ada doa shahih yang spesifik untuk topik ini, gunakan doa umum dari Al-Quran/Sunnah yang relevan.
+
+Format:
+---
+DOA:
+Judul: "Doa Memohon Ilmu yang Bermanfaat"
+Arab: رَبِّ زِدْنِي عِلْمًا
+Terjemahan: "Ya Tuhanku, tambahkanlah kepadaku ilmu."
+Sumber: QS. Thaha: 114
+---
+
+`;
 
   // === BAGIAN 4: PANDUAN USIA ===
   prompt += `
@@ -733,11 +820,12 @@ export default function PromptGeneratorPage() {
               {type === "KISAH" && (
                 <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 shadow-sm">
                   <label className="block text-sm font-bold text-amber-800 mb-3">1b. Pilih Sub-Tipe Kisah</label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                      { value: "SIRAH" as KisahSubType, label: "Sirah Nabawiyah", icon: "👑", desc: "Kisah Nabi dari kitab mu'tabar" },
-                      { value: "TELADAN" as KisahSubType, label: "Teladan Sahabat", icon: "⭐", desc: "Kisah sahabat & ulama terdahulu" },
-                      { value: "CERITA_FIKSI" as KisahSubType, label: "Cerita Fiksi", icon: "🌙", desc: "Cerita islami modern, tanpa sumber" },
+                      { value: "SIRAH" as KisahSubType, label: "Sirah Nabawiyah", icon: "👑", desc: "Khusus Nabi Muhammad ﻿" },
+                      { value: "QASHASH" as KisahSubType, label: "Qashashul Anbiya'", icon: "📜", desc: "Kisah para nabi dari Al-Quran" },
+                      { value: "TELADAN" as KisahSubType, label: "Teladan Sahabat & Ulama", icon: "⭐", desc: "Kisah sahabat & ulama terdahulu" },
+                      { value: "CERITA_FIKSI" as KisahSubType, label: "Cerita Fiksi Islami", icon: "🌙", desc: "Cerita fiksi islami modern" },
                     ].map(st => (
                       <button key={st.value} onClick={() => setKisahSubType(st.value)} className={`p-4 rounded-xl text-left border-2 transition-all ${kisahSubType === st.value ? "border-amber-500 bg-amber-100 shadow-sm" : "border-amber-200 hover:border-amber-300 bg-white"}`}>
                         <span className="text-2xl">{st.icon}</span>
@@ -752,7 +840,7 @@ export default function PromptGeneratorPage() {
               {/* Judul */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <label className="block text-sm font-bold text-slate-700 mb-2">2. Judul / Topik Konten</label>
-                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={type === "KISAH" ? `Contoh: ${kisahSubType === "SIRAH" ? "Kisah Nabi Ibrahim Membangun Ka'bah" : kisahSubType === "TELADAN" ? "Kedermawanan Utsman bin Affan" : "Hana dan Hari Pertama di Sekolah"}` : "Contoh: Mengapa Kita Harus Sholat 5 Waktu?"} className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500" />
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={type === "KISAH" ? `Contoh: ${kisahSubType === "SIRAH" ? "Kisah Perjalanan Isra' Mi'raj Nabi Muhammad ﻿" : kisahSubType === "QASHASH" ? "Kisah Nabi Yusuf dan Saudaranya" : kisahSubType === "TELADAN" ? "Kedermawanan Utsman bin Affan" : "Hana dan Hari Pertama di Sekolah"}` : "Contoh: Mengapa Kita Harus Sholat 5 Waktu?"} className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500" />
               </div>
 
               {/* Usia — KISAH selalu 3-10, tipe lain pilih manual */}
@@ -783,7 +871,7 @@ export default function PromptGeneratorPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {type === "KISAH" ? (
                 <>
-                  {(kisahSubType === "SIRAH" || kisahSubType === "TELADAN") && (
+                  {(kisahSubType === "SIRAH" || kisahSubType === "QASHASH" || kisahSubType === "TELADAN") && (
                     <label className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${options.referensi ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
                       <input type="checkbox" checked={options.referensi} onChange={e => setOptions({ ...options, referensi: e.target.checked })} className="w-4 h-4 text-amber-600 rounded" />
                       📚 Sertakan Referensi Kitab Sumber

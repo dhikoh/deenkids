@@ -53,6 +53,15 @@ function extractReadableText(blocks: any[], contentType?: string): string[] {
     if (type === "tip") {
       if (block.text) segments.push(block.text);
     }
+
+    if (type === "hikmah") {
+      if (block.text) segments.push(block.text);
+    }
+
+    if (type === "doa") {
+      // Baca terjemahan saja (teks arab di-skip untuk TTS)
+      if (block.translation) segments.push(block.translation);
+    }
     // Skip: image, video, headings, titles, sources, arabic text
   }
 

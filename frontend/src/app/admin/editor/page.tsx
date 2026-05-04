@@ -9,7 +9,7 @@ import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle, submit
 import ImageCropperModal from "@/components/ImageCropperModal";
 
 type ContentTypeOption = "PEMBELAJARAN" | "QNA" | "ARTICLE" | "KISAH";
-type BlockType = "paragraph" | "quick_answer" | "dialog" | "dalil" | "analogy" | "tip" | "image" | "video";
+type BlockType = "paragraph" | "quick_answer" | "dialog" | "dalil" | "analogy" | "tip" | "hikmah" | "doa" | "image" | "video";
 
 interface EditorBlock {
   id: string;
@@ -24,6 +24,8 @@ const BLOCK_TYPES: { type: BlockType; label: string; icon: any; color: string }[
   { type: "dalil", label: "Dalil/Landasan", icon: "📖", color: "bg-orange-100 text-orange-700" },
   { type: "analogy", label: "Analogi Sederhana", icon: "🧩", color: "bg-teal-100 text-teal-700" },
   { type: "tip", label: "Catatan/Tips", icon: "ℹ️", color: "bg-sky-100 text-sky-700" },
+  { type: "hikmah", label: "Hikmah / Pelajaran", icon: "✨", color: "bg-violet-100 text-violet-700" },
+  { type: "doa", label: "Doa", icon: "🤲", color: "bg-indigo-100 text-indigo-700" },
   { type: "image", label: "Gambar (Upload)", icon: "🖼️", color: "bg-pink-100 text-pink-700" },
   { type: "video", label: "Video (URL)", icon: "🎬", color: "bg-purple-100 text-purple-700" },
 ];
@@ -38,6 +40,8 @@ function defaultData(type: BlockType): any {
     case "dalil": return { entries: [{ arabic: "", translation: "", source: "" }] };
     case "analogy": return { title: "", text: "" };
     case "tip": return { text: "" };
+    case "hikmah": return { text: "" };
+    case "doa": return { title: "", arabic: "", translation: "", source: "" };
     case "image": return { url: "", caption: "", file: null };
     case "video": return { url: "", caption: "" };
   }
@@ -392,6 +396,19 @@ function EditorContent() {
             </div>
           )}
                     {type === "tip" && <div className="space-y-2"><textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Tips untuk orang tua..." className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px] bg-sky-50/50" /><input type="url" value={data.referenceUrl || ''} onChange={e => updateBlock(id, { referenceUrl: e.target.value })} placeholder="📎 Link referensi (opsional) — https://..." className="w-full border-slate-200 rounded-lg p-2 text-sm text-emerald-700" /></div>}
+          {type === "hikmah" && (
+            <div className="bg-violet-50/50 rounded-xl p-3">
+              <textarea value={data.text} onChange={e => updateBlock(id, { text: e.target.value })} placeholder="Hikmah atau pelajaran utama dari konten ini... Tulis refleksi yang menyentuh hati dan relevan." className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[80px]" />
+            </div>
+          )}
+          {type === "doa" && (
+            <div className="bg-indigo-50/50 rounded-xl p-3 space-y-2">
+              <input type="text" value={data.title} onChange={e => updateBlock(id, { title: e.target.value })} placeholder="Nama doa (opsional) — misal: Doa Memohon Ilmu" className="w-full border-slate-200 rounded-lg text-sm p-2 font-bold" />
+              <textarea value={data.arabic} onChange={e => updateBlock(id, { arabic: e.target.value })} placeholder="Teks Arab doa" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[50px] text-right font-serif text-lg" dir="rtl" />
+              <textarea value={data.translation} onChange={e => updateBlock(id, { translation: e.target.value })} placeholder="Terjemahan doa" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px]" />
+              <input type="text" value={data.source} onChange={e => updateBlock(id, { source: e.target.value })} placeholder="Sumber — WAJIB: QS. Thaha: 114 atau HR. Bukhari No. ..." className="w-full border-slate-200 rounded-lg text-sm p-2 font-bold text-indigo-700" />
+            </div>
+          )}
           {type === "image" && (
             <div className="space-y-2">
               {data.url && <img src={data.url} alt="" className="rounded-xl max-h-60 object-cover border border-slate-200" />}

@@ -1,7 +1,7 @@
 import { fetchContentBySlug } from "@/lib/api";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Star, ThumbsUp, Eye, Lightbulb, MessageCircle, User } from "lucide-react";
+import { ChevronLeft, Star, ThumbsUp, Eye, Lightbulb, MessageCircle, User, BookOpen, Quote, Sparkles } from "lucide-react";
 import { EngagementBar } from "@/components/ui/EngagementBar";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
@@ -57,12 +57,22 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
           <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-600 rounded-full">{(content.ageGroups || []).join(', ')} tahun</span>
         </div>
         <h1 className="text-3xl font-extrabold text-slate-800 mb-3">{content.title}</h1>
+        {content.description && (
+          <p className="text-slate-500 leading-relaxed mb-4 text-lg">{content.description}</p>
+        )}
         <div className="flex items-center gap-4 text-sm text-slate-500">
           <span className="flex items-center gap-1.5 font-medium"><User className="h-4 w-4" /> {authorName}</span>
           {content.avgRating > 0 && <span className="flex items-center gap-1 text-amber-500 font-bold"><Star className="h-4 w-4 fill-amber-500" /> {content.avgRating.toFixed(1)}</span>}
           <span className="flex items-center gap-1"><ThumbsUp className="h-4 w-4" /> {content.likeCount}</span>
           <span className="flex items-center gap-1"><Eye className="h-4 w-4" /> {content.viewCount}</span>
         </div>
+        {content.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4">
+            {content.tags.map((t: any, i: number) => (
+              <span key={i} className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100">#{t.tag?.name || t.name || t}</span>
+            ))}
+          </div>
+        )}
       </div>
 
       {qna && (
@@ -134,6 +144,7 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
                     const entries = block.entries || [block];
                     return (
                       <div key={i} className="space-y-3">
+                        <h3 className="font-bold text-amber-800 flex items-center gap-2"><BookOpen className="h-5 w-5" /> Dalil & Landasan</h3>
                         {entries.map((dalil: any, j: number) => (
                           <blockquote key={j} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
                             {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
@@ -149,14 +160,33 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
 
                   if (block.type === 'analogy') return (
                     <div key={i} className="bg-teal-50 border border-teal-200 rounded-2xl p-6">
-                      {block.title && <h3 className="font-bold text-teal-800 mb-2">{block.title}</h3>}
+                      <h3 className="font-bold text-teal-800 mb-2 flex items-center gap-2"><Quote className="h-4 w-4" /> Analogi Sederhana</h3>
+                      {block.title && <p className="font-bold text-teal-900 mb-1">{block.title}</p>}
                       <p className="text-teal-700 font-medium">{block.text}</p>
                     </div>
                   );
 
                   if (block.type === 'tip') return (
                     <div key={i} className="bg-slate-50 rounded-2xl p-5 border border-slate-200">
-                      <p className="text-sm text-slate-700 font-medium flex gap-2"><span className="text-emerald-500 font-bold">•</span><span>{block.text}{block.referenceUrl && <> — <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 underline hover:text-emerald-800 text-xs">Sumber ↗</a></>}</span></p>
+                      <h3 className="font-bold text-slate-700 mb-2 flex items-center gap-2"><Lightbulb className="h-4 w-4 text-emerald-500" /> Catatan / Tips</h3>
+                      <p className="text-sm text-slate-600 font-medium">{block.text}{block.referenceUrl && <> — <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 underline hover:text-emerald-800 text-xs">Sumber ↗</a></>}</p>
+                    </div>
+                  );
+
+                  if (block.type === 'hikmah') return (
+                    <div key={i} className="bg-violet-50 border border-violet-200 rounded-2xl p-6">
+                      <h3 className="font-bold text-violet-800 mb-2 flex items-center gap-2"><Sparkles className="h-4 w-4" /> Hikmah & Pelajaran</h3>
+                      <p className="text-violet-700 font-medium leading-relaxed">{block.text}</p>
+                    </div>
+                  );
+
+                  if (block.type === 'doa') return (
+                    <div key={i} className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6">
+                      <h3 className="font-bold text-indigo-800 mb-2 flex items-center gap-2">🤲 Doa</h3>
+                      {block.title && <p className="font-bold text-indigo-900 mb-2">{block.title}</p>}
+                      {block.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{block.arabic}</p>}
+                      <p className="text-indigo-700 italic font-medium">&ldquo;{block.translation}&rdquo;</p>
+                      {block.source && <cite className="block mt-2 text-sm font-bold text-indigo-600 not-italic">— {block.source}</cite>}
                     </div>
                   );
 
