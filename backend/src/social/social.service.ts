@@ -417,6 +417,7 @@ export class SocialService {
         qnaDetail: true,
         articleDetail: true,
         tags: { include: { tag: true } },
+        node: true,
       },
     });
     if (!content) throw new NotFoundException('Konten tidak ditemukan');
