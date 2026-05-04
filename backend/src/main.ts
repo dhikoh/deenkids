@@ -5,9 +5,20 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import * as cookieParser from 'cookie-parser';
+import { execSync } from 'child_process';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  // Auto-sync Prisma schema to database (creates new tables if missing)
+  try {
+    logger.log('🔄 Running prisma db push to sync schema...');
+    execSync('npx prisma db push --skip-generate', { stdio: 'inherit' });
+    logger.log('✅ Database schema synced successfully');
+  } catch (err) {
+    logger.warn('⚠️ prisma db push failed — tables may already be up to date');
+  }
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Trust reverse proxy (Coolify/Traefik) — reads real IP from X-Forwarded-For
