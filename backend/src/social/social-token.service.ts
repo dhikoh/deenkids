@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { encrypt, decrypt } from '../common/utils/encryption.util';
 
@@ -31,7 +31,7 @@ export class SocialTokenService {
   getAuthUrl(csrfState: string): string {
     if (!this.configId) {
       this.logger.error('META_CONFIG_ID is not set — Facebook Login for Business requires a config_id');
-      throw new Error('META_CONFIG_ID belum dikonfigurasi. Hubungi administrator.');
+      throw new BadRequestException('META_CONFIG_ID belum dikonfigurasi. Hubungi administrator.');
     }
 
     return `https://www.facebook.com/v19.0/dialog/oauth?client_id=${this.appId}&redirect_uri=${encodeURIComponent(this.redirectUri)}&config_id=${this.configId}&state=${csrfState}&response_type=code&override_default_response_type=true`;
@@ -47,7 +47,7 @@ export class SocialTokenService {
     const shortData = await shortRes.json();
     if (shortData.error) {
       this.logger.error(`OAuth code exchange failed: ${JSON.stringify(shortData.error)}`);
-      throw new Error(shortData.error.message || 'OAuth code exchange failed');
+      throw new BadRequestException(shortData.error.message || 'OAuth code exchange failed');
     }
 
     // Step 2: Short-lived → long-lived token
@@ -56,7 +56,7 @@ export class SocialTokenService {
     const longData = await longRes.json();
     if (longData.error) {
       this.logger.error(`Token exchange failed: ${JSON.stringify(longData.error)}`);
-      throw new Error(longData.error.message || 'Token exchange failed');
+      throw new BadRequestException(longData.error.message || 'Token exchange failed');
     }
 
     return longData.access_token;
@@ -70,7 +70,7 @@ export class SocialTokenService {
     const res = await fetch(url);
     const data = await res.json();
     if (data.error) {
-      throw new Error(data.error.message || 'Failed to fetch pages');
+      throw new BadRequestException(data.error.message || 'Failed to fetch pages');
     }
     return data.data || [];
   }
