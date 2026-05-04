@@ -41,6 +41,7 @@ model User {
   conversationsB   Conversation[]         @relation("ConversationB")
   sentMessages     Message[]
   loginHistory     LoginHistory[]
+  socialAccounts   SocialAccount[]
 }
 
 model RefreshToken {
@@ -134,6 +135,8 @@ model ContentItem {
   pov               String?           // 'ORTU' | 'ANAK' — Point of view, hanya untuk ARTICLE type
   deletedAt         DateTime? // Soft delete timestamp, null = active
   previousStatus    String? // Status before deletion, for trash UI display
+  socialThumbnailUrl String?          // Thumbnail 1:1 untuk IG/FB post
+  socialPublishLogs SocialPublishLog[]
 
   @@index([authorId, status])
   @@index([status, type])
@@ -500,4 +503,49 @@ model PageContent {
   content   Json
   updatedAt DateTime @updatedAt
   updatedBy String?
+}
+
+model SocialAccount {
+  id                String             @id @default(uuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id])
+  platform          String             @default("META") // 'META' = FB + IG
+  pageName          String
+  pageId            String             @unique
+  igAccountId       String?
+  igUsername         String?
+  pageAccessToken   String             // Encrypted (AES-256-GCM)
+  profilePictureUrl String?
+  defaultHashtags   String?            @default("#adably #edukasiislami #parentingislami")
+  captionTemplate   String?
+  isActive          Boolean            @default(true)
+  connectedAt       DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  publishLogs       SocialPublishLog[]
+
+  @@index([userId])
+}
+
+model SocialPublishLog {
+  id              String        @id @default(uuid())
+  contentId       String
+  content         ContentItem   @relation(fields: [contentId], references: [id])
+  socialAccountId String
+  socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id])
+  platform        String        // 'INSTAGRAM' | 'FACEBOOK'
+  postId          String?
+  postUrl         String?
+  caption         String
+  imageUrl        String
+  status          String        @default("SCHEDULED") // SCHEDULED | PUBLISHING | PUBLISHED | FAILED | CANCELLED
+  scheduledAt     DateTime?
+  publishedAt     DateTime?
+  error           String?
+  retryCount      Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status, scheduledAt])
+  @@index([contentId])
+  @@index([socialAccountId])
 }

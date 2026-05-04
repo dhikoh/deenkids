@@ -69,6 +69,10 @@ function EditorContent() {
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [cropperSrc, setCropperSrc] = useState<string | null>(null);
   const [showCropper, setShowCropper] = useState(false);
+  const [socialThumbnailUrl, setSocialThumbnailUrl] = useState("");
+  const [socialCropperSrc, setSocialCropperSrc] = useState<string | null>(null);
+  const [showSocialCropper, setShowSocialCropper] = useState(false);
+  const [socialThumbnailUploading, setSocialThumbnailUploading] = useState(false);
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [nodes, setNodes] = useState<any[]>([]);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
@@ -120,6 +124,7 @@ function EditorContent() {
               setDisplayAuthorName(c.displayAuthorName || "");
               setEnableAudio(c.enableAudio ?? false);
               setThumbnailUrl(c.thumbnailUrl || "");
+              setSocialThumbnailUrl(c.socialThumbnailUrl || "");
               setEditStatus(c.status || null);
               setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
               const cType: ContentTypeOption = c.type === 'PEMBELAJARAN' ? 'PEMBELAJARAN' : c.type === 'QNA' ? 'QNA' : c.type === 'KISAH' ? 'KISAH' : 'ARTICLE';
@@ -274,6 +279,7 @@ function EditorContent() {
       const payload: any = {
         title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, tags,
         thumbnailUrl: thumbnailUrl || null,
+        socialThumbnailUrl: socialThumbnailUrl || null,
         nodeId: (contentType === 'PEMBELAJARAN' || contentType === 'KISAH') ? nodeId : (nodeId || undefined),
         displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
         pov: contentType === 'ARTICLE' ? (pov || null) : undefined,
@@ -567,6 +573,48 @@ function EditorContent() {
                   </label>
                 )}
               </div>
+              {/* Social Media Thumbnail Upload (1:1) */}
+              {isSuperAdmin && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Thumbnail Sosmed <span className="text-xs text-slate-400 font-normal">(opsional — rasio 1:1 untuk IG & FB)</span></label>
+                  {socialThumbnailUrl ? (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-pink-200 shadow-sm">
+                        <img src={socialThumbnailUrl} alt="Social Thumbnail" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${socialThumbnailUploading ? 'bg-slate-100 text-slate-400' : 'bg-pink-50 text-pink-700 hover:bg-pink-100'}`}>
+                          <Image size={13} /> Ganti (1:1)
+                          <input type="file" accept="image/*" className="hidden" disabled={socialThumbnailUploading} onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 15 * 1024 * 1024) { toast.error('Ukuran maksimal 15MB'); return; }
+                            setSocialCropperSrc(URL.createObjectURL(file));
+                            setShowSocialCropper(true);
+                            e.target.value = '';
+                          }} />
+                        </label>
+                        <button type="button" onClick={() => setSocialThumbnailUrl("")} className="text-xs font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-rose-50 transition-colors">
+                          <Trash2 size={13} /> Hapus
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors ${socialThumbnailUploading ? 'border-pink-300 bg-pink-50' : 'border-slate-200 hover:border-pink-400 hover:bg-pink-50/50'}`}>
+                      <Image size={20} className="text-pink-400" />
+                      <span className="text-sm text-slate-500">{socialThumbnailUploading ? 'Mengupload...' : 'Upload gambar 1:1 untuk Instagram & Facebook'}</span>
+                      <input type="file" accept="image/*" className="hidden" disabled={socialThumbnailUploading} onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 15 * 1024 * 1024) { toast.error('Ukuran maksimal 15MB'); return; }
+                        setSocialCropperSrc(URL.createObjectURL(file));
+                        setShowSocialCropper(true);
+                        e.target.value = '';
+                      }} />
+                    </label>
+                  )}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 {contentType === "PEMBELAJARAN" && (
                   <div>
@@ -797,6 +845,39 @@ function EditorContent() {
               toast.error(err.message || 'Gagal upload thumbnail');
             } finally {
               setThumbnailUploading(false);
+            }
+          }}
+        />
+      )}
+
+      {/* Social Thumbnail Cropper Modal (1:1) */}
+      {showSocialCropper && socialCropperSrc && (
+        <ImageCropperModal
+          imageSrc={socialCropperSrc}
+          aspect={1}
+          title="Crop Thumbnail Sosmed (1:1)"
+          onCancel={() => { setShowSocialCropper(false); setSocialCropperSrc(null); }}
+          onCropComplete={async (blob) => {
+            setShowSocialCropper(false);
+            setSocialCropperSrc(null);
+            setSocialThumbnailUploading(true);
+            try {
+              const token = Cookies.get('_at');
+              const fd = new FormData();
+              fd.append('file', blob, 'social-thumb.jpg');
+              const res = await fetch(`${API_BASE_URL}/editor/upload`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: fd,
+              });
+              if (!res.ok) throw new Error('Upload gagal');
+              const data = await res.json();
+              setSocialThumbnailUrl(data.url);
+              toast.success('Thumbnail sosmed berhasil di-crop & diupload!');
+            } catch (err: any) {
+              toast.error(err.message || 'Gagal upload thumbnail sosmed');
+            } finally {
+              setSocialThumbnailUploading(false);
             }
           }}
         />

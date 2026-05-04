@@ -67,6 +67,11 @@ export class CreateContentDto {
   @IsOptional()
   thumbnailUrl?: string;
 
+  @ApiProperty({ required: false, description: 'Thumbnail 1:1 untuk IG/FB post' })
+  @IsString()
+  @IsOptional()
+  socialThumbnailUrl?: string;
+
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()

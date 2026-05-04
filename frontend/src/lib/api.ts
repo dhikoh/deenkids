@@ -777,3 +777,77 @@ export async function fetchContentBatch(ids: string[]) {
     body: JSON.stringify({ ids }),
   });
 }
+
+// ── Social Media ──
+
+export async function getSocialAuthUrl(token: string) {
+  return apiFetch(`${API_BASE_URL}/social/auth-url`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function connectSocialAccount(code: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/social/connect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function fetchSocialAccounts(token: string) {
+  return apiFetch(`${API_BASE_URL}/social/accounts`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function disconnectSocialAccount(accountId: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/social/accounts/${accountId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function updateSocialDefaults(accountId: string, data: { defaultHashtags?: string; captionTemplate?: string }, token: string) {
+  return apiFetch(`${API_BASE_URL}/social/accounts/${accountId}/defaults`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getSocialCaptionPreview(contentId: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/social/caption-preview?contentId=${contentId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function publishToSocial(data: { contentId: string; platforms: string[]; caption: string; mode: string; scheduledAt?: string }, token: string) {
+  return apiFetch(`${API_BASE_URL}/social/publish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchSocialLogs(params: { page?: number; contentId?: string }, token: string) {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.contentId) searchParams.set('contentId', params.contentId);
+  return apiFetch(`${API_BASE_URL}/social/logs?${searchParams.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function retrySocialPublish(logId: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/social/retry/${logId}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function cancelSocialScheduled(logId: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/social/scheduled/${logId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

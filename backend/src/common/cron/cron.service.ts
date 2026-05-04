@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RewardService } from '../../reward/reward.service';
 import { StorageService } from '../storage/storage.service';
+import { SocialService } from '../../social/social.service';
 import { PointType } from '@prisma/client';
 import * as fs from 'fs';
 import { join } from 'path';
@@ -16,6 +17,7 @@ export class CronService {
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
     @Inject(forwardRef(() => RewardService)) private readonly rewardService: RewardService,
+    private readonly socialService: SocialService,
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
@@ -260,6 +262,26 @@ export class CronService {
         where: { id: { in: orphans.map(t => t.id) } },
       });
       this.logger.log(`🏷️ Cleaned up ${orphans.length} orphan tags`);
+    }
+  }
+
+  // ─── Social Media Cron Jobs ──────────────────────────────────
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async processScheduledSocialPosts() {
+    try {
+      await this.socialService.processScheduledPosts();
+    } catch (err) {
+      this.logger.error(`Social scheduled post processing failed: ${err.message}`);
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async validateSocialTokens() {
+    try {
+      await this.socialService.validateAllTokens();
+    } catch (err) {
+      this.logger.error(`Social token validation failed: ${err.message}`);
     }
   }
 }

@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { FileText, Trash2, Edit2, Film, BookOpen, Search, RotateCcw, X, Send } from "lucide-react";
+import { FileText, Trash2, Edit2, Film, BookOpen, Search, RotateCcw, X, Send, Share2 } from "lucide-react";
 import { copyVideoScript } from "@/lib/videoScript";
 import { fetchAllContents, deleteContent, fetchContentForEdit, unpublishContent, submitContentForReview } from "@/lib/api";
+import SocialPublishModal from "@/components/SocialPublishModal";
 
 const AGE_OPTIONS = ["", "3-5", "5-7", "7-10", "10-13"];
 const statusColors: Record<string, string> = { DRAFT: "bg-slate-100 text-slate-600", REVIEW: "bg-amber-100 text-amber-700", REVISION: "bg-rose-100 text-rose-700", PUBLISHED: "bg-emerald-100 text-emerald-700", ARCHIVED: "bg-slate-200 text-slate-500" };
@@ -22,6 +23,7 @@ export default function ContentManagementPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [unpublishTarget, setUnpublishTarget] = useState<any | null>(null);
   const [unpublishNotes, setUnpublishNotes] = useState("");
+  const [publishSocialTarget, setPublishSocialTarget] = useState<any | null>(null);
 
   const load = async () => {
     const token = Cookies.get("_at"); if (!token) return;
@@ -141,6 +143,11 @@ export default function ContentManagementPage() {
                       <RotateCcw size={16} />
                     </button>
                   )}
+                  {item.status === "PUBLISHED" && (
+                    <button onClick={() => setPublishSocialTarget(item)} className="p-2 bg-gradient-to-r from-pink-50 to-indigo-50 text-indigo-600 rounded-lg hover:from-pink-100 hover:to-indigo-100" title="Publish ke Sosial Media">
+                      <Share2 size={16} />
+                    </button>
+                  )}
                   {/* Admin/SuperAdmin can submit DRAFT/REVISION content for review */}
                   {['DRAFT', 'REVISION'].includes(item.status) && (
                     <button onClick={() => handleSubmitReview(item.id)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100" title="Ajukan untuk Review">
@@ -197,6 +204,16 @@ export default function ContentManagementPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Social Publish Modal */}
+      {publishSocialTarget && (
+        <SocialPublishModal
+          contentId={publishSocialTarget.id}
+          contentTitle={publishSocialTarget.title}
+          onClose={() => setPublishSocialTarget(null)}
+          onPublished={() => load()}
+        />
       )}
     </div>
   );

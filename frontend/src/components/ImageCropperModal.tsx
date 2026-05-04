@@ -10,13 +10,18 @@ interface ImageCropperModalProps {
   imageSrc: string;
   onCancel: () => void;
   onCropComplete: (blob: Blob) => void;
+  aspect?: number;
+  title?: string;
 }
 
 export default function ImageCropperModal({
   imageSrc,
   onCancel,
   onCropComplete,
+  aspect = 16 / 9,
+  title: modalTitle,
 }: ImageCropperModalProps) {
+  const aspectLabel = aspect === 1 ? '1:1' : '16:9';
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -58,8 +63,8 @@ export default function ImageCropperModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-extrabold text-slate-800">Sesuaikan Thumbnail</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Geser dan zoom untuk memilih area terbaik (rasio 16:9)</p>
+            <h3 className="text-lg font-extrabold text-slate-800">{modalTitle || 'Sesuaikan Thumbnail'}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Geser dan zoom untuk memilih area terbaik (rasio {aspectLabel})</p>
           </div>
           <button onClick={onCancel} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
             <X size={20} />
@@ -72,7 +77,7 @@ export default function ImageCropperModal({
             image={imageSrc}
             crop={crop}
             zoom={zoom}
-            aspect={16 / 9}
+            aspect={aspect}
             onCropChange={onCropChange}
             onCropComplete={onCropCompleteCallback}
             onZoomChange={onZoomChange}
