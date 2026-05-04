@@ -73,6 +73,7 @@ function EditorContent() {
   const [socialCropperSrc, setSocialCropperSrc] = useState<string | null>(null);
   const [showSocialCropper, setShowSocialCropper] = useState(false);
   const [socialThumbnailUploading, setSocialThumbnailUploading] = useState(false);
+  const [socialAspect, setSocialAspect] = useState<number>(1); // 1 = 1:1 (1080×1080), 4/5 = 4:5 (1080×1350)
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [nodes, setNodes] = useState<any[]>([]);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
@@ -573,18 +574,31 @@ function EditorContent() {
                   </label>
                 )}
               </div>
-              {/* Social Media Thumbnail Upload (1:1) */}
+              {/* Social Media Thumbnail Upload */}
               {isSuperAdmin && (
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Thumbnail Sosmed <span className="text-xs text-slate-400 font-normal">(opsional — rasio 1:1 untuk IG & FB)</span></label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Thumbnail Sosmed <span className="text-xs text-slate-400 font-normal">(opsional — gambar utama post IG & FB)</span></label>
+                  {/* Aspect Ratio Selector */}
+                  <div className="flex gap-2 mb-3">
+                    <button type="button" onClick={() => setSocialAspect(1)} className={`flex-1 flex flex-col items-center gap-1 p-3 rounded-xl border-2 text-xs font-bold transition-all ${socialAspect === 1 ? 'border-pink-500 bg-pink-50 text-pink-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}`}>
+                      <div className="w-10 h-10 rounded border-2 border-current" />
+                      <span>1:1</span>
+                      <span className="text-[10px] font-normal opacity-70">1080×1080</span>
+                    </button>
+                    <button type="button" onClick={() => setSocialAspect(4/5)} className={`flex-1 flex flex-col items-center gap-1 p-3 rounded-xl border-2 text-xs font-bold transition-all ${socialAspect !== 1 ? 'border-pink-500 bg-pink-50 text-pink-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}`}>
+                      <div className="w-8 h-10 rounded border-2 border-current" />
+                      <span>4:5</span>
+                      <span className="text-[10px] font-normal opacity-70">1080×1350</span>
+                    </button>
+                  </div>
                   {socialThumbnailUrl ? (
                     <div className="flex items-center gap-3 flex-wrap">
-                      <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-pink-200 shadow-sm">
+                      <div className={`relative rounded-lg overflow-hidden border border-pink-200 shadow-sm ${socialAspect === 1 ? 'w-24 h-24' : 'w-20 h-[100px]'}`}>
                         <img src={socialThumbnailUrl} alt="Social Thumbnail" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <label className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${socialThumbnailUploading ? 'bg-slate-100 text-slate-400' : 'bg-pink-50 text-pink-700 hover:bg-pink-100'}`}>
-                          <Image size={13} /> Ganti (1:1)
+                          <Image size={13} /> Ganti ({socialAspect === 1 ? '1:1' : '4:5'})
                           <input type="file" accept="image/*" className="hidden" disabled={socialThumbnailUploading} onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
@@ -602,7 +616,7 @@ function EditorContent() {
                   ) : (
                     <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors ${socialThumbnailUploading ? 'border-pink-300 bg-pink-50' : 'border-slate-200 hover:border-pink-400 hover:bg-pink-50/50'}`}>
                       <Image size={20} className="text-pink-400" />
-                      <span className="text-sm text-slate-500">{socialThumbnailUploading ? 'Mengupload...' : 'Upload gambar 1:1 untuk Instagram & Facebook'}</span>
+                      <span className="text-sm text-slate-500">{socialThumbnailUploading ? 'Mengupload...' : `Upload gambar ${socialAspect === 1 ? '1:1' : '4:5'} untuk Instagram & Facebook`}</span>
                       <input type="file" accept="image/*" className="hidden" disabled={socialThumbnailUploading} onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
@@ -850,12 +864,12 @@ function EditorContent() {
         />
       )}
 
-      {/* Social Thumbnail Cropper Modal (1:1) */}
+      {/* Social Thumbnail Cropper Modal */}
       {showSocialCropper && socialCropperSrc && (
         <ImageCropperModal
           imageSrc={socialCropperSrc}
-          aspect={1}
-          title="Crop Thumbnail Sosmed (1:1)"
+          aspect={socialAspect}
+          title={`Crop Thumbnail Sosmed (${socialAspect === 1 ? '1:1 — 1080×1080' : '4:5 — 1080×1350'})`}
           onCancel={() => { setShowSocialCropper(false); setSocialCropperSrc(null); }}
           onCropComplete={async (blob) => {
             setShowSocialCropper(false);
