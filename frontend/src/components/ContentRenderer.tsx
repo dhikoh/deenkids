@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCircle, User } from "lucide-react";
+import { Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCircle, User, Sparkles } from "lucide-react";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
 
@@ -16,10 +16,12 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
   // Build audio blocks for AudioPlayerWrapper
   const audioBlocks = qna ? [
     ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
-    ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
-    ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
-    ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
-    ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+    ...(Array.isArray(qna.blocks) && qna.blocks.length > 0 ? qna.blocks : [
+      ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
+      ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
+      ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
+      ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+    ]),
   ] : (content.articleDetail?.blocks || []);
 
   return (
@@ -85,7 +87,7 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
           {/* Dalils */}
           {qna.dalilBlocks && qna.dalilBlocks.length > 0 && (
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><BookOpen className="h-5 w-5 text-amber-600" /> Dalil & Sumber</h2>
+              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><BookOpen className="h-5 w-5 text-amber-600" /> Dalil & Landasan</h2>
               <div className="space-y-4">
                 {(qna.dalilBlocks as any[]).map((dalilBlock: any, i: number) => {
                   const entries = dalilBlock.entries || [dalilBlock];
@@ -104,10 +106,10 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
           {/* Analogies */}
           {qna.analogyBlocks && qna.analogyBlocks.length > 0 && (
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><Quote className="h-5 w-5 text-teal-600" /> Analogi untuk Anak</h2>
+              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><Quote className="h-5 w-5 text-teal-600" /> Analogi Sederhana</h2>
               {(qna.analogyBlocks as any[]).map((a: any, i: number) => (
                 <div key={i} className="bg-teal-50 border border-teal-200 rounded-2xl p-6">
-                  <h3 className="font-bold text-teal-800 mb-2">{a.title}</h3>
+                  {a.title && <h3 className="font-bold text-teal-900 mb-1">{a.title}</h3>}
                   <p className="text-teal-700 font-medium">{a.text}</p>
                 </div>
               ))}
@@ -117,7 +119,7 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
           {/* Tips */}
           {qna.tipsBlocks && qna.tipsBlocks.length > 0 && (
             <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-              <h2 className="font-bold text-slate-800 mb-3">💡 Tips untuk Orang Tua</h2>
+              <h2 className="font-bold text-slate-800 mb-3 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-emerald-500" /> Catatan / Tips</h2>
               <ul className="space-y-2">
                 {(qna.tipsBlocks as any[]).map((tip: any, i: number) => (
                   <li key={i} className="text-sm text-slate-600 font-medium flex gap-2">
@@ -125,6 +127,37 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Unified blocks[] for QNA — renders hikmah, doa, and any other new block types */}
+          {Array.isArray(qna.blocks) && qna.blocks.length > 0 && (
+            <div className="space-y-6">
+              {(qna.blocks as any[]).map((block: any, i: number) => {
+                if (block.type === 'hikmah') return (
+                  <div key={i} className="bg-violet-50 border border-violet-200 rounded-2xl p-6">
+                    <h3 className="font-bold text-violet-800 mb-2 flex items-center gap-2"><Sparkles className="h-4 w-4" /> Hikmah & Pelajaran</h3>
+                    <p className="text-violet-700 font-medium leading-relaxed">{block.text}</p>
+                  </div>
+                );
+                if (block.type === 'doa') return (
+                  <div key={i} className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6">
+                    <h3 className="font-bold text-indigo-800 mb-2 flex items-center gap-2">🤲 Doa</h3>
+                    {block.title && <p className="font-bold text-indigo-900 mb-2">{block.title}</p>}
+                    {block.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{block.arabic}</p>}
+                    <p className="text-indigo-700 italic font-medium">&ldquo;{block.translation}&rdquo;</p>
+                    {block.source && <cite className="block mt-2 text-sm font-bold text-indigo-600 not-italic">— {block.source}</cite>}
+                  </div>
+                );
+                if (block.type === 'paragraph') return (
+                  <div key={i}>
+                    <p className="text-slate-700 leading-relaxed">{block.text}</p>
+                    {block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-1 inline-block">📎 Sumber referensi ↗</a>}
+                  </div>
+                );
+                // Dialog, dalil, analogy, tip from blocks[] are already rendered via legacy fields above for QNA preview
+                return null;
+              })}
             </div>
           )}
 
@@ -157,18 +190,32 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
                 <p className="text-emerald-900 font-medium">{block.text}</p>
               </div>
             );
-            if (block.type === 'dalil') return (
-              <blockquote key={i} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4 my-4">
-                {block.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{block.arabic}</p>}
-                <p className="text-slate-700 italic font-medium">&ldquo;{block.translation || block.text}&rdquo;</p>
-                {block.source && <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {block.source}</cite>}
-              </blockquote>
+            if (block.type === 'dalil') {
+              const entries = block.entries || [block];
+              return (
+                <div key={i} className="space-y-3 my-4">
+                  <h3 className="font-bold text-amber-800 flex items-center gap-2"><BookOpen className="h-5 w-5" /> Dalil & Landasan</h3>
+                  {entries.map((dalil: any, j: number) => (
+                    <blockquote key={j} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
+                      {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
+                      <p className="text-slate-700 italic font-medium">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
+                      {dalil.source && <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {dalil.source}</cite>}
+                    </blockquote>
+                  ))}
+                </div>
+              );
+            }
+            if (block.type === 'tip') return (
+              <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 my-4">
+                <h3 className="font-bold text-emerald-800 mb-2 flex items-center gap-2"><Lightbulb className="h-4 w-4" /> Catatan / Tips</h3>
+                <p className="text-emerald-800 text-sm font-medium">{block.text}{block.referenceUrl && <> — <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="underline text-xs hover:text-emerald-900">Sumber ↗</a></>}</p>
+              </div>
             );
-            if (block.type === 'tip') return <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 my-4 text-emerald-800 text-sm font-medium">💡 {block.text}</div>;
             if (block.type === 'dialog') {
               const lines = block.lines || [{ role: block.role || 'anak', text: block.text || '' }];
               return (
                 <div key={i} className="space-y-3 my-4">
+                  <h3 className="font-bold text-slate-700 flex items-center gap-2"><MessageCircle className="h-4 w-4" /> Dialog</h3>
                   {lines.map((line: any, j: number) => {
                     const cfg = ROLE_CONFIG[line.role] || ROLE_CONFIG.anak;
                     return (
@@ -185,8 +232,24 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
             }
             if (block.type === 'analogy') return (
               <div key={i} className="bg-teal-50 border border-teal-200 rounded-2xl p-6 my-4">
-                {block.title && <h3 className="font-bold text-teal-800 mb-2">{block.title}</h3>}
+                <h3 className="font-bold text-teal-800 mb-2 flex items-center gap-2"><Quote className="h-4 w-4" /> Analogi Sederhana</h3>
+                {block.title && <p className="font-bold text-teal-900 mb-1">{block.title}</p>}
                 <p className="text-teal-700 font-medium">{block.text}</p>
+              </div>
+            );
+            if (block.type === 'hikmah') return (
+              <div key={i} className="bg-violet-50 border border-violet-200 rounded-2xl p-6 my-4">
+                <h3 className="font-bold text-violet-800 mb-2 flex items-center gap-2"><Sparkles className="h-4 w-4" /> Hikmah & Pelajaran</h3>
+                <p className="text-violet-700 font-medium leading-relaxed">{block.text}</p>
+              </div>
+            );
+            if (block.type === 'doa') return (
+              <div key={i} className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6 my-4">
+                <h3 className="font-bold text-indigo-800 mb-2 flex items-center gap-2">🤲 Doa</h3>
+                {block.title && <p className="font-bold text-indigo-900 mb-2">{block.title}</p>}
+                {block.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{block.arabic}</p>}
+                <p className="text-indigo-700 italic font-medium">&ldquo;{block.translation}&rdquo;</p>
+                {block.source && <cite className="block mt-2 text-sm font-bold text-indigo-600 not-italic">— {block.source}</cite>}
               </div>
             );
             if (block.type === 'image' && block.url) return <img key={i} src={block.url} alt={block.caption || ''} className="rounded-2xl w-full my-4 border border-slate-200" />;

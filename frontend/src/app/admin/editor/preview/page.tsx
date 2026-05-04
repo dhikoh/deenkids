@@ -70,10 +70,15 @@ export default function PreviewPage() {
     qnaDetail: content.contentType === "QNA" ? {
       question: content.title,
       answerQuick: content.blocks?.find((b: any) => b.type === "quick_answer")?.data?.text || "",
+      answerQuickReferenceUrl: content.blocks?.find((b: any) => b.type === "quick_answer")?.data?.referenceUrl || "",
       dialogBlocks: content.blocks?.filter((b: any) => b.type === "dialog").map((b: any) => b.data) || [],
       dalilBlocks: content.blocks?.filter((b: any) => b.type === "dalil").map((b: any) => b.data) || [],
       analogyBlocks: content.blocks?.filter((b: any) => b.type === "analogy").map((b: any) => b.data) || [],
       tipsBlocks: content.blocks?.filter((b: any) => b.type === "tip").map((b: any) => b.data) || [],
+      // Unified blocks[] — forwards ALL block types including hikmah, doa, paragraph etc.
+      blocks: content.blocks
+        ?.filter((b: any) => b.type !== "quick_answer")
+        .map((b: any) => ({ type: b.type, ...b.data })) || [],
     } : undefined,
     articleDetail: content.contentType !== "QNA" ? {
       blocks: content.blocks?.map((b: any) => ({ type: b.type, ...b.data })) || [],
