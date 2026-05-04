@@ -135,7 +135,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
               <h2 className="text-3xl font-extrabold text-slate-800">📚 Pembelajaran Utama</h2>
               <p className="text-slate-500 mt-2 text-lg">Modul materi dasar keislaman yang terstruktur.</p>
             </div>
-            <Link href="/kurikulum" className="inline-flex items-center bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold py-2.5 px-6 rounded-xl border border-slate-200">
+            <Link href="/pembelajaran" className="inline-flex items-center bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold py-2.5 px-6 rounded-xl border border-slate-200">
               Jelajahi Semua <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
@@ -148,7 +148,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
           ) : flatNodes.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {flatNodes.map((node: any, index: number) => (
-                <Link href={`/kurikulum/${node.slug}`} key={node.id} className={`group ${index === 0 || index === 3 ? "md:col-span-2 lg:col-span-2" : ""}`}>
+                <Link href={`/pembelajaran/${node.slug}`} key={node.id} className={`group ${index === 0 || index === 3 ? "md:col-span-2 lg:col-span-2" : ""}`}>
                   <div className="relative h-full bg-slate-50 overflow-hidden p-8 rounded-3xl border border-slate-200 shadow-sm transition-all duration-500 hover:shadow-xl hover:-translate-y-1 hover:border-emerald-200">
                     <div className={`absolute -right-10 -top-10 w-40 h-40 rounded-full blur-3xl opacity-20 group-hover:scale-150 group-hover:opacity-40 ${index % 2 === 0 ? "bg-amber-400" : "bg-teal-400"}`} />
                     <div className="relative z-20">

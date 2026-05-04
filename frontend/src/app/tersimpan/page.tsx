@@ -42,7 +42,7 @@ export default function TersimpanPage() {
 
   const getUrl = (item: any) => {
     if (item.type === 'QNA') return `/qna/${item.slug}`;
-    if (item.type === 'PEMBELAJARAN') return `/kurikulum/${item.slug}`;
+    if (item.type === 'PEMBELAJARAN') return `/pembelajaran/${item.slug}`;
     if (item.type === 'KISAH') return `/kisah/${item.node?.slug || 'kisah'}/${item.slug}`;
     return `/artikel/${item.slug}`;
   };

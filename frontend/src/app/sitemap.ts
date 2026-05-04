@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/qna`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/artikel`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/kisah`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
-    { url: `${baseUrl}/kurikulum`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/pembelajaran`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/tentang-kami`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/search`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/tersimpan`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.4 },
@@ -36,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             const nodeSlug = item.node?.slug || 'kisah';
             url = `${baseUrl}/kisah/${nodeSlug}/${item.slug}`;
           } else if (item.type === 'PEMBELAJARAN') {
-            url = `${baseUrl}/kurikulum/${item.slug}`;
+            url = `${baseUrl}/pembelajaran/${item.slug}`;
           }
           return {
             url,

@@ -47,6 +47,8 @@ function SearchContent() {
 
   useEffect(() => { if (q) { setQuery(q); search(q); } }, [q]);
   useEffect(() => { if (query) search(); }, [type, age]);
+  // Reset age filter when KISAH is selected (KISAH is universal for all ages)
+  useEffect(() => { if (type === 'KISAH') setAge(''); }, [type]);
 
   const getTypeInfo = (r: any) => {
     if (r.type === "QNA") return { icon: <HelpCircle size={16} />, label: "Tanya Jawab", bg: "bg-amber-100 text-amber-600" };
@@ -79,9 +81,12 @@ function SearchContent() {
         <select value={type} onChange={e => setType(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
           {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        <select value={age} onChange={e => setAge(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+        <select value={age} onChange={e => setAge(e.target.value)} disabled={type === 'KISAH'} className={`border border-slate-300 rounded-lg px-3 py-2 text-sm transition-opacity ${type === 'KISAH' ? 'opacity-40 cursor-not-allowed bg-slate-50' : ''}`}>
           {AGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+        {type === 'KISAH' && (
+          <span className="self-center text-xs text-amber-600 font-medium">📖 Kisah tersedia untuk semua usia</span>
+        )}
         {total > 0 && <span className="self-center text-sm text-slate-500 ml-auto">{total} hasil ditemukan</span>}
       </div>
 

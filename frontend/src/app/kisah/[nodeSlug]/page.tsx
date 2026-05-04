@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { fetchKisahByNode } from "@/lib/api";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight, Volume2, Star, Eye, User, BookOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight, Volume2, Star, Eye, User, BookOpen, Search } from "lucide-react";
 import type { Metadata } from "next";
+import KisahSearchInput from "@/components/KisahSearchInput";
 
 export async function generateMetadata({ params }: { params: Promise<{ nodeSlug: string }> }): Promise<Metadata> {
   const { nodeSlug } = await params;
@@ -21,15 +22,16 @@ export default async function KisahSubcategoryPage({
   searchParams,
 }: {
   params: Promise<{ nodeSlug: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; search?: string }>;
 }) {
   const { nodeSlug } = await params;
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, search: searchParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam || "1"));
+  const search = searchParam?.trim() || undefined;
 
   let result: any;
   try {
-    result = await fetchKisahByNode(nodeSlug, page, 12);
+    result = await fetchKisahByNode(nodeSlug, page, 12, search);
   } catch {
     notFound();
   }
@@ -56,6 +58,22 @@ export default async function KisahSubcategoryPage({
         )}
         <p className="text-slate-400 ml-14 text-xs mt-1 font-medium">{meta.total} kisah tersedia</p>
       </div>
+
+      {/* Search Bar */}
+      <KisahSearchInput
+        nodeSlug={nodeSlug}
+        initialValue={search || ""}
+        placeholder={`Cari kisah di ${node?.title || "kategori ini"}...`}
+      />
+
+      {/* Search Result Info */}
+      {search && (
+        <div className="mb-5 flex items-center gap-2 text-sm text-slate-500">
+          <Search className="h-4 w-4" />
+          Menampilkan hasil untuk: <strong className="text-slate-800">"{search}"</strong>
+          <span>({meta.total} ditemukan)</span>
+        </div>
+      )}
 
       {/* Story Grid */}
       {stories.length > 0 ? (
@@ -122,7 +140,9 @@ export default async function KisahSubcategoryPage({
       ) : (
         <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
           <BookOpen className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-          <p className="font-bold text-slate-500">Belum ada kisah di kategori ini</p>
+          <p className="font-bold text-slate-500">
+            {search ? `Tidak ada kisah yang cocok dengan "${search}"` : "Belum ada kisah di kategori ini"}
+          </p>
         </div>
       )}
 
@@ -130,7 +150,7 @@ export default async function KisahSubcategoryPage({
       {meta.totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-10">
           {page > 1 && (
-            <Link href={`/kisah/${nodeSlug}?page=${page - 1}`} className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1">
+            <Link href={`/kisah/${nodeSlug}?page=${page - 1}${search ? `&search=${encodeURIComponent(search)}` : ''}`} className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1">
               <ChevronLeft className="h-4 w-4" /> Sebelumnya
             </Link>
           )}
@@ -138,7 +158,7 @@ export default async function KisahSubcategoryPage({
             {page} / {meta.totalPages}
           </span>
           {page < meta.totalPages && (
-            <Link href={`/kisah/${nodeSlug}?page=${page + 1}`} className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1">
+            <Link href={`/kisah/${nodeSlug}?page=${page + 1}${search ? `&search=${encodeURIComponent(search)}` : ''}`} className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1">
               Berikutnya <ChevronRight className="h-4 w-4" />
             </Link>
           )}

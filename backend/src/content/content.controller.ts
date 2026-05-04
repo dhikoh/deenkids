@@ -188,12 +188,14 @@ export class ContentController {
   @ApiOperation({ summary: 'Get Kisah content list by sub-category node slug' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'search', required: false, description: 'Filter stories by title/description keyword' })
   async getKisahByNode(
     @Param('nodeSlug') nodeSlug: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('search') search?: string,
   ) {
-    return this.contentService.getKisahByNode(nodeSlug, parseInt(page || '1'), parseInt(limit || '12'));
+    return this.contentService.getKisahByNode(nodeSlug, parseInt(page || '1'), parseInt(limit || '12'), search);
   }
 
   @Get(':slug')

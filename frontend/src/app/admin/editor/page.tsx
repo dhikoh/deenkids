@@ -50,7 +50,8 @@ function EditorContent() {
   const [contentType, setContentType] = useState<ContentTypeOption>("QNA");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [ageGroups, setAgeGroups] = useState<string[]>(["3-5"]);
+  const ALL_AGE_GROUPS = ["3-5", "5-7", "7-10", "10-13"];
+  const [ageGroups, setAgeGroups] = useState<string[]>([...ALL_AGE_GROUPS]);
   const [nodeId, setNodeId] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -110,7 +111,7 @@ function EditorContent() {
             const c = res.data;
             if (c) {
               setTitle(c.title || ""); setDescription(c.description || "");
-              setAgeGroups(c.ageGroups && c.ageGroups.length > 0 ? c.ageGroups : ["3-5"]); setNodeId(c.nodeId || "");
+              setAgeGroups(c.type === 'KISAH' ? [...ALL_AGE_GROUPS] : (c.ageGroups && c.ageGroups.length > 0 ? c.ageGroups : [...ALL_AGE_GROUPS])); setNodeId(c.nodeId || "");
               setDisplayAuthorName(c.displayAuthorName || "");
               setEnableAudio(c.enableAudio ?? false);
               setThumbnailUrl(c.thumbnailUrl || "");
@@ -158,6 +159,11 @@ function EditorContent() {
       }
     }
   }, [searchParams]);
+
+  // Auto-set semua usia saat tipe diubah ke KISAH (KISAH selalu universal 3-13 thn)
+  useEffect(() => {
+    if (contentType === 'KISAH') setAgeGroups([...ALL_AGE_GROUPS]);
+  }, [contentType]);
 
   const flattenNodes = (tree: any[], prefix = ""): any[] => {
     let result: any[] = [];
@@ -561,29 +567,37 @@ function EditorContent() {
                 )}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Kelompok Usia <span className="text-xs text-slate-400">(bisa lebih dari satu)</span></label>
-                  <div className="flex flex-wrap gap-2">
-                    {["3-5", "5-7", "7-10", "10-13", "Semua Usia"].map(age => {
-                      const ALL_AGES = ["3-5", "5-7", "7-10", "10-13"];
-                      const isAllSelected = ALL_AGES.every(a => ageGroups.includes(a));
-                      const checked = age === "Semua Usia" ? isAllSelected : ageGroups.includes(age);
-                      return (
-                        <label key={age} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all text-sm font-bold ${checked ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
-                          <input type="checkbox" checked={checked} onChange={() => {
-                            if (age === "Semua Usia") {
-                              setAgeGroups(isAllSelected ? [] : [...ALL_AGES]);
-                            } else {
-                              if (ageGroups.includes(age)) {
-                                setAgeGroups(ageGroups.filter(a => a !== age));
+                  {contentType === "KISAH" ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-sm font-bold">
+                        📖 Kisah — Semua Usia (3–13 Tahun)
+                      </span>
+                      <p className="text-xs text-amber-600">Konten kisah selalu menargetkan semua rentang usia anak.</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {["3-5", "5-7", "7-10", "10-13", "Semua Usia"].map(age => {
+                        const isAllSelected = ALL_AGE_GROUPS.every(a => ageGroups.includes(a));
+                        const checked = age === "Semua Usia" ? isAllSelected : ageGroups.includes(age);
+                        return (
+                          <label key={age} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all text-sm font-bold ${checked ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                            <input type="checkbox" checked={checked} onChange={() => {
+                              if (age === "Semua Usia") {
+                                setAgeGroups(isAllSelected ? [] : [...ALL_AGE_GROUPS]);
                               } else {
-                                setAgeGroups([...ageGroups, age]);
+                                if (ageGroups.includes(age)) {
+                                  setAgeGroups(ageGroups.filter(a => a !== age));
+                                } else {
+                                  setAgeGroups([...ageGroups, age]);
+                                }
                               }
-                            }
-                          }} className="w-4 h-4 text-emerald-600 rounded" />
-                          {age === "Semua Usia" ? age : `${age} Tahun`}
-                        </label>
-                      );
-                    })}
-                  </div>
+                            }} className="w-4 h-4 text-emerald-600 rounded" />
+                            {age === "Semua Usia" ? age : `${age} Tahun`}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
               {/* SuperAdmin: Author Disguise */}

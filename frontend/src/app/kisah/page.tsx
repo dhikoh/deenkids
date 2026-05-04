@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { fetchKisahTree } from "@/lib/api";
-import { BookOpen, ChevronRight, ScrollText, Star, Sparkles } from "lucide-react";
+import { BookOpen, ChevronRight, ScrollText, Star, Sparkles, Search, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -41,6 +41,28 @@ export default async function KisahPage() {
         <p className="text-slate-500 max-w-xl font-medium text-lg leading-relaxed">
           Kumpulan kisah penuh hikmah untuk menumbuhkan akhlak mulia sejak dini.
         </p>
+
+        {/* Search Bar — GET /search?q=...&type=KISAH */}
+        <form action="/search" method="get" className="w-full max-w-xl mt-6">
+          <input type="hidden" name="type" value="KISAH" />
+          <div className="bg-white p-2 rounded-2xl shadow-sm border border-amber-200 flex gap-2">
+            <div className="relative flex-grow flex items-center">
+              <Search className="absolute left-3 h-5 w-5 text-amber-400 pointer-events-none" />
+              <input
+                type="text"
+                name="q"
+                placeholder="Cari nama kisah atau tokoh..."
+                className="w-full h-10 pl-10 pr-4 bg-transparent outline-none text-slate-700 text-sm font-medium"
+              />
+            </div>
+            <button
+              type="submit"
+              className="h-10 px-5 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 flex items-center gap-2 text-sm transition-colors"
+            >
+              Cari <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Sub-category cards */}

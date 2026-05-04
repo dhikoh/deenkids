@@ -46,7 +46,7 @@ export class ContentService {
   }
 
   // ─── Kisah listing by sub-category node ──────────────────────────────────────
-  async getKisahByNode(nodeSlug: string, page = 1, limit = 12) {
+  async getKisahByNode(nodeSlug: string, page = 1, limit = 12, search?: string) {
     const node = await this.prisma.contentNode.findFirst({
       where: { slug: nodeSlug, isActive: true, group: 'KISAH' },
     });
@@ -63,7 +63,17 @@ export class ContentService {
     const nodeIds = getDescendantIds(node.id);
 
     const skip = (page - 1) * limit;
-    const where = { nodeId: { in: nodeIds }, type: 'KISAH' as any, status: 'PUBLISHED' as any, deletedAt: null };
+    const baseWhere: any = { nodeId: { in: nodeIds }, type: 'KISAH' as any, status: 'PUBLISHED' as any, deletedAt: null };
+    const conditions: any[] = [];
+    if (search) {
+      conditions.push({
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ],
+      });
+    }
+    const where = conditions.length > 0 ? { ...baseWhere, AND: conditions } : baseWhere;
 
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({

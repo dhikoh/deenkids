@@ -127,8 +127,10 @@ export async function fetchKisahTree() {
   return apiFetch(`${API_BASE_URL}/content/kisah-tree`);
 }
 
-export async function fetchKisahByNode(nodeSlug: string, page = 1, limit = 12) {
-  return apiFetch(`${API_BASE_URL}/content/kisah/${nodeSlug}?page=${page}&limit=${limit}`);
+export async function fetchKisahByNode(nodeSlug: string, page = 1, limit = 12, search?: string) {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (search) params.set('search', search);
+  return apiFetch(`${API_BASE_URL}/content/kisah/${nodeSlug}?${params.toString()}`);
 }
 
 export async function fetchContentList(params: { sort?: string; limit?: number; age?: string; type?: string; page?: number } = {}) {
