@@ -6,19 +6,18 @@ import { Injectable } from '@nestjs/common';
  *
  * Caption structure (top to bottom):
  * 1. HOOK — title + emoji based on content type
- * 2. ISI UTAMA — body excerpt
- * 3. DALIL — quote text (without source)
- * 4. DOA — prayer text (without source)
- * 5. HIKMAH — key takeaway
- * 6. SUMBER — collected dalil/doa sources
- * 7. LINK — web URL to the full content
- * 8. HASHTAG — content tags + account default hashtags (always last)
+ * 2. BODY — answerQuick (QNA) or description
+ * 3. ALL BLOCKS — in editor order, skip only: dialog, quick_answer
+ * 4. SUMBER — collected dalil/doa sources
+ * 5. LINK — web URL to the full content
+ * 6. HASHTAG — content tags + account default hashtags (always last)
  */
 @Injectable()
 export class SocialCaptionService {
 
   /**
    * Build a caption from content data and account defaults.
+   * Iterates ALL blocks in order, skipping only dialog (not suitable for social media).
    */
   buildCaption(content: any, account: any): string {
     const sections: string[] = [];
@@ -27,46 +26,30 @@ export class SocialCaptionService {
     // 1. HOOK — based on content type
     sections.push(this.buildHook(content));
 
-    // 2. ISI UTAMA
+    // 2. BODY — main excerpt
     const body = this.buildBody(content);
     if (body) sections.push(body);
 
-    // 3. DALIL (quote only — source collected separately)
-    const dalil = this.extractFirstBlock(content, 'dalil');
-    if (dalil) {
-      const entry = dalil.entries?.[0] || dalil;
-      if (entry.translation) {
-        sections.push(`📖 "${this.truncate(entry.translation, 150)}"`);
-        if (entry.source) sources.push(entry.source);
-      }
+    // 3. ALL BLOCKS — iterate in editor order, skip dialog & quick_answer
+    const blocks = this.getAllBlocks(content);
+    for (const block of blocks) {
+      const rendered = this.renderBlock(block, sources);
+      if (rendered) sections.push(rendered);
     }
 
-    // 4. DOA (quote only — source collected separately)
-    const doa = this.extractFirstBlock(content, 'doa');
-    if (doa?.translation) {
-      sections.push(`🤲 "${this.truncate(doa.translation, 150)}"`);
-      if (doa.source) sources.push(doa.source);
-    }
+    // ─── FOOTER (always at the bottom, fixed order) ─────────
 
-    // 5. HIKMAH
-    const hikmah = this.extractFirstBlock(content, 'hikmah');
-    if (hikmah?.text) {
-      sections.push(`✨ ${this.truncate(hikmah.text, 150)}`);
-    }
-
-    // ─── FOOTER (always at the bottom) ───────────────────────
-
-    // 6. SUMBER — collected references from dalil/doa
+    // 4. SUMBER — collected references from dalil/doa
     if (sources.length > 0) {
       const sourceLines = sources.map(s => `• ${s}`).join('\n');
       sections.push(`📌 Sumber:\n${sourceLines}`);
     }
 
-    // 7. LINK — web URL to the full content
+    // 5. LINK — web URL to the full content
     const contentUrl = this.buildContentUrl(content);
     sections.push(`🔗 ${contentUrl}`);
 
-    // 8. HASHTAG — content tags + account default hashtags (always last)
+    // 6. HASHTAG — content tags converted to hashtags + account default hashtags (ALWAYS LAST)
     const contentHashtags = (content.tags || [])
       .map((t: any) => `#${(t.tag?.name || t.name || '').replace(/\s+/g, '')}`)
       .filter((h: string) => h.length > 1)
@@ -82,6 +65,82 @@ export class SocialCaptionService {
     }
 
     return caption;
+  }
+
+  // ─── Block Renderer ────────────────────────────────────────
+
+  /**
+   * Render a single block to caption text.
+   * Returns null for blocks that should be skipped.
+   * Collects dalil/doa sources into the sources array for the footer.
+   */
+  private renderBlock(block: any, sources: string[]): string | null {
+    switch (block.type) {
+      // SKIP — dialog not suitable for social media captions
+      case 'dialog':
+        return null;
+
+      // SKIP — quick_answer already handled in body section
+      case 'quick_answer':
+        return null;
+
+      // Paragraph — plain text content
+      case 'paragraph':
+        if (block.text) return this.truncate(block.text, 200);
+        return null;
+
+      // Dalil — quote without source (source collected to footer)
+      case 'dalil': {
+        const entries = block.entries || [block];
+        const parts: string[] = [];
+        for (const entry of entries) {
+          if (entry.translation) {
+            parts.push(`📖 "${this.truncate(entry.translation, 150)}"`);
+            if (entry.source) sources.push(entry.source);
+          }
+        }
+        return parts.length > 0 ? parts.join('\n') : null;
+      }
+
+      // Doa — prayer quote without source (source collected to footer)
+      case 'doa':
+        if (block.translation) {
+          const doaText = `🤲 "${this.truncate(block.translation, 150)}"`;
+          if (block.source) sources.push(block.source);
+          return doaText;
+        }
+        return null;
+
+      // Hikmah — key takeaway
+      case 'hikmah':
+        if (block.text) return `✨ ${this.truncate(block.text, 150)}`;
+        return null;
+
+      // Analogy — simplified comparison
+      case 'analogy': {
+        if (!block.text) return null;
+        const title = block.title ? `${block.title}: ` : '';
+        return `🧩 ${title}${this.truncate(block.text, 150)}`;
+      }
+
+      // Tip — practical advice
+      case 'tip':
+        if (block.text) return `ℹ️ ${this.truncate(block.text, 150)}`;
+        return null;
+
+      // Image — include caption text only (not URL)
+      case 'image':
+        if (block.caption) return block.caption;
+        return null;
+
+      // Video — include caption text only (not URL)
+      case 'video':
+        if (block.caption) return block.caption;
+        return null;
+
+      default:
+        return null;
+    }
   }
 
   // ─── Hook Builder ──────────────────────────────────────────
@@ -100,34 +159,14 @@ export class SocialCaptionService {
   // ─── Body Builder ──────────────────────────────────────────
 
   private buildBody(content: any): string {
-    // QNA: use answerQuick
+    // QNA: use answerQuick as primary body
     if (content.type === 'QNA' && content.qnaDetail?.answerQuick) {
       return this.truncate(content.qnaDetail.answerQuick, 300);
     }
 
-    // KISAH: use description or first paragraph with narrative teaser
-    if (content.type === 'KISAH') {
-      if (content.description) {
-        return this.truncate(content.description, 300);
-      }
-      const blocks = this.getAllBlocks(content);
-      const firstParagraph = blocks.find((b: any) => b.type === 'paragraph');
-      if (firstParagraph?.text) {
-        return this.truncate(firstParagraph.text, 250) + '...';
-      }
-      return '';
-    }
-
-    // Description
+    // All types: use description if available
     if (content.description) {
       return this.truncate(content.description, 300);
-    }
-
-    // Fallback: first paragraph block
-    const blocks = this.getAllBlocks(content);
-    const firstParagraph = blocks.find((b: any) => b.type === 'paragraph');
-    if (firstParagraph?.text) {
-      return this.truncate(firstParagraph.text, 200) + '...';
     }
 
     return '';
@@ -157,11 +196,6 @@ export class SocialCaptionService {
 
   // ─── Block Extractors ──────────────────────────────────────
 
-  private extractFirstBlock(content: any, blockType: string): any {
-    const blocks = this.getAllBlocks(content);
-    return blocks.find((b: any) => b.type === blockType) || null;
-  }
-
   private getAllBlocks(content: any): any[] {
     // Unified blocks from articleDetail or qnaDetail
     const articleBlocks = content.articleDetail?.blocks;
@@ -181,22 +215,21 @@ export class SocialCaptionService {
   }
 
   /**
-   * Trim caption to fit IG 2200 char limit by removing optional sections.
-   * Priority: keep hook, link, hashtag — remove hikmah, doa, dalil, body as needed.
+   * Trim caption to fit IG 2200 char limit by removing content blocks from bottom up.
+   * Footer (sumber, link, hashtag = last 3 sections) is always preserved.
    */
   private trimToLimit(sections: string[], limit: number): string {
-    // Clone sections to avoid mutating the original
     let remaining = [...sections];
 
-    // Sections to try removing (indices from top): hikmah(4), doa(3), dalil(2), body(1)
-    // But indices shift as we remove — so remove from highest index first
-    // Fixed sections: hook(0), sumber(len-3), link(len-2), hashtag(len-1)
-    const removableCount = remaining.length - 4; // everything except hook + 3 footer items
-    for (let i = removableCount; i >= 1; i--) {
-      if (remaining.join('\n\n').length <= limit) break;
-      if (i < remaining.length - 3) { // Don't remove footer items (last 3)
-        remaining.splice(i, 1);
-      }
+    // Remove content blocks from bottom up, but never remove:
+    // - index 0 (hook)
+    // - last 3 items (sumber/link/hashtag footer)
+    const footerCount = 3;
+    while (remaining.join('\n\n').length > limit && remaining.length > footerCount + 1) {
+      // Remove the last content block (just before footer)
+      const removeIdx = remaining.length - footerCount - 1;
+      if (removeIdx <= 0) break; // Keep at least the hook
+      remaining.splice(removeIdx, 1);
     }
 
     let result = remaining.join('\n\n');
