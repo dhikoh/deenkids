@@ -78,7 +78,7 @@ export class SocialController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPERADMIN')
   async connectAccount(@Req() req: Request, @Body('code') code: string) {
-    const userId = (req as any).user.sub;
+    const userId = (req as any).user.id;
     const account = await this.socialService.connectAccount(userId, code);
     return { success: true, data: account };
   }
@@ -92,7 +92,7 @@ export class SocialController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPERADMIN')
   async getAccounts(@Req() req: Request) {
-    const userId = (req as any).user.sub;
+    const userId = (req as any).user.id;
     const data = await this.socialService.getAccounts(userId);
     return { data };
   }
@@ -104,7 +104,7 @@ export class SocialController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPERADMIN')
   async disconnectAccount(@Req() req: Request, @Param('id') id: string) {
-    const userId = (req as any).user.sub;
+    const userId = (req as any).user.id;
     await this.socialService.disconnectAccount(id, userId);
     return { success: true };
   }
@@ -120,7 +120,7 @@ export class SocialController {
     @Param('id') id: string,
     @Body() dto: UpdateSocialDefaultsDto,
   ) {
-    const userId = (req as any).user.sub;
+    const userId = (req as any).user.id;
     const data = await this.socialService.updateDefaults(id, userId, dto);
     return { success: true, data };
   }
@@ -134,7 +134,7 @@ export class SocialController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPERADMIN')
   async publishToSocial(@Req() req: Request, @Body() dto: PublishSocialDto) {
-    const userId = (req as any).user.sub;
+    const userId = (req as any).user.id;
     return this.socialService.handlePublish(userId, dto);
   }
 
@@ -145,7 +145,7 @@ export class SocialController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPERADMIN')
   async getCaptionPreview(@Req() req: Request, @Query('contentId') contentId: string) {
-    const userId = (req as any).user.sub;
+    const userId = (req as any).user.id;
     return this.socialService.generateCaption(contentId, userId);
   }
 
@@ -162,7 +162,7 @@ export class SocialController {
     @Query('page') page: string = '1',
     @Query('contentId') contentId?: string,
   ) {
-    const userId = (req as any).user.sub;
+    const userId = (req as any).user.id;
     return this.socialService.getLogs(userId, parseInt(page, 10) || 1, contentId);
   }
 
@@ -173,7 +173,7 @@ export class SocialController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPERADMIN')
   async retryPublish(@Req() req: Request, @Param('logId') logId: string) {
-    const userId = (req as any).user.sub;
+    const userId = (req as any).user.id;
     return this.socialService.retryPublish(logId, userId);
   }
 
@@ -184,7 +184,7 @@ export class SocialController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPERADMIN')
   async cancelScheduled(@Req() req: Request, @Param('logId') logId: string) {
-    const userId = (req as any).user.sub;
+    const userId = (req as any).user.id;
     return this.socialService.cancelScheduled(logId, userId);
   }
 }
