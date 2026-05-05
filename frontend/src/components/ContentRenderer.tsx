@@ -63,8 +63,8 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
 
           {/* Dialogs */}
           {qna.dialogBlocks && qna.dialogBlocks.length > 0 && (
-            <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><MessageCircle className="h-5 w-5 text-emerald-600" /> Contoh Dialog</h2>
+            <div className="bg-sky-50/50 border border-sky-100 rounded-2xl p-6">
+              <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2"><MessageCircle className="h-4 w-4 text-emerald-600" /> Contoh Dialog</h2>
               <div className="space-y-3">
                 {(qna.dialogBlocks as any[]).map((block: any, i: number) => {
                   const lines = block.lines || [{ role: block.role || 'anak', text: block.text || '' }];
@@ -150,9 +150,9 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
                   </div>
                 );
                 if (block.type === 'paragraph') return (
-                  <div key={i}>
-                    <p className="text-slate-700 leading-relaxed">{block.text}</p>
-                    {block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-1 inline-block">📎 Sumber referensi ↗</a>}
+                  <div key={i} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <p className="text-slate-700 leading-relaxed whitespace-pre-line">{block.text}</p>
+                    {block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-2 inline-block">📎 Sumber referensi ↗</a>}
                   </div>
                 );
                 // Dialog, dalil, analogy, tip from blocks[] are already rendered via legacy fields above for QNA preview
@@ -183,7 +183,7 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
         <div className="prose prose-slate max-w-none">
           {(content.articleDetail.blocks as any[])?.map((block: any, i: number) => {
             if (block.type === 'heading') return <h2 key={i} className="text-xl font-bold text-slate-800 mt-8 mb-3">{block.text}</h2>;
-            if (block.type === 'paragraph') return <p key={i} className="text-slate-600 leading-relaxed mb-4">{block.text}</p>;
+            if (block.type === 'paragraph') return <div key={i} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-4"><p className="text-slate-600 leading-relaxed whitespace-pre-line">{block.text}</p></div>;
             if (block.type === 'quick_answer') return (
               <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 my-4">
                 <h3 className="font-bold text-emerald-800 mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5" /> Ringkasan</h3>

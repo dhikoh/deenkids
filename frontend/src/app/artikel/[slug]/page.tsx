@@ -85,7 +85,7 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
         <div className="prose prose-slate max-w-none">
           {(content.articleDetail.blocks as any[])?.map((block: any, i: number) => {
             if (block.type === 'heading') return <h2 key={i} className="text-xl font-bold text-slate-800 mt-8 mb-3">{block.text}</h2>;
-            if (block.type === 'paragraph') return <div key={i} className="mb-4"><p className="text-slate-600 leading-relaxed">{block.text}</p>{block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800">📎 Sumber referensi ↗</a>}</div>;
+            if (block.type === 'paragraph') return <div key={i} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-4"><p className="text-slate-600 leading-relaxed whitespace-pre-line">{block.text}</p>{block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-2 inline-block">📎 Sumber referensi ↗</a>}</div>;
             if (block.type === 'quick_answer') return (
               <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 my-4">
                 <h3 className="font-bold text-emerald-800 mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5" /> Jawaban Ringkas</h3>

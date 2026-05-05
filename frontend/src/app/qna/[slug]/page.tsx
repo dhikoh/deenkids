@@ -112,16 +112,16 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
               <div className="space-y-6">
                 {blockList.map((block: any, i: number) => {
                   if (block.type === 'paragraph') return (
-                    <div key={i}>
-                      <p className="text-slate-700 leading-relaxed">{block.text}</p>
-                      {block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-1 inline-block">📎 Sumber referensi ↗</a>}
+                    <div key={i} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                      <p className="text-slate-700 leading-relaxed whitespace-pre-line">{block.text}</p>
+                      {block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-2 inline-block">📎 Sumber referensi ↗</a>}
                     </div>
                   );
 
                   if (block.type === 'dialog') {
                     const lines = block.lines || [{ role: block.role || 'anak', text: block.text || '' }];
                     return (
-                      <div key={i}>
+                      <div key={i} className="bg-sky-50/50 border border-sky-100 rounded-2xl p-6">
                         <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mb-3"><MessageCircle className="h-3.5 w-3.5" /> Dialog</h3>
                         <div className="space-y-3">
                           {lines.map((line: any, j: number) => {

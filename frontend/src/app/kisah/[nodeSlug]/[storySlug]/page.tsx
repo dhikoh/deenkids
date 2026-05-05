@@ -108,10 +108,10 @@ export default async function KisahDetailPage({
           );
 
           if (block.type === "paragraph") return (
-            <div key={i} className="mb-5">
-              <p className="text-slate-700 leading-[1.9] text-base">{block.text}</p>
+            <div key={i} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-5">
+              <p className="text-slate-700 leading-[1.9] text-base whitespace-pre-line">{block.text}</p>
               {block.referenceUrl && (
-                <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-amber-600 underline hover:text-amber-800 mt-1 inline-block">
+                <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-amber-600 underline hover:text-amber-800 mt-2 inline-block">
                   📎 Sumber referensi ↗
                 </a>
               )}
