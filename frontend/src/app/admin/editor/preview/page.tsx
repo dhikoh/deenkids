@@ -67,6 +67,8 @@ export default function PreviewPage() {
     authorName: content.displayAuthorName || "Anda",
     tags: content.tags,
     enableAudio: content.enableAudio,
+    audioTitle: content.audioTitle !== undefined ? content.audioTitle : true,
+    audioDescription: content.audioDescription !== undefined ? content.audioDescription : true,
     qnaDetail: content.contentType === "QNA" ? {
       question: content.title,
       answerQuick: content.blocks?.find((b: any) => b.type === "quick_answer")?.data?.text || "",

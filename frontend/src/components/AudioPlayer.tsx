@@ -12,6 +12,9 @@ function extractReadableText(blocks: any[], contentType?: string): string[] {
   const segments: string[] = [];
 
   for (const block of blocks) {
+    // Skip blocks with audio disabled
+    if (block.enableAudio === false) continue;
+
     const type = block.type;
 
     if (type === "quick_answer" && block.text) {

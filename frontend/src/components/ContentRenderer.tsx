@@ -13,16 +13,23 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
   const qna = content.qnaDetail;
   const authorName = content.authorName || content.displayAuthorName || content.author?.name || 'Anonim';
 
-  // Build audio blocks for AudioPlayerWrapper
-  const audioBlocks = qna ? [
-    ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
-    ...(Array.isArray(qna.blocks) && qna.blocks.length > 0 ? qna.blocks : [
-      ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
-      ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
-      ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
-      ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
-    ]),
-  ] : (content.articleDetail?.blocks || []);
+  // Build audio blocks for AudioPlayerWrapper (respecting audioTitle, audioDescription, and per-block enableAudio)
+  const titleDescBlocks = [
+    ...(content.audioTitle !== false && content.title ? [{ type: 'paragraph', text: content.title, enableAudio: true }] : []),
+    ...(content.audioDescription !== false && content.description ? [{ type: 'paragraph', text: content.description, enableAudio: true }] : []),
+  ];
+  const audioBlocks = [
+    ...titleDescBlocks,
+    ...(qna ? [
+      ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
+      ...(Array.isArray(qna.blocks) && qna.blocks.length > 0 ? qna.blocks : [
+        ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
+        ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
+        ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
+        ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+      ]),
+    ] : (content.articleDetail?.blocks || [])),
+  ];
 
   return (
     <div className="max-w-3xl mx-auto">

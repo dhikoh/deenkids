@@ -43,10 +43,11 @@ export default async function KisahDetailPage({
   const authorName = content.authorName || content.displayAuthorName || content.author?.name || "Anonim";
   const blocks: any[] = content.articleDetail?.blocks || [];
 
-  // Audio for KISAH: only title + paragraph/heading blocks (no dalil, dialog, analogy, tip)
+  // Audio for KISAH: title + description + all readable blocks (respecting enableAudio)
   const audioBlocks: any[] = [
-    { type: 'paragraph', text: content.title }, // Read title first
-    ...blocks.filter((b: any) => b.type === 'paragraph' || b.type === 'heading'),
+    ...(content.audioTitle !== false && content.title ? [{ type: 'paragraph', text: content.title, enableAudio: true }] : []),
+    ...(content.audioDescription !== false && content.description ? [{ type: 'paragraph', text: content.description, enableAudio: true }] : []),
+    ...blocks.filter((b: any) => (b.type === 'paragraph' || b.type === 'heading') && b.enableAudio !== false),
   ];
 
   return (

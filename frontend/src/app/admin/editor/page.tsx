@@ -34,16 +34,16 @@ function genId() { return Math.random().toString(36).substring(2, 9); }
 
 function defaultData(type: BlockType): any {
   switch (type) {
-    case "paragraph": return { text: "" };
-    case "quick_answer": return { text: "" };
-    case "dialog": return { lines: [{ role: "anak", text: "" }] };
-    case "dalil": return { entries: [{ arabic: "", translation: "", source: "" }] };
-    case "analogy": return { title: "", text: "" };
-    case "tip": return { text: "" };
-    case "hikmah": return { text: "" };
-    case "doa": return { title: "", arabic: "", translation: "", source: "" };
-    case "image": return { url: "", caption: "", file: null };
-    case "video": return { url: "", caption: "" };
+    case "paragraph": return { text: "", enableAudio: true };
+    case "quick_answer": return { text: "", enableAudio: true };
+    case "dialog": return { lines: [{ role: "anak", text: "" }], enableAudio: true };
+    case "dalil": return { entries: [{ arabic: "", translation: "", source: "" }], enableAudio: true };
+    case "analogy": return { title: "", text: "", enableAudio: true };
+    case "tip": return { text: "", enableAudio: true };
+    case "hikmah": return { text: "", enableAudio: true };
+    case "doa": return { title: "", arabic: "", translation: "", source: "", enableAudio: true };
+    case "image": return { url: "", caption: "", file: null, enableAudio: false };
+    case "video": return { url: "", caption: "", enableAudio: false };
   }
 }
 
@@ -64,6 +64,8 @@ function EditorContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [displayAuthorName, setDisplayAuthorName] = useState("");
   const [enableAudio, setEnableAudio] = useState(false);
+  const [audioTitle, setAudioTitle] = useState(true);
+  const [audioDescription, setAudioDescription] = useState(true);
   const [pov, setPov] = useState(""); // 'ORTU' | 'ANAK' | '' — hanya untuk ARTICLE
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
@@ -124,6 +126,8 @@ function EditorContent() {
               setAgeGroups(c.type === 'KISAH' ? [...ALL_AGE_GROUPS] : (c.ageGroups && c.ageGroups.length > 0 ? c.ageGroups : [...ALL_AGE_GROUPS])); setNodeId(c.nodeId || "");
               setDisplayAuthorName(c.displayAuthorName || "");
               setEnableAudio(c.enableAudio ?? false);
+              setAudioTitle(c.audioTitle !== undefined ? c.audioTitle : true);
+              setAudioDescription(c.audioDescription !== undefined ? c.audioDescription : true);
               setThumbnailUrl(c.thumbnailUrl || "");
               setSocialThumbnailUrl(c.socialThumbnailUrl || "");
               setEditStatus(c.status || null);
@@ -195,13 +199,13 @@ function EditorContent() {
     if (editId) return; // Don't auto-save when editing existing content
     const timer = setInterval(() => {
       if (title || blocks.length > 0) {
-        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, thumbnailUrl, pov, savedAt: new Date().toISOString() };
+        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, thumbnailUrl, pov, savedAt: new Date().toISOString() };
         localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft));
         setLastAutoSave(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
       }
     }, 30000);
     return () => clearInterval(timer);
-  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, thumbnailUrl, pov, editId]);
+  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, thumbnailUrl, pov, editId]);
 
   const recoverDraft = () => {
     try {
@@ -217,6 +221,8 @@ function EditorContent() {
         if (d.blocks) setBlocks(d.blocks);
         if (d.displayAuthorName) setDisplayAuthorName(d.displayAuthorName);
         if (d.enableAudio !== undefined) setEnableAudio(d.enableAudio);
+        if (d.audioTitle !== undefined) setAudioTitle(d.audioTitle);
+        if (d.audioDescription !== undefined) setAudioDescription(d.audioDescription);
         if (d.thumbnailUrl) setThumbnailUrl(d.thumbnailUrl);
         if (d.pov && d.contentType === 'ARTICLE') setPov(d.pov);
         toast.success("Draft berhasil dipulihkan!");
@@ -278,7 +284,7 @@ function EditorContent() {
     const token = Cookies.get("_at");
     try {
       const payload: any = {
-        title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, tags,
+        title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, audioTitle, audioDescription, tags,
         thumbnailUrl: thumbnailUrl || null,
         socialThumbnailUrl: socialThumbnailUrl || null,
         nodeId: (contentType === 'PEMBELAJARAN' || contentType === 'KISAH') ? nodeId : (nodeId || undefined),
@@ -358,6 +364,9 @@ function EditorContent() {
           <GripVertical size={14} className="text-slate-300" />
           <span className="text-xs font-bold text-slate-500 uppercase">{BLOCK_TYPES.find(b => b.type === type)?.icon} {BLOCK_TYPES.find(b => b.type === type)?.label}</span>
           <div className="ml-auto flex items-center gap-1">
+            {enableAudio && type !== 'image' && type !== 'video' && (
+              <button type="button" onClick={() => updateBlock(id, { enableAudio: !(data.enableAudio !== false) })} title={data.enableAudio !== false ? 'Audio: ON — klik untuk matikan' : 'Audio: OFF — klik untuk nyalakan'} className={`p-1 rounded transition-colors ${data.enableAudio !== false ? 'text-purple-500 hover:text-purple-700' : 'text-slate-300 hover:text-slate-500'}`}>{data.enableAudio !== false ? <Volume2 size={14} /> : <VolumeX size={14} />}</button>
+            )}
             <button onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"><ArrowUp size={14} /></button>
             <button onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"><ArrowDown size={14} /></button>
             <button onClick={() => removeBlock(id)} className="p-1 text-slate-400 hover:text-rose-500"><Trash2 size={14} /></button>
@@ -484,7 +493,7 @@ function EditorContent() {
             <span className="text-sm font-medium flex items-center gap-1">{enableAudio ? <Volume2 className="h-4 w-4 text-purple-500" /> : <VolumeX className="h-4 w-4 text-slate-400" />} Audio</span>
           </label>
           <button onClick={() => {
-            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, displayAuthorName };
+            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, audioTitle, audioDescription, displayAuthorName };
             localStorage.setItem('adably_preview_data', JSON.stringify(previewData));
             window.open('/admin/editor/preview', '_blank');
           }} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2">
@@ -525,11 +534,21 @@ function EditorContent() {
               ))}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Judul</label>
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1">
+                  Judul
+                  {enableAudio && (
+                    <button type="button" onClick={() => setAudioTitle(!audioTitle)} title={audioTitle ? 'Audio Judul: ON' : 'Audio Judul: OFF'} className={`p-0.5 rounded transition-colors ${audioTitle ? 'text-purple-500 hover:text-purple-700' : 'text-slate-300 hover:text-slate-500'}`}>{audioTitle ? <Volume2 size={13} /> : <VolumeX size={13} />}</button>
+                  )}
+                </label>
                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Judul konten..." className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Deskripsi Singkat</label>
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1">
+                  Deskripsi Singkat
+                  {enableAudio && (
+                    <button type="button" onClick={() => setAudioDescription(!audioDescription)} title={audioDescription ? 'Audio Deskripsi: ON' : 'Audio Deskripsi: OFF'} className={`p-0.5 rounded transition-colors ${audioDescription ? 'text-purple-500 hover:text-purple-700' : 'text-slate-300 hover:text-slate-500'}`}>{audioDescription ? <Volume2 size={13} /> : <VolumeX size={13} />}</button>
+                  )}
+                </label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ringkasan konten..." className="w-full border border-slate-300 rounded-lg shadow-sm p-2.5 focus:border-emerald-500 focus:ring-emerald-500 min-h-[60px]" />
               </div>
               {/* Thumbnail Upload */}

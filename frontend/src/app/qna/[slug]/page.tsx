@@ -79,6 +79,8 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
         <div className="space-y-8">
           {/* Audio Player — unified blocks for TTS */}
           <AudioPlayerWrapper blocks={[
+            ...(content.audioTitle !== false && content.title ? [{ type: 'paragraph', text: content.title, enableAudio: true }] : []),
+            ...(content.audioDescription !== false && content.description ? [{ type: 'paragraph', text: content.description, enableAudio: true }] : []),
             ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
             ...((Array.isArray(qna.blocks) && qna.blocks.length > 0 ? qna.blocks : [
               ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),

@@ -82,6 +82,16 @@ export class CreateContentDto {
   @IsOptional()
   enableAudio?: boolean;
 
+  @ApiProperty({ required: false, description: 'Include title in audio playback' })
+  @IsBoolean()
+  @IsOptional()
+  audioTitle?: boolean;
+
+  @ApiProperty({ required: false, description: 'Include description in audio playback' })
+  @IsBoolean()
+  @IsOptional()
+  audioDescription?: boolean;
+
   // Polymorphic Details — typed interfaces, stored as Prisma Json
   @ApiProperty({ required: false, description: 'QNA content: question, answerQuick, dialogBlocks, dalilBlocks, analogyBlocks, tipsBlocks' })
   @IsObject()
