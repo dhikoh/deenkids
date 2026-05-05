@@ -385,25 +385,69 @@ Berikan output dalam format berikut:
 
 1. JUDUL VIDEO (menarik, SEO-friendly, max 60 karakter)
 2. DESKRIPSI YOUTUBE (150-200 kata, include 5 hashtag relevan)
-3. SCRIPT NARASI (per scene, ${isShorts ? '8-12 scene cepat' : '6-10 scene sinematik'}):
-   - [SCENE 1] Pembuka / Hook — deskripsi visual DETAIL + narasi + emosi karakter
-   - [SCENE 2] dst... (setiap scene: visual + narasi + transisi ke scene berikutnya)
-   - [SCENE PENUTUP] Hikmah + doa penutup
-   Setiap scene HARUS memiliki:
-   a) Deskripsi visual detail (komposisi, warna, pencahayaan, angle kamera)
-   b) Teks narasi yang akan diucapkan
-   c) Emosi karakter (gunakan panduan ekspresi non-wajah di atas)
-   d) Transisi ke scene berikutnya
-4. THUMBNAIL TEXT (teks pendek untuk thumbnail, max 5 kata)
-5. TAGS YOUTUBE (10 tags relevan, pisahkan koma)
 
-CATATAN PENTING:
-- Format ${aspectRatio}. Durasi ${durationLabel}.
-- Gaya visual: 3D Pixar/Disney, FACELESS, warm lighting.
-- Karakter Nabi/Rasul = CAHAYA (sinar keemasan/putih). BUKAN siluet.
-- Emosi melalui bahasa tubuh + warna + efek visual. BUKAN ekspresi wajah.
-- Setiap scene harus VARIATIF — jangan ada 2 scene yang komposisinya sama.
-- Dalil HANYA dari sumber shahih yang tersedia di konten.`;
+3. KARAKTER (daftar semua karakter yang muncul, untuk konsistensi antar scene):
+   Contoh format:
+   - [KARAKTER A] "Anak laki-laki, jubah putih pendek, sorban kecil biru, faceless,
+     3D Pixar style, warm lighting" — muncul di scene 1, 2, 4, 7
+   - [CAHAYA NABI] "Sinar keemasan bercahaya, aura putih keemasan yang agung,
+     partikel emas halus" — muncul di scene 3, 5
+
+4. SCRIPT PER SCENE (${isShorts ? '8-12 scene cepat' : '6-10 scene sinematik'}):
+
+   Format SETIAP scene:
+
+   ┌─────────────────────────────────────────────
+   │ [SCENE X] — Judul Scene (${isShorts ? '3-5' : '8-15'} detik)
+   │
+   │ 🖼️ IMAGE PROMPT (tulis dalam BAHASA INGGRIS, siap paste ke AI image generator):
+   │ "3D Pixar Disney style, [deskripsi komposisi lengkap], [karakter + pakaian],
+   │  [environment detail], [pencahayaan], [warna dominan], [mood],
+   │  faceless characters, no face features, warm lighting, 8K quality,
+   │  cinematic composition, ${aspectRatio} aspect ratio"
+   │
+   │ 🎬 GERAKAN & KAMERA (instruksi untuk AI video animator):
+   │ - Kamera: [static / slow pan left / zoom in / dolly forward / tilt up / orbit / dll]
+   │ - Gerakan karakter: [apa yang dilakukan karakter di scene ini]
+   │ - Efek emosi: [aura warna / partikel / perubahan cahaya]
+   │ - Durasi: [X detik]
+   │ - Transisi ke scene berikutnya: [cut / fade / dissolve / whip pan]
+   │
+   │ 🎙️ NARASI (teks yang dibacakan, dalam Bahasa Indonesia):
+   │ "[Teks narasi yang natural, sesuai tone scene ini]"
+   │
+   │ 💡 TEKS DI LAYAR (jika ada — kutipan ayat, hadits, atau keyword):
+   │ "[Teks Arab + terjemahan]" atau "[Keyword besar]"
+   └─────────────────────────────────────────────
+
+   Scene wajib:
+   - [SCENE 1] HOOK — langsung menarik perhatian${isShorts ? ' dalam 3 detik pertama' : ''}
+   - [SCENE 2-${isShorts ? '11' : '9'}] ISI — alur cerita dengan emotional beats
+   - [SCENE TERAKHIR] PENUTUP — hikmah + doa + ajakan subscribe
+
+5. THUMBNAIL:
+   - THUMBNAIL TEXT (max 5 kata, provokatif)
+   - THUMBNAIL IMAGE PROMPT (bahasa Inggris, siap paste ke AI):
+     "3D Pixar style, [komposisi thumbnail], [karakter utama], vibrant colors,
+      faceless, dramatic lighting, ${aspectRatio}, 4K, YouTube thumbnail style"
+
+6. TAGS YOUTUBE (10 tags relevan, pisahkan koma)
+
+════════════════════════════════════════
+  ATURAN OUTPUT — WAJIB DIIKUTI
+════════════════════════════════════════
+
+- Image prompt WAJIB bahasa INGGRIS (agar kompatibel dengan semua AI image/video tool).
+- Narasi WAJIB bahasa INDONESIA (untuk voice over).
+- Setiap image prompt HARUS menyertakan: "faceless, no face features, no eyes no mouth,
+  3D Pixar Disney style, ${aspectRatio}" di akhir.
+- Jika ada karakter Nabi/Rasul, image prompt HARUS berisi:
+  "glowing golden divine light, radiant white-gold aura, no silhouette no human form,
+  sacred presence with floating name text" — JANGAN ada bentuk tubuh.
+- Gerakan kamera HARUS bervariasi antar scene — jangan semua static atau semua zoom in.
+- Total durasi semua scene = ${durationLabel}.
+- Dalil/ayat yang ditampilkan HANYA dari sumber yang tersedia di konten sumber.
+- Format ${aspectRatio}. Gaya 3D Pixar/Disney. Faceless. Warm lighting.`;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
