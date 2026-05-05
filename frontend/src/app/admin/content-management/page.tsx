@@ -24,6 +24,7 @@ export default function ContentManagementPage() {
   const [unpublishTarget, setUnpublishTarget] = useState<any | null>(null);
   const [unpublishNotes, setUnpublishNotes] = useState("");
   const [publishSocialTarget, setPublishSocialTarget] = useState<any | null>(null);
+  const [exportTarget, setExportTarget] = useState<string | null>(null);
 
   const load = async () => {
     const token = Cookies.get("_at"); if (!token) return;
@@ -44,13 +45,14 @@ export default function ContentManagementPage() {
     } catch (e: any) { toast.error(e.message); }
   };
 
-  const handleExportScript = async (id: string) => {
+  const handleExportScript = async (id: string, aspectRatio: '16:9' | '9:16' = '16:9') => {
     const token = Cookies.get("_at"); if (!token) return;
     try {
       const res = await fetchContentForEdit(token, id);
-      const ok = copyVideoScript(res.data);
-      if (ok) toast.success("Script video berhasil disalin ke clipboard!"); else toast.error("Gagal menyalin");
+      const ok = copyVideoScript(res.data, aspectRatio);
+      if (ok) toast.success(`Script video (${aspectRatio}) berhasil disalin ke clipboard!`); else toast.error("Gagal menyalin");
     } catch (e: any) { toast.error(e.message); }
+    setExportTarget(null);
   };
 
   const handleUnpublish = async () => {
@@ -135,7 +137,7 @@ export default function ContentManagementPage() {
                   <Link href={`/admin/editor?id=${item.id}`} className="p-2 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100" title="Edit">
                     <Edit2 size={16} />
                   </Link>
-                  <button onClick={() => handleExportScript(item.id)} className={`p-2 rounded-lg ${item.type === 'KISAH' ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-purple-50 text-purple-600 hover:bg-purple-100'}`} title={item.type === 'KISAH' ? 'Export Naskah Kisah' : 'Export Script Video'}>
+                  <button onClick={() => item.type === 'KISAH' ? handleExportScript(item.id) : setExportTarget(item.id)} className={`p-2 rounded-lg ${item.type === 'KISAH' ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-purple-50 text-purple-600 hover:bg-purple-100'}`} title={item.type === 'KISAH' ? 'Export Naskah Kisah' : 'Export Script Video'}>
                     {item.type === 'KISAH' ? <BookOpen size={16} /> : <Film size={16} />}
                   </button>
                   {item.status === "PUBLISHED" && (
@@ -214,6 +216,46 @@ export default function ContentManagementPage() {
           onClose={() => setPublishSocialTarget(null)}
           onPublished={() => load()}
         />
+      )}
+      {/* Export Script Video — Aspect Ratio Modal */}
+      {exportTarget && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setExportTarget(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-5 text-white flex items-center justify-between rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <Film size={22} />
+                <h3 className="font-extrabold">Export Script Video</h3>
+              </div>
+              <button onClick={() => setExportTarget(null)} className="text-white/70 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600">Pilih format video untuk menyesuaikan prompt:</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleExportScript(exportTarget, '16:9')}
+                  className="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-purple-200 hover:border-purple-500 hover:bg-purple-50 transition-all group"
+                >
+                  <div className="w-16 h-9 rounded-lg border-2 border-purple-300 group-hover:border-purple-500 flex items-center justify-center">
+                    <span className="text-[9px] font-bold text-purple-400 group-hover:text-purple-600">16:9</span>
+                  </div>
+                  <span className="text-sm font-bold text-slate-700">YouTube</span>
+                  <span className="text-[10px] text-slate-400">90-120 detik</span>
+                </button>
+                <button
+                  onClick={() => handleExportScript(exportTarget, '9:16')}
+                  className="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-pink-200 hover:border-pink-500 hover:bg-pink-50 transition-all group"
+                >
+                  <div className="w-9 h-16 rounded-lg border-2 border-pink-300 group-hover:border-pink-500 flex items-center justify-center">
+                    <span className="text-[9px] font-bold text-pink-400 group-hover:text-pink-600">9:16</span>
+                  </div>
+                  <span className="text-sm font-bold text-slate-700">Shorts</span>
+                  <span className="text-[10px] text-slate-400">60-90 detik</span>
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 text-center">Klik format untuk langsung export & salin ke clipboard</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
