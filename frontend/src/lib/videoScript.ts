@@ -271,16 +271,44 @@ ${catCtx}
 ${getSharedFoundation(aspectRatio)}
 
 ════════════════════════════════════════
-  TEKNIK NARASI (STORYTELLING)
+  TEKNIK NARASI — ARC EMOSIONAL 5 FASE
 ════════════════════════════════════════
 
-- HOOK KUAT di awal — pertanyaan, fakta mengejutkan, atau situasi menegangkan.
-- PACING DINAMIS — cepat saat aksi, lambat saat refleksi/hikmah.
-- Bangun KONFLIK/MISTERI di awal, RESOLUSI memuaskan di akhir.
-- EMOTIONAL BEATS — momen haru, takjub, semangat.
-- SHOW DON'T TELL — tunjukkan melalui visual, bukan hanya kata.
-- Variasi TONE: antusias saat seru, lembut saat hikmah, takjub saat dalil.
-- Akhiri: resolusi + hikmah + doa penutup.
+Struktur narasi video WAJIB mengikuti 5 fase berikut secara BERURUTAN:
+
+━ FASE 1 — HOOK (scene pertama)
+Buka LANGSUNG dengan momen menegangkan, pertanyaan mengejutkan, atau suasana dramatis.
+Pembuka wajib membuat penonton TIDAK BISA berhenti menonton.
+Contoh: "Langit masih gelap ketika sebuah keputusan mengubah segalanya..."
+
+━ FASE 2 — SETUP (1-2 scene)
+Perkenalkan tokoh, tempat, dan suasana secara hangat.
+Buat penonton PEDULI pada tokoh sebelum konflik datang.
+
+━ FASE 3 — KONFLIK / UJIAN (2-3 scene)
+Ini jantung cerita. Tunjukkan perjuangan, keraguan, dan tekanan.
+Akhiri fase ini dengan cliffhanger — penonton harus INGIN tahu kelanjutannya.
+
+━ FASE 4 — KLIMAKS (1-2 scene)
+Momen paling intens. Keputusan besar, pertolongan Allah, atau titik balik.
+Puncak emosi — visual paling dramatis di seluruh video.
+
+━ FASE 5 — RESOLUSI & KEHANGATAN (scene terakhir)
+Tunjukkan buah dari kesabaran/keimanan. Tutup dengan hikmah + doa penutup.
+Nada: lembut, hangat, penuh harapan.
+
+ATURAN TRANSISI WAJIB:
+- Setiap fase HARUS terhubung ke fase berikutnya via kalimat/visual penghubung.
+- Urutan fase TIDAK BOLEH ditukar.
+- Contoh kalimat penghubung: "Tapi ujian yang sesungguhnya belum selesai...", "Justru di saat itulah, sesuatu yang tak terduga terjadi..."
+- PACING: cepat saat aksi (Fase 3-4), lambat saat refleksi (Fase 5).
+- SHOW DON'T TELL — tunjukkan emosi via visual (body language, lighting, efek aura), bukan hanya narasi.
+
+ANALOGI (jika ada dalam konten sumber):
+- Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam kisah — bukan analogi generik.
+- Test mandiri: jika analogimu bisa dipakai untuk topik LAIN tanpa perubahan → buat ulang.
+- Contoh ✅: kisah tentang menunggu pelangi → gunakan pelangi/hujan yang sudah muncul dalam cerita.
+- Contoh ❌: kisah tentang menunggu pelangi → "seperti menanam permen di tanah" (tidak ada hubungannya).
 
 === KONTEN SUMBER ===
 
@@ -326,6 +354,105 @@ function buildExplainerPrompt(content: any, aspectRatio: AspectRatio): string {
   const blocks = extractContentBlocks(content);
   const catCtx = getCategoryContext(content);
   const typeLabel = content.type === 'QNA' ? 'Tanya Jawab' : content.type === 'PEMBELAJARAN' ? 'Pembelajaran' : 'Artikel';
+  const isQna = content.type === 'QNA';
+  const isPembelajaran = content.type === 'PEMBELAJARAN';
+  const isArtikel = content.type === 'ARTIKEL' || content.type === 'ARTICLE';
+  const pov = content.pov || '';
+
+  // POV label untuk artikel
+  let povSection = '';
+  if (isArtikel && pov === 'ORTU') {
+    povSection = `\nSudut Pandang: ORANG TUA — Tulis untuk orang tua yang ingin mendidik anak.\nGunakan bahasa orang dewasa yang reflektif, empatis, dan actionable.\nFokus: tips parenting, panduan mendidik, insight praktis.\n`;
+  } else if (isArtikel && pov === 'ANAK') {
+    povSection = `\nSudut Pandang: ANAK — Tulis dari perspektif anak atau untuk anak lebih dewasa (10-13 tahun).\nGunakan bahasa yang relatable, segar, dan memotivasi.\nFokus: pengalaman, rasa ingin tahu, pembentukan karakter.\n`;
+  }
+
+  // Teknik section berbeda per tipe
+  let teknikSection = '';
+  if (isQna) {
+    teknikSection = `
+════════════════════════════════════════
+  TEKNIK EXPLAINER — TANYA JAWAB (QNA)
+════════════════════════════════════════
+
+URUTAN ALUR WAJIB (ikuti urutan ini):
+1. 💡 HOOK — Buka dengan PERTANYAAN BESAR dramatis. Buat anak penasaran langsung dari scene 1.
+2. 💬 DIALOG — Tampilkan percakapan NYATA antara Anak dengan Ibu ATAU Anak dengan Ayah.
+3. 📖 DALIL — Visual landasan Al-Quran/Hadits yang memperkuat dialog.
+4. 🧩 ANALOGI — Perumpamaan visual yang menyederhanakan dalil.
+5. ℹ️ TIPS — Highlight poin praktis untuk keluarga.
+6. ✨ HIKMAH + DOA — Penutup hangat.
+
+KUNCI ALUR: Setiap scene harus TERASA SAMBUNGAN dari scene sebelumnya.
+Dialog menjelaskan jawaban. Dalil memperkuat dialog. Analogi menyederhanakan dalil. Tips mengaplikasikan semuanya.
+
+PANDUAN DIALOG (WAJIB):
+- Dialog harus seperti percakapan NYATA di rumah — BUKAN tanya-jawab formal atau ceramah.
+- Anak BOLEH menyela, menyanggah, atau bertanya lagi.
+- Orang tua BOLEH berpikir sebentar, menggunakan cerita pendek, atau bertanya balik.
+- Gunakan BAHASA SEHARI-HARI keluarga muslim.
+
+  ❌ KAKU (HINDARI): "Nak, tahukah kamu bahwa shalat itu wajib?"
+  ✅ NATURAL (TIRU): "Hmm, kamu pernah nggak merasa lemas kalau belum makan seharian?
+     Nah, sholat itu makanan untuk hati kita..."
+
+- Gunakan INFOGRAFIS ANIMASI untuk poin penting: teks keyword besar, diagram sederhana, ikon.
+- Jika ada LANGKAH-LANGKAH: tampilkan STEP-BY-STEP dengan nomor urut visual.
+- JANGAN buat narasi dramatik berlebihan — tone INFORMATIF dan CERIA.
+
+ANALOGI (dari konten sumber):
+- Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam konten sumber — bukan analogi generik.
+- Test mandiri: jika analogimu bisa dipakai untuk topik LAIN tanpa perubahan → buat ulang.
+- Contoh ✅: QNA tentang wudhu → analogi menggunakan air/bersih yang sudah ada dalam konten.
+- Contoh ❌: QNA tentang wudhu → "seperti mengisi bensin di SPBU" (tidak muncul dalam konten).`;
+  } else if (isPembelajaran) {
+    teknikSection = `
+════════════════════════════════════════
+  TEKNIK EXPLAINER — PEMBELAJARAN
+════════════════════════════════════════
+
+URUTAN BLOK PEDAGOGIS WAJIB (ikuti urutan ini untuk pembelajaran efektif):
+1. 📝 HOOK — Buka dengan pertanyaan/fakta/cerita pendek yang buat anak PENASARAN (scene 1).
+2. 📝 PENJELASAN INTI — Jelaskan konsep utama dengan bahasa sederhana.
+3. 📖 DALIL — Tunjukkan landasan dari Al-Quran/Hadits (visual yang memperkuat).
+4. 🧩 ANALOGI — Buat konsep lebih mudah dimengerti via perumpamaan visual.
+5. 📝 PRAKTIK — Langkah konkret yang bisa dilakukan anak (step-by-step jika ada).
+6. ℹ️ TIPS — Panduan untuk orang tua (infografis pendek).
+7. ✨ HIKMAH — Refleksi mengapa ini penting.
+8. 🤲 DOA — Doa yang relevan.
+
+KUNCI: Setiap scene harus menjawab "lalu apa?" dari scene sebelumnya — satu alur mengalir.
+
+- Buka dengan PERTANYAAN BESAR atau FAKTA MENARIK — buat anak penasaran.
+- Jika ada LANGKAH-LANGKAH: tampilkan STEP-BY-STEP dengan nomor urut visual.
+- Gunakan INFOGRAFIS ANIMASI: teks keyword besar, diagram sederhana, ikon.
+- Setiap poin penting: HIGHLIGHT dengan efek visual (zoom, glow, underline).
+- JANGAN buat narasi dramatik berlebihan — tone INFORMATIF dan CERIA.
+
+ANALOGI (dari konten sumber):
+- Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam konten sumber — bukan analogi generik.
+- Test mandiri: jika analogimu bisa dipakai untuk topik LAIN tanpa perubahan → buat ulang.
+- Contoh ✅: materi tentang sholat → analogi menggunakan ritual/waktu yang sudah disebutkan dalam konten.
+- Contoh ❌: materi tentang sholat → analogi yang tidak ada hubungannya dengan isi konten.`;
+  } else {
+    // ARTIKEL
+    teknikSection = `
+════════════════════════════════════════
+  TEKNIK EXPLAINER — ARTIKEL${pov ? ` (POV: ${pov})` : ''}
+════════════════════════════════════════
+${povSection}
+- Buka dengan HOOK — jangan langsung masuk materi. Mulai dengan anekdot nyata, pertanyaan, atau fakta mengejutkan.
+- Gunakan contoh nyata dari kehidupan anak/keluarga.
+- Setiap heading harus membuat penonton ingin lanjut menonton.
+- Tutup setiap section dengan kalimat yang menghubungkan ke section berikutnya.
+- Akhiri dengan CALL TO ACTION yang hangat dan mendorong tindakan.
+- Gunakan INFOGRAFIS ANIMASI untuk poin-poin penting.
+- JANGAN buat narasi dramatik berlebihan — tone sesuai POV (reflektif untuk ORTU, segar untuk ANAK).
+
+ANALOGI (dari konten sumber):
+- Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam konten sumber.
+- Test mandiri: jika analogimu bisa dipakai untuk topik LAIN tanpa perubahan → buat ulang.`;
+  }
 
   return `=== PROMPT VIDEO — MODE EXPLAINER (EDUKASI) ===
 
@@ -335,24 +462,12 @@ Durasi: ${durationLabel}. Format: ${aspectRatio}.
 
 ${catCtx}
 ${getSharedFoundation(aspectRatio)}
-
-════════════════════════════════════════
-  TEKNIK EXPLAINER
-════════════════════════════════════════
-
-- Buka dengan PERTANYAAN BESAR atau FAKTA MENARIK — buat anak penasaran.
-- Jelaskan dengan ANALOGI VISUAL yang relatable untuk anak.
-- Jika ada LANGKAH-LANGKAH (wudhu, sholat): tampilkan STEP-BY-STEP dengan nomor urut.
-- Jika ada DIALOG: tampilkan 2 karakter berdialog secara natural.
-- Gunakan INFOGRAFIS ANIMASI: teks keyword besar, diagram sederhana, ikon.
-- Setiap poin penting: HIGHLIGHT dengan efek visual (zoom, glow, underline).
-- Akhiri: rangkuman singkat + dalil pendukung + doa + ajakan.
-- JANGAN buat narasi dramatik berlebihan — tone INFORMATIF dan CERIA.
+${teknikSection}
 
 === KONTEN SUMBER ===
 
 Judul: ${content.title}
-Tipe: ${typeLabel}
+Tipe: ${typeLabel}${pov ? `\nSudut Pandang: ${pov}` : ''}
 Usia: ${ageGroup} tahun
 Durasi: ${durationLabel}
 ${content.node?.title ? `Kategori: ${content.node.title}` : ''}
@@ -364,7 +479,7 @@ ${blocks.join('\n\n---\n\n')}
 1. JUDUL VIDEO (max 60 karakter, SEO-friendly)
 2. DESKRIPSI YOUTUBE (150-200 kata + 5 hashtag)
 3. KARAKTER — daftar karakter + deskripsi visual unik + scene mana muncul
-4. SCRIPT PER SCENE (${sceneCount} scene):
+4. SCRIPT PER SCENE (${sceneCount} scene, ikuti urutan alur yang tertera di atas):
 ${getSceneTemplate(aspectRatio, isShorts)}
 5. THUMBNAIL TEXT (max 5 kata) + THUMBNAIL IMAGE PROMPT (English)
 6. TAGS YOUTUBE (10 tags)
