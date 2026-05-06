@@ -83,10 +83,12 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
   const [qnaItems, setQnaItems] = useState<any[]>([]);
   const [articleItems, setArticleItems] = useState<any[]>([]);
   const [kisahNodes, setKisahNodes] = useState<any[]>([]);
+  const [kisahPopular, setKisahPopular] = useState<any[]>([]);
   const [loadingNodes, setLoadingNodes] = useState(false);
   const [loadingQna, setLoadingQna] = useState(true);
   const [loadingArticle, setLoadingArticle] = useState(true);
   const [loadingKisah, setLoadingKisah] = useState(true);
+  const [loadingKisahPopular, setLoadingKisahPopular] = useState(true);
 
   // Fetch QnA, Articles, Pembelajaran nodes — re-runs when age filter changes
   useEffect(() => {
@@ -112,12 +114,17 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
       .finally(() => setLoadingArticle(false));
   }, [selectedAge]);
 
-  // Fetch Kisah sub-categories ONCE on mount — not age-filtered (global nodes)
+  // Fetch Kisah sub-categories and popular kisah ONCE on mount
   useEffect(() => {
     fetchKisahTree()
       .then((res) => setKisahNodes(Array.isArray(res) ? res : (res?.data || [])))
       .catch(() => setKisahNodes([]))
       .finally(() => setLoadingKisah(false));
+
+    fetchContentList({ type: "KISAH", sort: "popular", limit: 6 })
+      .then((res) => setKisahPopular(res?.data || []))
+      .catch(() => setKisahPopular([]))
+      .finally(() => setLoadingKisahPopular(false));
   }, []);
 
   const flatNodes = Array.isArray(nodes) ? nodes : [];
@@ -289,6 +296,39 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
             </div>
           ) : (
             <EmptyState message="Belum ada sub-kategori kisah yang tersedia." />
+          )}
+        </div>
+      </section>
+
+      {/* Kisah Islami Populer */}
+      <section className="py-16 bg-gradient-to-b from-white to-amber-50/30">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold mb-3">
+                ⭐ Paling Banyak Dibaca
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-800">Kisah Islami Populer</h2>
+              <p className="text-slate-500 mt-1">Kisah-kisah yang paling banyak disukai oleh keluarga Muslim.</p>
+            </div>
+            <Link href="/kisah" className="inline-flex items-center bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-2.5 px-6 rounded-xl border border-amber-200 shrink-0">
+              Semua Kisah <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
+          </div>
+          {loadingKisahPopular ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-44 bg-amber-50 rounded-2xl animate-pulse border border-amber-100" />
+              ))}
+            </div>
+          ) : kisahPopular.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {kisahPopular.map((item: any, i: number) => (
+                <ContentCard key={item.id} item={item} index={i} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState message="Belum ada kisah yang dipublikasikan." />
           )}
         </div>
       </section>

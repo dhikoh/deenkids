@@ -871,3 +871,69 @@ export async function updateSocialCronSettings(data: {
     body: JSON.stringify(data),
   });
 }
+
+// ─────────────────────────────────────────────
+// API Settings (SuperAdmin Only)
+// ─────────────────────────────────────────────
+
+export async function fetchApiSettings(token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/settings/api`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function updateApiSettings(
+  settings: { key: string; value: string; group: string }[],
+  token: string,
+) {
+  return apiFetch(`${API_BASE_URL}/superadmin/settings/api`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ settings }),
+  });
+}
+
+// ─────────────────────────────────────────────
+// TTS Audio Generate (SuperAdmin Only)
+// Returns Blob (MP3) — caller triggers download
+// ─────────────────────────────────────────────
+
+export async function generateTtsAudio(
+  blocks: { type: string; text: string }[],
+  filename: string,
+  token: string,
+): Promise<Blob> {
+  const res = await fetch(`${API_BASE_URL}/superadmin/tts/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ blocks, filename }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'TTS gagal' }));
+    throw new Error(err.message || `TTS error ${res.status}`);
+  }
+  return res.blob();
+}
+
+// ─────────────────────────────────────────────
+// Audio Upload (SuperAdmin Only)
+// Upload MP3 file → returns { url, filename, size }
+// ─────────────────────────────────────────────
+
+export async function uploadAudioFile(
+  file: File,
+  token: string,
+): Promise<{ url: string; filename: string; size: number; message: string }> {
+  const formData = new FormData();
+  formData.append('audio', file);
+  const res = await fetch(`${API_BASE_URL}/superadmin/audio/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Upload gagal' }));
+    throw new Error(err.message || `Upload error ${res.status}`);
+  }
+  return res.json();
+}

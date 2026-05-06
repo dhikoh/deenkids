@@ -54,8 +54,24 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
         </div>
       </div>
 
-      {/* Audio Player */}
-      <AudioPlayerWrapper blocks={audioBlocks} enableAudio={content.enableAudio} contentType={content.type} />
+      {/* Audio Player — uploaded MP3 takes priority over browser TTS */}
+      {content.audioUrl ? (
+        <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-2xl p-4 mb-6 border border-purple-100 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-sm font-bold text-purple-700">
+            <span>🎙️</span>
+            <span>Dengarkan Narasi Audio</span>
+          </div>
+          <audio
+            controls
+            src={`${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace('/api', '')}${content.audioUrl}`}
+            className="w-full"
+            style={{ height: '40px' }}
+          />
+          <p className="text-xs text-purple-400">Narasi AI — dengarkan konten ini tanpa harus membaca</p>
+        </div>
+      ) : (
+        <AudioPlayerWrapper blocks={audioBlocks} enableAudio={content.enableAudio} contentType={content.type} />
+      )}
 
       {/* QNA Content */}
       {qna && (
@@ -91,10 +107,10 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
             </div>
           )}
 
-          {/* Dalils */}
+          {/* Dalils — legacy format */}
           {qna.dalilBlocks && qna.dalilBlocks.length > 0 && (
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><BookOpen className="h-5 w-5 text-amber-600" /> Dalil & Landasan</h2>
+              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><BookOpen className="h-5 w-5 text-amber-600" /> Dalil &amp; Landasan</h2>
               <div className="space-y-4">
                 {(qna.dalilBlocks as any[]).map((dalilBlock: any, i: number) => {
                   const entries = dalilBlock.entries || [dalilBlock];
@@ -102,7 +118,8 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
                     <blockquote key={`${i}-${j}`} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
                       {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
                       <p className="text-slate-700 italic font-medium leading-relaxed">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
-                      <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {dalil.source}</cite>
+                      {dalil.source && <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">&mdash; {dalil.source}</cite>}
+                      {dalil.sourceUrl && <a href={dalil.sourceUrl} target="_blank" rel="noopener noreferrer" className="block mt-1 text-xs font-semibold text-amber-600 hover:text-amber-800 underline">🔗 Lihat Sumber ↗</a>}
                     </blockquote>
                   ));
                 })}
@@ -137,13 +154,63 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
             </div>
           )}
 
-          {/* Unified blocks[] for QNA — renders hikmah, doa, and any other new block types */}
+          {/* Unified blocks[] for QNA — new format: renders ALL block types */}
           {Array.isArray(qna.blocks) && qna.blocks.length > 0 && (
             <div className="space-y-6">
               {(qna.blocks as any[]).map((block: any, i: number) => {
+                if (block.type === 'dalil') {
+                  const entries = block.entries || [block];
+                  return (
+                    <div key={i} className="space-y-3">
+                      <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2"><BookOpen className="h-5 w-5 text-amber-600" /> Dalil &amp; Landasan</h3>
+                      {entries.map((dalil: any, j: number) => (
+                        <blockquote key={j} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
+                          {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
+                          <p className="text-slate-700 italic font-medium leading-relaxed">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
+                          {dalil.source && <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">&mdash; {dalil.source}</cite>}
+                          {dalil.sourceUrl && <a href={dalil.sourceUrl} target="_blank" rel="noopener noreferrer" className="block mt-1 text-xs font-semibold text-amber-600 hover:text-amber-800 underline">🔗 Lihat Sumber ↗</a>}
+                        </blockquote>
+                      ))}
+                    </div>
+                  );
+                }
+                if (block.type === 'dialog') {
+                  const lines = block.lines || [{ role: block.role || 'anak', text: block.text || '' }];
+                  return (
+                    <div key={i} className="bg-sky-50/50 border border-sky-100 rounded-2xl p-6">
+                      <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2"><MessageCircle className="h-4 w-4 text-emerald-600" /> Contoh Dialog</h3>
+                      <div className="space-y-3">
+                        {lines.map((line: any, j: number) => {
+                          const cfg = ROLE_CONFIG[line.role] || ROLE_CONFIG.anak;
+                          return (
+                            <div key={j} className={`flex ${cfg.align}`}>
+                              <div className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm font-medium ${cfg.chatBg}`}>
+                                <p className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-60">{cfg.label}</p>
+                                {line.text}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+                if (block.type === 'analogy') return (
+                  <div key={i} className="bg-teal-50 border border-teal-200 rounded-2xl p-6">
+                    <h3 className="font-bold text-teal-800 mb-2 flex items-center gap-2"><Quote className="h-4 w-4" /> Analogi Sederhana</h3>
+                    {block.title && <p className="font-bold text-teal-900 mb-1">{block.title}</p>}
+                    <p className="text-teal-700 font-medium">{block.text}</p>
+                  </div>
+                );
+                if (block.type === 'tip') return (
+                  <div key={i} className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+                    <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><Lightbulb className="h-4 w-4 text-emerald-500" /> Catatan / Tips</h3>
+                    <p className="text-sm text-slate-600 font-medium">{block.text}{block.referenceUrl && <> &mdash; <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="underline text-xs hover:text-slate-800">Sumber ↗</a></>}</p>
+                  </div>
+                );
                 if (block.type === 'hikmah') return (
                   <div key={i} className="bg-violet-50 border border-violet-200 rounded-2xl p-6">
-                    <h3 className="font-bold text-violet-800 mb-2 flex items-center gap-2"><Sparkles className="h-4 w-4" /> Hikmah & Pelajaran</h3>
+                    <h3 className="font-bold text-violet-800 mb-2 flex items-center gap-2"><Sparkles className="h-4 w-4" /> Hikmah &amp; Pelajaran</h3>
                     <p className="text-violet-700 font-medium leading-relaxed">{block.text}</p>
                   </div>
                 );
@@ -153,7 +220,8 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
                     {block.title && <p className="font-bold text-indigo-900 mb-2">{block.title}</p>}
                     {block.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{block.arabic}</p>}
                     <p className="text-indigo-700 italic font-medium">&ldquo;{block.translation}&rdquo;</p>
-                    {block.source && <cite className="block mt-2 text-sm font-bold text-indigo-600 not-italic">— {block.source}</cite>}
+                    {block.source && <cite className="block mt-2 text-sm font-bold text-indigo-600 not-italic">&mdash; {block.source}</cite>}
+                    {block.sourceUrl && <a href={block.sourceUrl} target="_blank" rel="noopener noreferrer" className="block mt-1 text-xs font-semibold text-indigo-500 hover:text-indigo-700 underline">🔗 Lihat Sumber ↗</a>}
                   </div>
                 );
                 if (block.type === 'paragraph') return (
@@ -162,7 +230,6 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
                     {block.referenceUrl && <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-2 inline-block">📎 Sumber referensi ↗</a>}
                   </div>
                 );
-                // Dialog, dalil, analogy, tip from blocks[] are already rendered via legacy fields above for QNA preview
                 return null;
               })}
             </div>
@@ -201,12 +268,13 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
               const entries = block.entries || [block];
               return (
                 <div key={i} className="space-y-3 my-4">
-                  <h3 className="font-bold text-amber-800 flex items-center gap-2"><BookOpen className="h-5 w-5" /> Dalil & Landasan</h3>
+                  <h3 className="font-bold text-amber-800 flex items-center gap-2"><BookOpen className="h-5 w-5" /> Dalil &amp; Landasan</h3>
                   {entries.map((dalil: any, j: number) => (
                     <blockquote key={j} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-xl px-6 py-4">
                       {dalil.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{dalil.arabic}</p>}
                       <p className="text-slate-700 italic font-medium">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
-                      {dalil.source && <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">— {dalil.source}</cite>}
+                      {dalil.source && <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">&mdash; {dalil.source}</cite>}
+                      {dalil.sourceUrl && <a href={dalil.sourceUrl} target="_blank" rel="noopener noreferrer" className="block mt-1 text-xs font-semibold text-amber-600 hover:text-amber-800 underline">🔗 Lihat Sumber ↗</a>}
                     </blockquote>
                   ))}
                 </div>
@@ -256,7 +324,8 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
                 {block.title && <p className="font-bold text-indigo-900 mb-2">{block.title}</p>}
                 {block.arabic && <p className="text-right text-lg font-serif text-slate-800 mb-2" dir="rtl">{block.arabic}</p>}
                 <p className="text-indigo-700 italic font-medium">&ldquo;{block.translation}&rdquo;</p>
-                {block.source && <cite className="block mt-2 text-sm font-bold text-indigo-600 not-italic">— {block.source}</cite>}
+                {block.source && <cite className="block mt-2 text-sm font-bold text-indigo-600 not-italic">&mdash; {block.source}</cite>}
+                {block.sourceUrl && <a href={block.sourceUrl} target="_blank" rel="noopener noreferrer" className="block mt-1 text-xs font-semibold text-indigo-500 hover:text-indigo-700 underline">🔗 Lihat Sumber ↗</a>}
               </div>
             );
             if (block.type === 'image' && block.url) return <img key={i} src={block.url} alt={block.caption || ''} className="rounded-2xl w-full my-4 border border-slate-200" />;

@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock, Volume2, VolumeX, Eye } from "lucide-react";
+import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock, Volume2, VolumeX, Eye, Mic, Upload, Music } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
-import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle, submitContentForReview, apiFetch, authHeaders, API_BASE_URL } from "@/lib/api";
+import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle, submitContentForReview, apiFetch, authHeaders, API_BASE_URL, generateTtsAudio, uploadAudioFile } from "@/lib/api";
 import ImageCropperModal from "@/components/ImageCropperModal";
 
 type ContentTypeOption = "PEMBELAJARAN" | "QNA" | "ARTICLE" | "KISAH";
@@ -66,6 +66,9 @@ function EditorContent() {
   const [enableAudio, setEnableAudio] = useState(false);
   const [audioTitle, setAudioTitle] = useState(true);
   const [audioDescription, setAudioDescription] = useState(true);
+  const [audioUrl, setAudioUrl] = useState(""); // uploaded MP3 narration URL
+  const [generatingTts, setGeneratingTts] = useState(false);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
   const [pov, setPov] = useState(""); // 'ORTU' | 'ANAK' | '' — hanya untuk ARTICLE
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
@@ -131,6 +134,7 @@ function EditorContent() {
               setEnableAudio(c.enableAudio ?? false);
               setAudioTitle(c.audioTitle !== undefined ? c.audioTitle : true);
               setAudioDescription(c.audioDescription !== undefined ? c.audioDescription : true);
+              setAudioUrl(c.audioUrl || "");
               setThumbnailUrl(c.thumbnailUrl || "");
               setSocialThumbnailUrl(c.socialThumbnailUrl || "");
               setEditStatus(c.status || null);
@@ -301,7 +305,9 @@ function EditorContent() {
     const token = Cookies.get("_at");
     try {
       const payload: any = {
-        title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, audioTitle, audioDescription, tags,
+        title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, audioTitle, audioDescription,
+        audioUrl: audioUrl || null,
+        tags,
         thumbnailUrl: thumbnailUrl || null,
         socialThumbnailUrl: socialThumbnailUrl || null,
         nodeId: (contentType === 'PEMBELAJARAN' || contentType === 'KISAH') ? nodeId : (nodeId || undefined),
@@ -858,6 +864,99 @@ function EditorContent() {
               )}
             </div>
           </div>
+
+          {/* SuperAdmin TTS Narration Panel */}
+          {isSuperAdmin && (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-purple-200">
+              <h3 className="font-bold text-slate-800 mb-1 flex items-center gap-2">
+                <Mic size={16} className="text-purple-500" /> Narasi Audio AI
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">Generate narasi dari blok konten, download MP3, lalu upload kembali.</p>
+
+              {enableAudio && blocks.filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video').length > 0 ? (
+                <div className="bg-purple-50 rounded-xl p-3 mb-3 space-y-1">
+                  <p className="text-xs font-bold text-purple-700 mb-2">Blok yang akan dinarasikan:</p>
+                  {blocks.filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video').map(b => (
+                    <div key={b.id} className="flex items-center gap-2 text-xs text-purple-600">
+                      <Volume2 size={11} />
+                      <span className="font-medium">{BLOCK_TYPES.find(bt => bt.type === b.type)?.label || b.type}</span>
+                      <span className="opacity-60 truncate max-w-[120px]">
+                        {b.type === 'dalil' ? `${(b.data.entries || []).length} dalil` : b.type === 'dialog' ? `${(b.data.lines || []).length} baris` : (b.data.text || b.data.translation || '').substring(0, 30)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 bg-slate-50 rounded-xl p-3 mb-3">
+                  {enableAudio ? 'Tidak ada blok aktif untuk narasi.' : '⚠️ Aktifkan Audio di panel kiri untuk memilih blok.'}
+                </p>
+              )}
+
+              <button
+                type="button"
+                disabled={generatingTts || !enableAudio}
+                onClick={async () => {
+                  const token = Cookies.get("_at");
+                  if (!token) return;
+                  const narBlocks = blocks
+                    .filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video')
+                    .map(b => {
+                      if (b.type === 'dalil') return { type: b.type, text: (b.data.entries || []).map((e: any) => e.translation || '').join('. ') };
+                      if (b.type === 'dialog') return { type: b.type, text: (b.data.lines || []).map((l: any) => `${l.role === 'anak' ? 'Anak' : l.role === 'ibu' ? 'Ibu' : 'Ayah'}: ${l.text}`).join('\n') };
+                      if (b.type === 'doa') return { type: b.type, text: b.data.translation || '' };
+                      return { type: b.type, text: b.data.text || b.data.title || '' };
+                    })
+                    .filter(b => b.text?.trim());
+                  if (narBlocks.length === 0) return toast.error('Tidak ada teks untuk dinarasikan');
+                  setGeneratingTts(true);
+                  try {
+                    const blob = await generateTtsAudio(narBlocks, `narasi-${(title || 'konten').toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 30)}`, token);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `narasi-${Date.now()}.mp3`; a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success('🎙️ Narasi berhasil di-generate! MP3 sudah ter-download.');
+                  } catch (e: any) { toast.error(e.message || 'Generate TTS gagal'); }
+                  finally { setGeneratingTts(false); }
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white py-2.5 rounded-xl font-bold text-sm transition-colors mb-3"
+              >
+                <Mic size={15} /> {generatingTts ? 'Generating...' : '🎙️ Generate Narasi AI'}
+              </button>
+
+              <label className={`flex items-center gap-2 justify-center border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors mb-3 ${uploadingAudio ? 'border-purple-300 bg-purple-50' : audioUrl ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 hover:border-purple-300 hover:bg-purple-50/50'}`}>
+                <Upload size={14} className={audioUrl ? 'text-emerald-500' : 'text-slate-400'} />
+                <span className="text-xs font-bold text-slate-600">
+                  {uploadingAudio ? 'Mengupload...' : audioUrl ? '✓ Audio ter-upload — klik ganti' : 'Upload MP3 hasil generate'}
+                </span>
+                <input type="file" accept="audio/mp3,audio/mpeg,audio/*" className="hidden" disabled={uploadingAudio}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    if (file.size > 50 * 1024 * 1024) return toast.error('Ukuran maks 50MB');
+                    const token = Cookies.get("_at"); if (!token) return;
+                    setUploadingAudio(true);
+                    try {
+                      const result = await uploadAudioFile(file, token);
+                      setAudioUrl(result.url);
+                      toast.success('🎵 Audio berhasil di-upload!');
+                    } catch (err: any) { toast.error(err.message || 'Upload audio gagal'); }
+                    finally { setUploadingAudio(false); e.target.value = ''; }
+                  }}
+                />
+              </label>
+
+              {audioUrl && (
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Music size={13} className="text-purple-500" />
+                    <span className="text-xs font-bold text-slate-600">Preview Narasi</span>
+                    <button type="button" onClick={() => setAudioUrl('')} className="ml-auto text-xs text-rose-400 hover:text-rose-600 font-bold">Hapus</button>
+                  </div>
+                  <audio controls src={`${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace('/api', '')}${audioUrl}`} className="w-full h-8" />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

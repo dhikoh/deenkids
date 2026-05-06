@@ -114,5 +114,10 @@ export class CreateContentDto {
   @IsString()
   @IsOptional()
   pov?: string;
+
+  @ApiProperty({ required: false, description: 'URL file MP3 narasi hasil TTS generate yang di-upload (SuperAdmin only)' })
+  @IsString()
+  @IsOptional()
+  audioUrl?: string;
 }
 export class UpdateContentDto extends PartialType(CreateContentDto) {}

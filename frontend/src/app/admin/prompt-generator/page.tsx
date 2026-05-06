@@ -301,6 +301,12 @@ Format per dalil:
 • Arabic  : [teks arab]
 • Terjemah: [terjemahan bahasa Indonesia]
 • Sumber  : [nama surah + ayat, atau kitab hadits + nomor]
+• Sumber URL: [URL sumber — panduan di bawah]
+
+⚠️ PANDUAN URL SUMBER:
+- Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: QS. Al-Baqarah:260 → https://quran.com/2/260
+- Hadits: https://www.hadits.id/hadits/[kitab]/[nomor] | Contoh: HR. Bukhari No. 1234 → https://www.hadits.id/hadits/bukhari/1234
+- 🛑 JANGAN mengarang URL. Jika tidak yakin, KOSONGKAN field "Sumber URL".
 Tempatkan di posisi paling bermakna (sebelum klimaks atau setelah narasi utama).\n\n`;
   }
 
@@ -383,7 +389,11 @@ Format per doa:
 • Judul : [nama doa singkat]
 • Arab  : [teks arab doa]
 • Terjemah: [terjemahan bahasa Indonesia]
-• Sumber: [QS. ... atau HR. Bukhari/Muslim No. ...]\n`;
+• Sumber: [QS. ... atau HR. Bukhari/Muslim No. ...]
+• Sumber URL: [URL sumber]
+  - Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat]
+  - Hadits: https://www.hadits.id/hadits/[kitab]/[nomor]
+  - 🛑 JANGAN mengarang URL. Jika tidak yakin, KOSONGKAN field ini.\n`;
   } else {
     prompt += `\n━━━ 🤲 BLOK DOA (doa) — Opsional ━━━
 Boleh menyisipkan doa sederhana dalam narasi cerita.
@@ -392,7 +402,8 @@ Format (jika digunakan):
 • Judul : [nama doa singkat]
 • Arab  : [teks arab doa]
 • Terjemah: [terjemahan]
-• Sumber: [sumber shahih]\n`;
+• Sumber: [sumber shahih]
+• Sumber URL: [URL jika tersedia — JANGAN mengarang URL]\n`;
   }
 
   // Inject intellectual framework if thinkers selected
@@ -549,12 +560,22 @@ Dalil 1:
   Arab: إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا
   Terjemahan: "Sesungguhnya shalat itu adalah kewajiban yang ditentukan waktunya atas orang-orang yang beriman."
   Sumber: QS. An-Nisa: 103
+  Sumber URL: https://quran.com/4/103
 
 Dalil 2:
   Arab: (jika ada)
   Terjemahan: "..."
-  Sumber: HR. Bukhari No. ...
+  Sumber: HR. Bukhari No. 8
+  Sumber URL: https://www.hadits.id/hadits/bukhari/8
 ---
+
+⚠️ PANDUAN URL SUMBER WAJIB DIBACA:
+- Al-Quran: format URL = https://quran.com/[nomor-surah]/[nomor-ayat]
+  Contoh: QS. An-Nisa: 103 → https://quran.com/4/103 | QS. Al-Baqarah: 255 → https://quran.com/2/255
+- Hadits: format URL = https://www.hadits.id/hadits/[nama-kitab]/[nomor]
+  Contoh: HR. Bukhari No. 8 → https://www.hadits.id/hadits/bukhari/8
+- 🛑 LARANGAN KERAS: JANGAN MENGARANG atau MENEBAK URL.
+  Jika tidak 100% yakin URL-nya benar, KOSONGKAN field "Sumber URL" — cukup isi "Sumber" teks saja.
 
 `;
   }
@@ -627,7 +648,13 @@ Judul: "Doa Memohon Ilmu yang Bermanfaat"
 Arab: رَبِّ زِدْنِي عِلْمًا
 Terjemahan: "Ya Tuhanku, tambahkanlah kepadaku ilmu."
 Sumber: QS. Thaha: 114
+Sumber URL: https://quran.com/20/114
 ---
+
+⚠️ PANDUAN URL SUMBER DOA:
+- Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: QS. Thaha: 114 → https://quran.com/20/114
+- Hadits: https://www.hadits.id/hadits/[nama-kitab]/[nomor]
+- 🛑 JANGAN mengarang URL. Jika tidak yakin, KOSONGKAN field "Sumber URL".
 
 `;
 
