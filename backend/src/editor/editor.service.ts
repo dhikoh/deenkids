@@ -5,6 +5,7 @@ import { RewardService } from '../reward/reward.service';
 import { NotificationService } from '../notification/notification.service';
 import { CreateContentDto, UpdateContentDto } from './dto/editor.dto';
 import { sanitizeText, sanitizeJsonDeep } from '../common/utils/sanitize.util';
+import { StorageService } from '../common/storage/storage.service';
 import { PointType } from '@prisma/client';
 import slugify from 'slugify';
 
@@ -16,6 +17,7 @@ export class EditorService {
     private aiChecker: AiCheckerService,
     private rewardService: RewardService,
     private notificationService: NotificationService,
+    private storageService: StorageService,
   ) {}
 
   async createContent(authorId: string, dto: CreateContentDto) {
@@ -254,6 +256,14 @@ export class EditorService {
     if (user?.role === 'SUPERADMIN' && (dto as any).displayAuthorName !== undefined) {
       updateData.displayAuthorName = sanitizeText((dto as any).displayAuthorName || '') || null;
     }
+
+    // Cleanup old audio file from MinIO if audioUrl is being replaced or cleared
+    if (user?.role === 'SUPERADMIN' && existing.audioUrl && updateData.audioUrl !== existing.audioUrl) {
+      this.storageService.deleteFile(existing.audioUrl).catch(err =>
+        this.logger.warn(`⚠️  Failed to cleanup old audio: ${err.message}`),
+      );
+    }
+
     const updated = await this.prisma.contentItem.update({
       where: { id: contentId },
       data: updateData,
@@ -551,6 +561,13 @@ export class EditorService {
     if (!content) throw new NotFoundException('Konten tidak ditemukan');
     if (!content.deletedAt) throw new BadRequestException('Konten harus ada di Tempat Sampah terlebih dahulu');
 
+    // Cleanup audio file from MinIO before hard delete
+    if (content.audioUrl) {
+      await this.storageService.deleteFile(content.audioUrl).catch(err =>
+        this.logger.warn(`⚠️  Failed to cleanup audio on permanent delete: ${err.message}`),
+      );
+    }
+
     // Hard delete — Prisma cascade will clean up all related data
     await this.prisma.contentItem.delete({ where: { id: contentId } });
 
@@ -561,6 +578,19 @@ export class EditorService {
     // Only SUPERADMIN can empty trash
     if (userRole !== 'SUPERADMIN') {
       throw new ForbiddenException('Hanya SuperAdmin yang bisa mengosongkan Tempat Sampah');
+    }
+
+    // Cleanup all audio files from MinIO before bulk delete
+    const trashedWithAudio = await this.prisma.contentItem.findMany({
+      where: { deletedAt: { not: null }, audioUrl: { not: null } },
+      select: { audioUrl: true },
+    });
+    for (const item of trashedWithAudio) {
+      if (item.audioUrl) {
+        await this.storageService.deleteFile(item.audioUrl).catch(err =>
+          this.logger.warn(`⚠️  Failed to cleanup audio in emptyTrash: ${err.message}`),
+        );
+      }
     }
 
     const result = await this.prisma.contentItem.deleteMany({

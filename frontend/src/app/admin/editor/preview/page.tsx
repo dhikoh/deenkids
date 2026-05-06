@@ -69,6 +69,7 @@ export default function PreviewPage() {
     enableAudio: content.enableAudio,
     audioTitle: content.audioTitle !== undefined ? content.audioTitle : true,
     audioDescription: content.audioDescription !== undefined ? content.audioDescription : true,
+    audioUrl: content.audioUrl || null, // Forward uploaded MP3 URL to ContentRenderer
     qnaDetail: content.contentType === "QNA" ? {
       question: content.title,
       answerQuick: content.blocks?.find((b: any) => b.type === "quick_answer")?.data?.text || "",

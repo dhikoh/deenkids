@@ -5,6 +5,7 @@ import { ChevronLeft, Star, ThumbsUp, Eye, Lightbulb, MessageCircle, User, BookO
 import { EngagementBar } from "@/components/ui/EngagementBar";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
+import NarrationAudioPlayer from "@/components/NarrationAudioPlayer";
 import type { Metadata } from "next";
 import { JsonLd, buildFaqPageSchema, buildBreadcrumbSchema } from "@/components/seo/JsonLd";
 
@@ -105,18 +106,22 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
 
       {qna && (
         <div className="space-y-8">
-          {/* Audio Player — unified blocks for TTS */}
-          <AudioPlayerWrapper blocks={[
-            ...(content.audioTitle !== false && content.title ? [{ type: 'paragraph', text: content.title, enableAudio: true }] : []),
-            ...(content.audioDescription !== false && content.description ? [{ type: 'paragraph', text: content.description, enableAudio: true }] : []),
-            ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
-            ...((Array.isArray(qna.blocks) && qna.blocks.length > 0 ? qna.blocks : [
-              ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
-              ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
-              ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
-              ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
-            ]) as any[]),
-          ]} enableAudio={content.enableAudio} contentType={content.type} />
+          {/* Audio Player — uploaded MP3 takes priority over browser TTS */}
+          {content.audioUrl ? (
+            <NarrationAudioPlayer audioUrl={content.audioUrl} />
+          ) : (
+            <AudioPlayerWrapper blocks={[
+              ...(content.audioTitle !== false && content.title ? [{ type: 'paragraph', text: content.title, enableAudio: true }] : []),
+              ...(content.audioDescription !== false && content.description ? [{ type: 'paragraph', text: content.description, enableAudio: true }] : []),
+              ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
+              ...((Array.isArray(qna.blocks) && qna.blocks.length > 0 ? qna.blocks : [
+                ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
+                ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
+                ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
+                ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+              ]) as any[]),
+            ]} enableAudio={content.enableAudio} contentType={content.type} />
+          )}
 
           {/* Quick Answer Card — always shown first */}
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">

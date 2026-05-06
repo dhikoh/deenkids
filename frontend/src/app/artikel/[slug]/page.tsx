@@ -5,6 +5,7 @@ import { ChevronLeft, Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCi
 import { EngagementBar } from "@/components/ui/EngagementBar";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
+import NarrationAudioPlayer from "@/components/NarrationAudioPlayer";
 import type { Metadata } from "next";
 import { JsonLd, buildArticleSchema, buildBreadcrumbSchema } from "@/components/seo/JsonLd";
 
@@ -104,16 +105,20 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
         )}
       </div>
 
-      {/* Audio Player */}
-      <AudioPlayerWrapper blocks={
-        content.articleDetail?.blocks || [
-          ...(content.qnaDetail?.answerQuick ? [{ type: 'quick_answer', text: content.qnaDetail.answerQuick }] : []),
-          ...(content.qnaDetail?.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
-          ...(content.qnaDetail?.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
-          ...(content.qnaDetail?.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
-          ...(content.qnaDetail?.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
-        ]
-      } enableAudio={content.enableAudio} contentType={content.type} />
+      {/* Audio Player — uploaded MinIO MP3 takes priority over browser TTS */}
+      {content.audioUrl ? (
+        <NarrationAudioPlayer audioUrl={content.audioUrl} />
+      ) : (
+        <AudioPlayerWrapper blocks={
+          content.articleDetail?.blocks || [
+            ...(content.qnaDetail?.answerQuick ? [{ type: 'quick_answer', text: content.qnaDetail.answerQuick }] : []),
+            ...(content.qnaDetail?.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
+            ...(content.qnaDetail?.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
+            ...(content.qnaDetail?.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
+            ...(content.qnaDetail?.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+          ]
+        } enableAudio={content.enableAudio} contentType={content.type} />
+      )}
 
       {/* Article Blocks Renderer */}
       {content.articleDetail && (

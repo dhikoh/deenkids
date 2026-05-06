@@ -3,6 +3,7 @@
 import { Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCircle, User, Sparkles } from "lucide-react";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
+import NarrationAudioPlayer from "@/components/NarrationAudioPlayer";
 
 interface ContentRendererProps {
   content: any;
@@ -56,24 +57,7 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
 
       {/* Audio Player — uploaded MinIO MP3 takes priority over browser TTS */}
       {content.audioUrl ? (
-        <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-2xl p-4 mb-6 border border-purple-100 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-sm font-bold text-purple-700">
-            <span>🎙️</span>
-            <span>Dengarkan Narasi Audio</span>
-          </div>
-          <audio
-            controls
-            src={
-              // Full URL (MinIO) → use directly. Relative path (legacy) → prepend API base.
-              content.audioUrl.startsWith('http://') || content.audioUrl.startsWith('https://')
-                ? content.audioUrl
-                : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '')}${content.audioUrl}`
-            }
-            className="w-full"
-            style={{ height: '40px' }}
-          />
-          <p className="text-xs text-purple-400">Narasi AI — dengarkan konten ini tanpa harus membaca</p>
-        </div>
+        <NarrationAudioPlayer audioUrl={content.audioUrl} />
       ) : (
         <AudioPlayerWrapper blocks={audioBlocks} enableAudio={content.enableAudio} contentType={content.type} />
       )}

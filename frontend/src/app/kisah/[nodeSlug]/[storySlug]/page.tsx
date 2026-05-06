@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronLeft, Star, ThumbsUp, Eye, User, Volume2, Lightbulb, Quote } from "lucide-react";
 import { EngagementBar } from "@/components/ui/EngagementBar";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
+import NarrationAudioPlayer from "@/components/NarrationAudioPlayer";
 import type { Metadata } from "next";
 
 export async function generateMetadata({ params }: { params: Promise<{ nodeSlug: string; storySlug: string }> }): Promise<Metadata> {
@@ -92,8 +93,12 @@ export default async function KisahDetailPage({
         </div>
       </div>
 
-      {/* Audio Player — prominent for Kisah */}
-      {content.enableAudio && (
+      {/* Audio Player — uploaded MP3 takes priority, then browser TTS */}
+      {content.audioUrl ? (
+        <div className="mb-6">
+          <NarrationAudioPlayer audioUrl={content.audioUrl} />
+        </div>
+      ) : content.enableAudio && (
         <div className="mb-6">
           <AudioPlayerWrapper blocks={audioBlocks} enableAudio={content.enableAudio} contentType={content.type} />
         </div>
