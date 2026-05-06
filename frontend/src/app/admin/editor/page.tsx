@@ -952,7 +952,15 @@ function EditorContent() {
                     <span className="text-xs font-bold text-slate-600">Preview Narasi</span>
                     <button type="button" onClick={() => setAudioUrl('')} className="ml-auto text-xs text-rose-400 hover:text-rose-600 font-bold">Hapus</button>
                   </div>
-                  <audio controls src={`${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace('/api', '')}${audioUrl}`} className="w-full h-8" />
+                  <audio
+                    controls
+                    src={
+                      audioUrl.startsWith('http://') || audioUrl.startsWith('https://')
+                        ? audioUrl
+                        : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '')}${audioUrl}`
+                    }
+                    className="w-full h-8"
+                  />
                 </div>
               )}
             </div>

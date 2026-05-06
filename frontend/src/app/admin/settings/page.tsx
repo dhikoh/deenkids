@@ -20,6 +20,18 @@ const TTS_PROVIDERS = [
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("general");
 
+  // ── User role (from localStorage — same pattern as editor/page.tsx) ──
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        const u = JSON.parse(stored);
+        setIsSuperAdmin(u?.role === "SUPERADMIN");
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   // ── General ──
   const [aiEnabled, setAiEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -162,22 +174,28 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-200">
-        {[
-          { key: "general", label: "⚙️ Umum" },
-          { key: "api", label: "🔑 Pengaturan API" },
-        ].map(t => (
+        <button
+          onClick={() => setTab("general")}
+          className={`px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 transition-colors ${
+            tab === "general"
+              ? "bg-white border-slate-200 text-emerald-700"
+              : "bg-slate-50 border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          ⚙️ Umum
+        </button>
+        {isSuperAdmin && (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key as Tab)}
+            onClick={() => setTab("api")}
             className={`px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 transition-colors ${
-              tab === t.key
+              tab === "api"
                 ? "bg-white border-slate-200 text-emerald-700"
                 : "bg-slate-50 border-transparent text-slate-500 hover:text-slate-700"
             }`}
           >
-            {t.label}
+            🔑 Pengaturan API
           </button>
-        ))}
+        )}
       </div>
 
       {/* ─── TAB UMUM ─── */}

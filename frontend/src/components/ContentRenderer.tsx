@@ -54,7 +54,7 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
         </div>
       </div>
 
-      {/* Audio Player — uploaded MP3 takes priority over browser TTS */}
+      {/* Audio Player — uploaded MinIO MP3 takes priority over browser TTS */}
       {content.audioUrl ? (
         <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-2xl p-4 mb-6 border border-purple-100 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-sm font-bold text-purple-700">
@@ -63,7 +63,12 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
           </div>
           <audio
             controls
-            src={`${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace('/api', '')}${content.audioUrl}`}
+            src={
+              // Full URL (MinIO) → use directly. Relative path (legacy) → prepend API base.
+              content.audioUrl.startsWith('http://') || content.audioUrl.startsWith('https://')
+                ? content.audioUrl
+                : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '')}${content.audioUrl}`
+            }
             className="w-full"
             style={{ height: '40px' }}
           />

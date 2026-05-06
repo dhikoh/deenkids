@@ -60,7 +60,7 @@ export class EditorService {
         enableAudio: dto.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio || false),
         audioTitle: dto.audioTitle !== undefined ? dto.audioTitle : true,
         audioDescription: dto.audioDescription !== undefined ? dto.audioDescription : true,
-        audioUrl: dto.audioUrl ? sanitizeText(dto.audioUrl) : null,
+        audioUrl: author?.role === 'SUPERADMIN' ? (dto.audioUrl ? sanitizeText(dto.audioUrl) : null) : null,
         pov: dto.type === 'ARTICLE' ? (dto.pov || null) : null,
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : undefined,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : undefined,
@@ -236,7 +236,9 @@ export class EditorService {
         enableAudio: existing.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio ?? existing.enableAudio),
         audioTitle: dto.audioTitle !== undefined ? dto.audioTitle : existing.audioTitle,
         audioDescription: dto.audioDescription !== undefined ? dto.audioDescription : existing.audioDescription,
-        audioUrl: dto.audioUrl !== undefined ? (dto.audioUrl ? sanitizeText(dto.audioUrl) : null) : existing.audioUrl,
+        audioUrl: user?.role === 'SUPERADMIN'
+          ? (dto.audioUrl !== undefined ? (dto.audioUrl ? sanitizeText(dto.audioUrl) : null) : existing.audioUrl)
+          : existing.audioUrl, // non-SUPERADMIN: always preserve existing audioUrl — cannot overwrite
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : dto.metaTitle,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : dto.metaDesc,
         pov: existing.type === 'ARTICLE' ? (dto.pov !== undefined ? (dto.pov || null) : existing.pov) : null,

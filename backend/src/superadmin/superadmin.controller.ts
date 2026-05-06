@@ -3,18 +3,13 @@ import {
   UseInterceptors, UploadedFile, BadRequestException, Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { memoryStorage } from 'multer';
 import { Response } from 'express';
 import { SuperadminService } from './superadmin.service';
+import { StorageService } from '../common/storage/storage.service';
 import { RolesGuard, JwtAuthGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
-
-// Ensure upload directory exists at import time
-const AUDIO_UPLOAD_DIR = join(process.cwd(), 'public', 'audio');
-if (!existsSync(AUDIO_UPLOAD_DIR)) mkdirSync(AUDIO_UPLOAD_DIR, { recursive: true });
 
 @ApiTags('SuperAdmin')
 @ApiBearerAuth()
@@ -22,9 +17,13 @@ if (!existsSync(AUDIO_UPLOAD_DIR)) mkdirSync(AUDIO_UPLOAD_DIR, { recursive: true
 @Controller('superadmin')
 export class SuperadminController {
   private readonly logger = new Logger(SuperadminController.name);
-  constructor(private readonly superadminService: SuperadminService) {}
 
-  // ── AI Settings ──
+  constructor(
+    private readonly superadminService: SuperadminService,
+    private readonly storageService: StorageService,
+  ) {}
+
+  // ── AI Settings (legacy toggle) ──
   @Get('settings/ai-toggle')
   @Roles('SUPERADMIN')
   async getAiToggle() {
@@ -52,11 +51,11 @@ export class SuperadminController {
     return this.superadminService.updateApiSettings(body.settings || []);
   }
 
-  // ── TTS Generate ──
+  // ── TTS Generate — streams binary MP3 back to client ──
   @Post('tts/generate')
   @Roles('SUPERADMIN')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Generate TTS audio from selected content blocks (returns MP3 binary)' })
+  @ApiOperation({ summary: 'Generate TTS audio from content blocks (returns MP3 binary for download)' })
   async generateTts(
     @Body() body: { blocks: { type: string; text: string }[]; filename?: string },
     @Res() res: Response,
@@ -72,22 +71,16 @@ export class SuperadminController {
     res.send(audioBuffer);
   }
 
-  // ── Audio Upload ──
+  // ── Audio Upload — uses StorageService (MinIO) same as banners/thumbnails ──
   @Post('audio/upload')
   @Roles('SUPERADMIN')
-  @ApiOperation({ summary: 'Upload MP3 audio file for a content item (after TTS download)' })
+  @ApiOperation({ summary: 'Upload MP3 audio to MinIO storage — returns full public URL' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('audio', {
-      storage: diskStorage({
-        destination: AUDIO_UPLOAD_DIR,
-        filename: (_req, file, cb) => {
-          const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
-          cb(null, `narasi-${unique}${extname(file.originalname)}`);
-        },
-      }),
+      storage: memoryStorage(), // In-memory buffer — same pattern as banner.controller.ts
       fileFilter: (_req, file, cb) => {
-        if (!file.mimetype.match(/^audio\/(mpeg|mp3|mp4|ogg|wav)$/)) {
+        if (!file.mimetype.match(/^audio\/(mpeg|mp3|mp4|ogg|wav|x-m4a|webm)/)) {
           return cb(new BadRequestException('Hanya file audio MP3/OGG/WAV yang diizinkan'), false);
         }
         cb(null, true);
@@ -97,9 +90,17 @@ export class SuperadminController {
   )
   async uploadAudio(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('File audio tidak ditemukan dalam request');
-    const url = `/audio/${file.filename}`;
-    this.logger.log(`Audio uploaded: ${file.filename} (${file.size} bytes)`);
-    return { url, filename: file.filename, size: file.size, message: 'Audio berhasil di-upload' };
+
+    // Upload to MinIO via StorageService — consistent with all other file uploads in the app
+    const url = await this.storageService.uploadFile(
+      file.buffer,
+      file.mimetype,
+      file.originalname,
+      'audio', // subfolder prefix in bucket: adably/audio/filename.mp3
+    );
+
+    this.logger.log(`Audio uploaded to MinIO: ${url} (${file.size} bytes)`);
+    return { url, filename: file.originalname, size: file.size, message: 'Audio berhasil di-upload ke cloud storage' };
   }
 
   // ── Donation Settings ──

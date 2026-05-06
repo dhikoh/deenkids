@@ -6,8 +6,6 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import * as cookieParser from 'cookie-parser';
 import { execSync } from 'child_process';
-import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -89,11 +87,6 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
     logger.log('📚 Swagger Docs available at /api/docs');
   }
-
-  // Static Files — serve uploaded audio narrations
-  const audioDir = join(process.cwd(), 'public', 'audio');
-  if (!existsSync(audioDir)) mkdirSync(audioDir, { recursive: true });
-  app.useStaticAssets(join(process.cwd(), 'public'), { prefix: '/' });
 
   // Prefix & Port
   app.setGlobalPrefix('api');
