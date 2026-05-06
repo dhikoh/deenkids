@@ -37,11 +37,11 @@ function defaultData(type: BlockType): any {
     case "paragraph": return { text: "", enableAudio: true };
     case "quick_answer": return { text: "", enableAudio: true };
     case "dialog": return { lines: [{ role: "anak", text: "" }], enableAudio: true };
-    case "dalil": return { entries: [{ arabic: "", translation: "", source: "" }], enableAudio: true };
+    case "dalil": return { entries: [{ arabic: "", translation: "", source: "", sourceUrl: "" }], enableAudio: true };
     case "analogy": return { title: "", text: "", enableAudio: true };
     case "tip": return { text: "", enableAudio: true };
     case "hikmah": return { text: "", enableAudio: true };
-    case "doa": return { title: "", arabic: "", translation: "", source: "", enableAudio: true };
+    case "doa": return { title: "", arabic: "", translation: "", source: "", sourceUrl: "", enableAudio: true };
     case "image": return { url: "", caption: "", file: null, enableAudio: false };
     case "video": return { url: "", caption: "", enableAudio: false };
   }
@@ -416,10 +416,10 @@ function EditorContent() {
                   <textarea value={entry.arabic} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], arabic: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="Teks Arab (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[50px] text-right font-serif text-lg" dir="rtl" />
                   <textarea value={entry.translation} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], translation: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="Terjemahan / isi dalil" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px]" />
                   <input type="text" value={entry.source} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], source: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="Sumber: QS. Al-Baqarah: 43" className="w-full border-slate-200 rounded-lg text-sm p-2 font-bold" />
-                  <input type="url" value={entry.sourceUrl || ''} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], sourceUrl: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="🔗 URL sumber (opsional) — https://sunnah.com/..." className="w-full border-slate-200 rounded-lg text-sm p-2 text-emerald-700" />
+                  <input type="url" value={entry.sourceUrl || ''} onChange={e => { const ne = [...data.entries]; ne[ei] = { ...ne[ei], sourceUrl: e.target.value }; updateBlock(id, { entries: ne }); }} placeholder="🔗 URL Sumber — Al-Quran: https://quran.com/2/255 | Hadits: https://www.hadits.id/hadits/bukhari/8 (opsional, isi hanya jika yakin)" className="w-full border-slate-200 rounded-lg text-sm p-2 text-emerald-700" />
                 </div>
               ))}
-              <button onClick={() => updateBlock(id, { entries: [...(data.entries || []), { arabic: "", translation: "", source: "" }] })} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-100"><Plus size={12} /> Tambah Dalil</button>
+              <button onClick={() => updateBlock(id, { entries: [...(data.entries || []), { arabic: "", translation: "", source: "", sourceUrl: "" }] })} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-100"><Plus size={12} /> Tambah Dalil</button>
             </div>
           )}
           {type === "analogy" && (
@@ -440,6 +440,7 @@ function EditorContent() {
               <textarea value={data.arabic} onChange={e => updateBlock(id, { arabic: e.target.value })} placeholder="Teks Arab doa" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[50px] text-right font-serif text-lg" dir="rtl" />
               <textarea value={data.translation} onChange={e => updateBlock(id, { translation: e.target.value })} placeholder="Terjemahan doa" className="w-full border-slate-200 rounded-lg text-sm p-2 min-h-[60px]" />
               <input type="text" value={data.source} onChange={e => updateBlock(id, { source: e.target.value })} placeholder="Sumber — WAJIB: QS. Thaha: 114 atau HR. Bukhari No. ..." className="w-full border-slate-200 rounded-lg text-sm p-2 font-bold text-indigo-700" />
+              <input type="url" value={data.sourceUrl || ''} onChange={e => updateBlock(id, { sourceUrl: e.target.value })} placeholder="🔗 URL Sumber — Al-Quran: https://quran.com/20/114 | Hadits: https://www.hadits.id/hadits/bukhari/1 (opsional)" className="w-full border-slate-200 rounded-lg text-sm p-2 text-emerald-700" />
             </div>
           )}
           {type === "image" && (
