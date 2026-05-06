@@ -517,7 +517,7 @@ function EditorContent() {
             <Eye size={18} /> Preview
           </button>
           <button onClick={() => handleSave()} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-70">
-            <Save size={18} /> {isSaving ? "Menyimpan..." : "Simpan Draft"}
+            <Save size={18} /> {isSaving ? "Menyimpan..." : editId ? "Simpan Perubahan" : "Simpan Draft"}
           </button>
           {isSuperAdmin && (
             <button onClick={() => handleSave('PUBLISHED')} disabled={isSaving} className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 disabled:opacity-70">
@@ -534,25 +534,48 @@ function EditorContent() {
             <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Informasi Utama</h2>
             <div className="space-y-4">
               {/* Content Type Selector */}
-              <div className="flex gap-3">
-              {(["PEMBELAJARAN", "QNA", "ARTICLE", "KISAH"] as ContentTypeOption[]).map(t => (
-                <button key={t} onClick={() => {
-                  setContentType(t);
-                  if (t === 'KISAH') setEnableAudio(true);
-                  // FIX #3: hanya fetch nodes untuk tipe yang membutuhkan (PEMBELAJARAN / KISAH)
-                  const token = Cookies.get('_at');
-                  if (token) {
-                    if (t === 'PEMBELAJARAN' || t === 'KISAH') {
-                      const group = t === 'PEMBELAJARAN' ? 'PEMBELAJARAN' : 'KISAH';
-                      fetchEditorNodes(token, group).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
-                    } else {
-                      setNodes([]); // QNA / ARTICLE tidak membutuhkan nodes
-                    }
-                  }
-                }} className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${contentType === t ? "bg-emerald-600 text-white shadow-md" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
-                  {t === "PEMBELAJARAN" ? "📚 Pembelajaran" : t === "QNA" ? "🗨️ Tanya Jawab" : t === "KISAH" ? "📖 Kisah" : "📝 Artikel"}
-                </button>
-              ))}
+              <div className="flex gap-3 items-center">
+              {(["PEMBELAJARAN", "QNA", "ARTICLE", "KISAH"] as ContentTypeOption[]).map(t => {
+                const isActive = contentType === t;
+                const isLocked = !!editId; // tipe tidak bisa diubah setelah konten dibuat
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    disabled={isLocked}
+                    onClick={() => {
+                      if (isLocked) return;
+                      setContentType(t);
+                      if (t === 'KISAH') setEnableAudio(true);
+                      const token = Cookies.get('_at');
+                      if (token) {
+                        if (t === 'PEMBELAJARAN' || t === 'KISAH') {
+                          const group = t === 'PEMBELAJARAN' ? 'PEMBELAJARAN' : 'KISAH';
+                          fetchEditorNodes(token, group).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
+                        } else {
+                          setNodes([]);
+                        }
+                      }
+                    }}
+                    title={isLocked ? 'Tipe konten tidak dapat diubah setelah dibuat' : undefined}
+                    className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                      isActive
+                        ? isLocked
+                          ? 'bg-slate-700 text-white cursor-not-allowed opacity-90' // locked + active
+                          : 'bg-emerald-600 text-white shadow-md'
+                        : isLocked
+                          ? 'bg-slate-100 text-slate-300 cursor-not-allowed' // locked + inactive
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {t === "PEMBELAJARAN" ? "📚 Pembelajaran" : t === "QNA" ? "🗨️ Tanya Jawab" : t === "KISAH" ? "📖 Kisah" : "📝 Artikel"}
+                    {isActive && isLocked && <span className="ml-1 text-[10px] opacity-70">🔒</span>}
+                  </button>
+                );
+              })}
+              {editId && (
+                <span className="text-xs text-slate-400 italic ml-1">Tipe tidak dapat diubah</span>
+              )}
               </div>
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1">
@@ -820,7 +843,7 @@ function EditorContent() {
             </ul>
             <div className="space-y-2">
               <button onClick={() => handleSave()} disabled={isSaving} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-70">
-                <Save size={16} /> {isSaving ? "Menyimpan..." : "Simpan Draft"}
+                <Save size={16} /> {isSaving ? "Menyimpan..." : editId ? "Simpan Perubahan" : "Simpan Draft"}
               </button>
               {isSuperAdmin && (
                 <button onClick={() => handleSave('PUBLISHED')} disabled={isSaving} className="w-full bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-70">

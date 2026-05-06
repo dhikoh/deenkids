@@ -229,15 +229,15 @@ export class EditorService {
         description: dto.description ? sanitizeText(dto.description) : dto.description,
         thumbnailUrl: dto.thumbnailUrl !== undefined ? (dto.thumbnailUrl ? sanitizeText(dto.thumbnailUrl) : null) : undefined,
         socialThumbnailUrl: dto.socialThumbnailUrl !== undefined ? (dto.socialThumbnailUrl ? sanitizeText(dto.socialThumbnailUrl) : null) : undefined,
-        type: dto.type,
+        // NOTE: 'type' is immutable after creation — never updated here to prevent orphan detail records
         ageGroups: dto.ageGroups || [],
         nodeId: dto.nodeId || null,
-        enableAudio: dto.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio ?? existing.enableAudio),
+        enableAudio: existing.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio ?? existing.enableAudio),
         audioTitle: dto.audioTitle !== undefined ? dto.audioTitle : existing.audioTitle,
         audioDescription: dto.audioDescription !== undefined ? dto.audioDescription : existing.audioDescription,
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : dto.metaTitle,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : dto.metaDesc,
-        pov: dto.type === 'ARTICLE' ? (dto.pov !== undefined ? (dto.pov || null) : existing.pov) : null,
+        pov: existing.type === 'ARTICLE' ? (dto.pov !== undefined ? (dto.pov || null) : existing.pov) : null,
         status: newStatus,
     };
 
@@ -283,8 +283,8 @@ export class EditorService {
       }
     }
 
-    // Update QnA Detail
-    if (dto.type === 'QNA' && dto.qnaDetail) {
+    // Update QnA Detail — use existing.type (immutable) to route to correct detail table
+    if (existing.type === 'QNA' && dto.qnaDetail) {
       const sanitized = sanitizeJsonDeep(dto.qnaDetail);
       await this.prisma.qnaDetail.upsert({
         where: { contentId },
@@ -315,7 +315,7 @@ export class EditorService {
     }
 
     // Update Article/Pembelajaran/Kisah Detail
-    if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN' || dto.type === 'KISAH') && dto.articleDetail) {
+    if (['ARTICLE', 'PEMBELAJARAN', 'KISAH'].includes(existing.type) && dto.articleDetail) {
       const sanitized = sanitizeJsonDeep(dto.articleDetail);
       await this.prisma.articleDetail.upsert({
         where: { contentId },
