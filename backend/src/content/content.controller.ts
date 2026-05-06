@@ -33,6 +33,7 @@ export class ContentController {
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'pov', required: false, description: 'Filter by POV: ORTU | ANAK (only for ARTICLE type)' })
+  @ApiQuery({ name: 'nodeSlug', required: false, description: 'Filter by content node slug (e.g. for pembelajaran detail page)' })
   async getList(
     @Query('age') age?: string,
     @Query('sort') sort?: string,
@@ -41,8 +42,9 @@ export class ContentController {
     @Query('search') search?: string,
     @Query('limit') limit?: number,
     @Query('pov') pov?: string,
+    @Query('nodeSlug') nodeSlug?: string,
   ) {
-    return this.contentService.getList({ age, sort, page, type, search, limit, pov });
+    return this.contentService.getList({ age, sort, page, type, search, limit, pov, nodeSlug });
   }
 
   @Get('tags')

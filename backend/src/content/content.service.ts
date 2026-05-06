@@ -147,8 +147,8 @@ export class ContentService {
   }
 
   // ─── General Content List ─────────────────────────────────────────────────────
-  async getList(query: { age?: string; sort?: string; page?: any; limit?: any; type?: string; search?: string; pov?: string }) {
-    const { age, sort = 'newest', type, search, pov } = query;
+  async getList(query: { age?: string; sort?: string; page?: any; limit?: any; type?: string; search?: string; pov?: string; nodeSlug?: string }) {
+    const { age, sort = 'newest', type, search, pov, nodeSlug } = query;
     const page = Math.max(1, parseInt(query.page) || 1);
     const limit = Math.max(1, parseInt(query.limit) || 10);
     const skip = (page - 1) * limit;
@@ -169,6 +169,22 @@ export class ContentService {
     if (type) where.type = type;
     if (pov) where.pov = pov;
 
+    // Filter by nodeSlug: resolve slug → node IDs (including descendants)
+    if (nodeSlug) {
+      const allNodes = await this.prisma.contentNode.findMany({ where: { isActive: true } });
+      const targetNode = allNodes.find(n => n.slug === nodeSlug);
+      if (targetNode) {
+        const getDescendantIds = (parentId: string): string[] => {
+          const children = allNodes.filter(n => n.parentId === parentId);
+          return [parentId, ...children.flatMap(c => getDescendantIds(c.id))];
+        };
+        where.nodeId = { in: getDescendantIds(targetNode.id) };
+      } else {
+        // nodeSlug not found — return empty rather than all content
+        return { data: [], meta: { total: 0, page: Number(page), limit: Number(limit), totalPages: 0 } };
+      }
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.contentItem.findMany({
         where, orderBy, skip, take: Number(limit),
@@ -178,7 +194,7 @@ export class ContentService {
           ratingCount: true, publishedAt: true, description: true, thumbnailUrl: true,
           enableAudio: true, displayAuthorName: true, pov: true,
           author: { select: { name: true } },
-          node: { select: { title: true } },
+          node: { select: { title: true, slug: true } },
           tags: { include: { tag: { select: { name: true, slug: true } } } },
         },
       }),

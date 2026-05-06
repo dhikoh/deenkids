@@ -149,7 +149,7 @@ export async function fetchKisahByNode(nodeSlug: string, page = 1, limit = 12, s
   return apiFetch(`${API_BASE_URL}/content/kisah/${nodeSlug}?${params.toString()}`);
 }
 
-export async function fetchContentList(params: { sort?: string; limit?: number; age?: string; type?: string; page?: number; pov?: string } = {}) {
+export async function fetchContentList(params: { sort?: string; limit?: number; age?: string; type?: string; page?: number; pov?: string; nodeSlug?: string } = {}) {
   const searchParams = new URLSearchParams();
   if (params.sort) searchParams.append('sort', params.sort);
   if (params.limit) searchParams.append('limit', params.limit.toString());
@@ -157,6 +157,7 @@ export async function fetchContentList(params: { sort?: string; limit?: number; 
   if (params.type) searchParams.append('type', params.type);
   if (params.page) searchParams.append('page', params.page.toString());
   if (params.pov) searchParams.append('pov', params.pov);
+  if (params.nodeSlug) searchParams.append('nodeSlug', params.nodeSlug);
   return apiFetch(`${API_BASE_URL}/content/list?${searchParams.toString()}`);
 }
 

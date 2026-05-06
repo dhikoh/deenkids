@@ -261,20 +261,38 @@ FORMAT OUTPUT — BLOK KONTEN EDITOR ADABLY
 ══════════════════════════════════════════
 Susun konten menggunakan blok-blok berikut. Setiap blok HARUS diisi dengan baik.\n\n`;
 
-  prompt += `━━━ 📝 BLOK 1: ISI KONTEN (paragraph + heading) — WAJIB PANJANG ━━━
-Tulis MINIMAL 3 babak kisah. Setiap babak diawali JUDUL BABAK (heading) lalu diikuti 2–4 paragraf narasi panjang.
-Gunakan struktur:
+  prompt += `━━━ 📝 BLOK 1: ISI KONTEN (paragraph + heading) — WAJIB PANJANG & MENGALIR ━━━
+Tulis kisah menggunakan ARC EMOSIONAL berikut. Setiap fase WAJIB ada dan mengalir ke fase berikutnya:
 
-[HEADING] Babak 1: [nama babak — misal: "Sebuah Perintah yang Berat"]
-[PARAGRAPH] Narasi babak 1 — gambarkan suasana, tokoh, perasaan, detail tempat & waktu. ${subType !== "CERITA_FIKSI" ? "Sisipkan dialog bersumber dalam narasi jika ada." : "Sisipkan dialog antar tokoh yang membuat cerita hidup."}
+━ FASE 1 — HOOK (1 paragraf)
+[PARAGRAPH] Pembuka yang LANGSUNG menarik perhatian dalam kalimat pertama.
+Bisa berupa: momen menegangkan, suasana yang kuat, atau pertanyaan yang menggugah.
+Contoh: "Langit masih gelap ketika sebuah keputusan mengubah segalanya..."
 
-[HEADING] Babak 2: [nama babak — misal: "Ujian yang Datang"]
-[PARAGRAPH] Narasi babak 2 — kembangkan konflik atau perjalanan kisah...
+━ FASE 2 — SETUP (1–2 paragraf)
+[PARAGRAPH] Perkenalkan tokoh, tempat, waktu, dan suasana secara hangat.
+Buat pembaca PEDULI pada tokoh sebelum konflik datang.
 
-[HEADING] Babak 3: [nama babak — momen klimaks/puncak]
-[PARAGRAPH] Narasi babak 3 — klimaks kisah, momen paling menyentuh...
+━ FASE 3 — KONFLIK / UJIAN (2–3 paragraf)
+[HEADING] [nama babak — misal: "Ujian yang Berat"]
+[PARAGRAPH] Ini jantung cerita. Tunjukkan perjuangan, keraguan, dan tekanan.
+${subType !== "CERITA_FIKSI" ? "Sisipkan dialog bersumber dari riwayat dalam narasi jika ada." : "Sisipkan dialog antar tokoh yang membuat cerita hidup."}
+Akhiri babak ini dengan kalimat yang membuat pembaca INGIN tahu kelanjutannya.
 
-[PARAGRAPH] Penutup naratif — resolusi kisah, suasana akhir yang hangat & bermakna.\n\n`;
+━ FASE 4 — KLIMAKS (1–2 paragraf)
+[HEADING] [nama babak — momen paling intens]
+[PARAGRAPH] Keputusan besar, pertolongan Allah, atau momen yang mengubah segalanya.
+Ini puncak emosi — buat pembaca merasakan getarannya.
+Akhiri dengan kalimat penghubung menuju resolusi.
+
+━ FASE 5 — RESOLUSI & KEHANGATAN (1–2 paragraf)
+[PARAGRAPH] Tunjukkan buah dari kesabaran/keimanan. Tutup dengan kalimat yang terasa seperti pelukan hangat.
+
+ATURAN TRANSISI WAJIB:
+- Setiap fase HARUS mengalir ke fase berikutnya dengan kalimat penghubung.
+- Urutan fase TIDAK BOLEH ditukar — jika ditukar, cerita akan rusak.
+- Contoh kalimat penghubung: "Tapi ujian yang sesungguhnya belum selesai...", "Justru di saat itulah, sesuatu yang tak terduga terjadi..."
+\n\n`;
 
   if (subType !== "CERITA_FIKSI") {
     prompt += `━━━ 📖 BLOK 2: DALIL / LANDASAN (dalil) ━━━
@@ -288,20 +306,37 @@ Tempatkan di posisi paling bermakna (sebelum klimaks atau setelah narasi utama).
 
   if (options.analogi) {
     const bloknr = subType !== "CERITA_FIKSI" ? "3" : "2";
-    prompt += `━━━ 🧩 BLOK ${bloknr}: ANALOGI SEDERHANA (analogy) ━━━
-Buat 1 analogi singkat yang membantu anak usia ${TARGET_USIA} memahami hikmah utama kisah.
-Gunakan perumpamaan dari kehidupan sehari-hari (tumbuhan, air, teman bermain, mainan, dll.).
+    prompt += `━━━ 🧩 BLOK ${bloknr}: ANALOGI ORGANIK (analogy) ━━━
+Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam kisah di atas — bukan analogi generik.
+
+ATURAN:
+1. Baca ulang kisah yang sudah kamu tulis → ambil benda/situasi/tokoh yang sudah muncul → jadikan analogi.
+2. Analogi harus membuat anak bilang "Ohhh iya ya!"
+3. JANGAN buat analogi yang tidak ada hubungannya dengan elemen dalam cerita.
+
+❌ SALAH: Kisah tentang sabar menunggu pelangi → Analogi "menanam permen di tanah"
+   (permen tidak muncul dalam cerita — analoginya terasa random)
+✅ BENAR: Kisah tentang sabar menunggu pelangi → Analogi menggunakan pelangi/hujan yang SUDAH ada dalam cerita.
+
+TEST MANDIRI: Jika analogimu bisa dipakai untuk topik LAIN tanpa perubahan, berarti terlalu generik. Buat ulang.
+
 Format:
-• Judul Analogi: [nama analogi singkat]
-• Penjelasan   : [2–3 kalimat yang mudah dipahami anak]\n\n`;
+• Judul: [ambil dari elemen yang sudah muncul dalam kisah]
+• Penjelasan: [2–3 kalimat, menggunakan benda/situasi dari kisah itu sendiri]\n\n`;
   }
 
   const tipBlockNr = subType !== "CERITA_FIKSI" ? (options.analogi ? "4" : "3") : (options.analogi ? "3" : "2");
   prompt += `━━━ ℹ️ BLOK ${tipBlockNr}: CATATAN / TIPS (tip) ━━━
-Hikmah dan pelajaran utama dari kisah ini — untuk anak sekaligus panduan orang tua/pendidik.
-Tulis 3–4 poin hikmah praktis, hangat, dan memotivasi — BUKAN ceramah.
+Tips WAJIB merupakan REFLEKSI NATURAL dari momen spesifik yang terjadi dalam kisah di atas.
+Setiap tips harus bisa dijawab: "Di bagian mana kisah ini poin ini muncul?"
+
+❌ SALAH: Tips generik yang bisa ditulis tanpa membaca kisah sama sekali.
+✅ BENAR: Tips yang hanya masuk akal setelah membaca kisah di atas.
+
+Tulis 3–4 poin, hangat dan memotivasi — BUKAN ceramah.
 Format per poin:
-• 💡 [poin hikmah yang singkat namun bermakna]\n\n`;
+• 💡 [poin hikmah + referensi ke momen kisah]
+   Contoh: "Seperti [tokoh] yang [momen dari kisah], ajak anak..."\n\n`;
 
   if ((subType === "SIRAH" || subType === "QASHASH" || subType === "TELADAN") && options.referensi) {
     prompt += `━━━ 📚 REFERENSI SUMBER (dalil — tipe referensi) ━━━
@@ -415,7 +450,7 @@ Target pembaca: anak usia ${ageLabel}
   // === BAGIAN 3: FORMAT TEKNOLOGI EDITOR ===
   prompt += `FORMAT OUTPUT YANG HARUS KAMU IKUTI:
 
-Platform kami menggunakan sistem "Blok Konten". Kamu HARUS memberikan output dalam format blok-blok berikut. Kamu bebas menyusun blok dalam urutan apapun dan jumlah berapapun — tidak ada aturan wajib berapa kali setiap blok harus muncul.
+Platform kami menggunakan sistem "Blok Konten". Kamu HARUS memberikan output dalam format blok-blok berikut.
 
 ═══ METADATA ═══
 - Judul: [judul konten yang menarik]
@@ -427,30 +462,75 @@ Platform kami menggunakan sistem "Blok Konten". Kamu HARUS memberikan output dal
 
 `;
 
-  // Blok sesuai tipe
-  prompt += `📝 BLOK: ISI KONTEN (paragraph)
-Teks narasi atau penjelasan utama. Gunakan bahasa yang mudah dipahami anak.
+  if (type === "QNA") {
+    prompt += `URUTAN BLOK YANG DIREKOMENDASIKAN (ikuti urutan ini untuk alur terbaik):
+1. 💡 JAWABAN INSTAN — langsung jawab pertanyaan anak (quick_answer)
+2. 💬 DIALOG — simulasi bagaimana orangtua menjelaskan ke anak (dialog)
+3. 📖 DALIL — landasan dari Al-Quran/Hadits (dalil)
+4. 🧩 ANALOGI — perumpamaan dari kehidupan anak (analogy)
+5. 📝 ISI KONTEN — penjelasan tambahan jika perlu detail lebih (paragraph)
+6. ℹ️ TIPS — panduan praktis untuk orangtua (tip)
+7. ✨ HIKMAH — refleksi penutup (hikmah)
+8. 🤲 DOA — doa relevan (doa)
+
+KUNCI ALUR: Setiap blok harus TERASA SAMBUNGAN dari blok sebelumnya.
+Dialog menjelaskan jawaban instan. Dalil memperkuat dialog. Analogi menyederhanakan dalil. Tips mengaplikasikan semuanya.
 
 `;
-
-  if (type === "QNA") {
     prompt += `💡 BLOK: JAWABAN INSTAN (quick_answer)
-Jawaban singkat dan langsung yang bisa dibacakan ke anak. Maksimal 2-3 kalimat. Ini adalah jawaban ringkas sebelum penjelasan detail.
+Jawaban singkat dan langsung. Maksimal 2-3 kalimat yang menjawab inti pertanyaan.
 
 💬 BLOK: SIMULASI DIALOG (dialog)
-Percakapan antara 2 ORANG SAJA: Anak dengan Ibu ATAU Anak dengan Ayah.
-PENTING: Dalam 1 blok dialog bisa ada BANYAK baris percakapan bolak-balik.
-Tidak ada aturan khusus berapa baris — buat sealami mungkin seperti percakapan keluarga muslim di rumah.
+Tulis dialog seperti percakapan NYATA di rumah — bukan tanya-jawab formal.
+Anak boleh menyela, menyanggah, atau bertanya lagi.
+Orang tua boleh berpikir sebentar, menggunakan cerita pendek, atau bertanya balik.
+Gunakan BAHASA SEHARI-HARI keluarga muslim — terasa seperti "ini bisa terjadi di rumah saya".
 
-Format yang harus kamu ikuti:
+❌ KAKU: "Nak, tahukah kamu bahwa shalat itu wajib?"
+✅ NATURAL: "Hmm, kamu pernah nggak merasa lemas kalau belum makan seharian? Nah, sholat itu makanan untuk hati kita..."
+
+Percakapan HANYA antara Anak dengan Ibu ATAU Anak dengan Ayah.
+Format:
 ---
 DIALOG:
-- [Anak] "Bunda, kenapa kita harus sholat?"
-- [Ibu] "Karena sholat adalah perintah Allah, sayang."
-- [Anak] "Tapi kenapa harus 5 kali?"
-- [Ibu] "Karena Allah tahu itu yang terbaik untuk kita."
+- [Anak] "..."
+- [Ibu] "..."
+- [Anak] "..."
 ---
-(Gunakan [Anak] dan [Ibu] atau [Anak] dan [Ayah] sebagai speaker)
+
+`;
+  } else if (type === "PEMBELAJARAN") {
+    prompt += `URUTAN BLOK PEDAGOGIS (ikuti urutan ini untuk pembelajaran efektif):
+1. 📝 HOOK — buka dengan pertanyaan/fakta/cerita pendek yang buat anak PENASARAN (paragraph)
+2. 📝 PENJELASAN INTI — jelaskan konsep utama dengan bahasa sederhana (paragraph)
+3. 📖 DALIL — tunjukkan landasannya dari Al-Quran/Hadits (dalil)
+4. 🧩 ANALOGI — buat konsep lebih mudah dimengerti (analogy)
+5. 📝 PRAKTIK — langkah konkret yang bisa dilakukan anak (paragraph)
+6. ℹ️ TIPS — panduan untuk orang tua (tip)
+7. ✨ HIKMAH — refleksi mengapa ini penting (hikmah)
+8. 🤲 DOA — doa yang relevan (doa)
+
+KUNCI: Setiap blok harus menjawab "lalu apa?" dari blok sebelumnya — sehingga terasa satu alur yang mengalir.
+
+📝 BLOK: ISI KONTEN (paragraph)
+Gunakan bahasa yang mudah dipahami anak. Buka dengan HOOK terlebih dulu, lalu penjelasan inti, lalu langkah praktik.
+
+`;
+  } else if (type === "ARTIKEL") {
+    prompt += `PANDUAN MENULIS ARTIKEL:
+- Buka dengan HOOK — jangan langsung masuk materi. Mulai dengan anekdot nyata, pertanyaan, atau fakta mengejutkan.
+- Gunakan contoh nyata dari kehidupan anak/keluarga.
+- Setiap heading harus membuat pembaca ingin baca bagian selanjutnya.
+- Tutup setiap section dengan kalimat yang menghubungkan ke section berikutnya.
+- Akhiri dengan CALL TO ACTION yang hangat dan mendorong tindakan.
+
+📝 BLOK: ISI KONTEN (paragraph)
+Tulis narasi artikel yang mengalir, menginspirasi, dan terasa personal — bukan ceramah.
+
+`;
+  } else {
+    prompt += `📝 BLOK: ISI KONTEN (paragraph)
+Teks narasi atau penjelasan utama. Gunakan bahasa yang mudah dipahami anak.
 
 `;
   }
@@ -480,16 +560,24 @@ Dalil 2:
   }
 
   if (options.analogi) {
-    prompt += `🧩 BLOK: ANALOGI SEDERHANA (analogy)
-Perumpamaan yang mudah dipahami anak sesuai usianya. Berisi:
-- Judul analogi (singkat)
-- Isi analogi (gunakan perumpamaan dari kehidupan sehari-hari anak)
+    prompt += `🧩 BLOK: ANALOGI KONTEKSTUAL (analogy)
+Analogi HARUS relevan dengan usia target DAN lahir dari konteks konten yang sudah kamu tulis.
+
+PANDUAN USIA:
+- 3-5 tahun: mainan, hewan peliharaan, makanan favorit, teman bermain
+- 5-7 tahun: sekolah, PR, jajan, sepeda, teman sekelas
+- 7-10 tahun: game, olahraga, eksplorasi alam, tim/kelompok
+- 10-13 tahun: media sosial, teknologi, cita-cita, tanggung jawab
+
+ATURAN:
+1. Baca ulang konten yang sudah kamu tulis → ambil elemen di dalamnya → jadikan analogi.
+2. TEST MANDIRI: Jika analogi ini bisa dipakai untuk topik LAIN tanpa perubahan → terlalu generik, buat ulang.
 
 Format:
 ---
 ANALOGI:
-Judul: "Sholat Seperti Makan"
-Isi: "Bayangkan kalau kamu tidak makan seharian, pasti lemas kan? Nah, sholat itu makanan untuk hati kita..."
+Judul: "[judul yang spesifik, ambil dari elemen konten]"
+Isi: "[2-3 kalimat menggunakan referensi dari konten yang sudah ditulis]"
 ---
 
 `;

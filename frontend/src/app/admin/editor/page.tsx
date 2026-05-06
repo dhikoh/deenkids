@@ -86,6 +86,8 @@ function EditorContent() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [lastAutoSave, setLastAutoSave] = useState<string | null>(null);
   const [showRecovery, setShowRecovery] = useState(false);
+  // Guard: skip nodeId reset on first render (edit mode loads nodeId from API)
+  const isFirstRender = useRef(true);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -93,7 +95,8 @@ function EditorContent() {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
     if (token) {
-      fetchEditorNodes(token, 'PEMBELAJARAN').then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
+      // Nodes untuk mode baru tidak di-fetch di sini — di-fetch saat user pilih tipe konten
+      // (default tipe = QNA, tidak membutuhkan nodes)
       fetchEditorTags(token).then(r => setAvailableTags(r.data || [])).catch(() => {});
       // Fetch AI global toggle
       fetchAiToggle(token).then(r => { setAiGlobalEnabled(r.aiEnabled); if (!r.aiEnabled) setUseAi(false); }).catch(() => {});
@@ -133,6 +136,15 @@ function EditorContent() {
               setEditStatus(c.status || null);
               setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
               const cType: ContentTypeOption = c.type === 'PEMBELAJARAN' ? 'PEMBELAJARAN' : c.type === 'QNA' ? 'QNA' : c.type === 'KISAH' ? 'KISAH' : 'ARTICLE';
+              // FIX #1: fetch nodes sesuai tipe konten yang diedit (bukan hardcode PEMBELAJARAN)
+              const nodeGroup = cType === 'PEMBELAJARAN' ? 'PEMBELAJARAN' : cType === 'KISAH' ? 'KISAH' : null;
+              if (nodeGroup) {
+                fetchEditorNodes(token, nodeGroup)
+                  .then(r => setNodes(flattenNodes(r.data || [])))
+                  .catch(() => {});
+              }
+              // Set contentType SETELAH fetch nodes agar isFirstRender guard bekerja
+              isFirstRender.current = true; // tetap true saat load edit — jangan reset nodeId
               setContentType(cType);
               // Auto-enable audio for KISAH content
               if (c.type === 'KISAH' && c.enableAudio !== false) setEnableAudio(true);
@@ -176,10 +188,15 @@ function EditorContent() {
     }
   }, [searchParams]);
 
-  // Auto-set semua usia saat tipe diubah ke KISAH (KISAH selalu universal 3-13 thn)
+  // FIX #2: Reset nodeId saat ganti tipe — dengan guard agar tidak terpicu saat load edit mode
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return; // Skip reset pada render pertama (edit mode sudah set nodeId dari API)
+    }
     if (contentType === 'KISAH') setAgeGroups([...ALL_AGE_GROUPS]);
-    if (contentType !== 'ARTICLE') setPov(''); // reset pov jika bukan ARTICLE
+    if (contentType !== 'ARTICLE') setPov('');
+    setNodeId(''); // Reset nodeId saat user ganti tipe secara manual
   }, [contentType]);
 
   const flattenNodes = (tree: any[], prefix = ""): any[] => {
@@ -522,11 +539,15 @@ function EditorContent() {
                 <button key={t} onClick={() => {
                   setContentType(t);
                   if (t === 'KISAH') setEnableAudio(true);
-                  // Reload nodes for the new content type group
+                  // FIX #3: hanya fetch nodes untuk tipe yang membutuhkan (PEMBELAJARAN / KISAH)
                   const token = Cookies.get('_at');
                   if (token) {
-                    const group = t === 'PEMBELAJARAN' ? 'PEMBELAJARAN' : t === 'KISAH' ? 'KISAH' : undefined;
-                    fetchEditorNodes(token, group).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
+                    if (t === 'PEMBELAJARAN' || t === 'KISAH') {
+                      const group = t === 'PEMBELAJARAN' ? 'PEMBELAJARAN' : 'KISAH';
+                      fetchEditorNodes(token, group).then(r => setNodes(flattenNodes(r.data || []))).catch(() => {});
+                    } else {
+                      setNodes([]); // QNA / ARTICLE tidak membutuhkan nodes
+                    }
                   }
                 }} className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${contentType === t ? "bg-emerald-600 text-white shadow-md" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
                   {t === "PEMBELAJARAN" ? "📚 Pembelajaran" : t === "QNA" ? "🗨️ Tanya Jawab" : t === "KISAH" ? "📖 Kisah" : "📝 Artikel"}

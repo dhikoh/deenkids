@@ -28,10 +28,25 @@ function EmptyState({ message }: { message: string }) {
 function ContentCard({ item, index }: { item: any; index: number }) {
   const isQna = item.type === "QNA";
   const isPembelajaran = item.type === "PEMBELAJARAN";
-  const typeLabel = isQna ? "Tanya Jawab" : isPembelajaran ? "Pembelajaran" : "Artikel";
-  const typeStyle = isQna ? "bg-amber-50 text-amber-700 border border-amber-200" : isPembelajaran ? "bg-purple-50 text-purple-700 border border-purple-200" : "bg-sky-50 text-sky-700 border border-sky-200";
+  const isKisah = item.type === "KISAH";
+  const typeLabel = isQna ? "Tanya Jawab" : isPembelajaran ? "Pembelajaran" : isKisah ? "Kisah" : "Artikel";
+  const typeStyle = isQna
+    ? "bg-amber-50 text-amber-700 border border-amber-200"
+    : isPembelajaran
+    ? "bg-purple-50 text-purple-700 border border-purple-200"
+    : isKisah
+    ? "bg-orange-50 text-orange-700 border border-orange-200"
+    : "bg-sky-50 text-sky-700 border border-sky-200";
+
+  // Routing berdasarkan tipe konten
+  const href = isQna
+    ? `/qna/${item.slug}`
+    : isKisah
+    ? `/kisah/${item.node?.slug}/${item.slug}`
+    : `/artikel/${item.slug}`; // PEMBELAJARAN & ARTICLE keduanya menggunakan articleDetail
+
   return (
-    <Link href={isQna ? `/qna/${item.slug}` : `/artikel/${item.slug}`} className="group">
+    <Link href={href} className="group">
       <div className="h-full bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-emerald-200 transition-all duration-300 overflow-hidden">
         {item.thumbnailUrl && (
           <div className="w-full aspect-video overflow-hidden">
