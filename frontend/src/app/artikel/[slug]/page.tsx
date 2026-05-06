@@ -105,8 +105,8 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
         )}
       </div>
 
-      {/* Audio Player — uploaded MinIO MP3 takes priority over browser TTS */}
-      {content.audioUrl ? (
+      {/* Audio Player — enableAudio is master gate; MP3 takes priority over browser TTS */}
+      {content.enableAudio && content.audioUrl ? (
         <NarrationAudioPlayer audioUrl={content.audioUrl} />
       ) : (
         <AudioPlayerWrapper blocks={

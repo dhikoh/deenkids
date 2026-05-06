@@ -93,8 +93,8 @@ export default async function KisahDetailPage({
         </div>
       </div>
 
-      {/* Audio Player — uploaded MP3 takes priority, then browser TTS */}
-      {content.audioUrl ? (
+      {/* Audio Player — enableAudio is master gate; MP3 takes priority over browser TTS */}
+      {content.enableAudio && content.audioUrl ? (
         <div className="mb-6">
           <NarrationAudioPlayer audioUrl={content.audioUrl} />
         </div>

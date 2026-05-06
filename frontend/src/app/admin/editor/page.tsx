@@ -517,7 +517,7 @@ function EditorContent() {
             <span className="text-sm font-medium flex items-center gap-1">{enableAudio ? <Volume2 className="h-4 w-4 text-purple-500" /> : <VolumeX className="h-4 w-4 text-slate-400" />} Audio</span>
           </label>
           <button onClick={() => {
-            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, audioTitle, audioDescription, displayAuthorName };
+            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, audioTitle, audioDescription, audioUrl, displayAuthorName };
             localStorage.setItem('adably_preview_data', JSON.stringify(previewData));
             window.open('/admin/editor/preview', '_blank');
           }} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2">
@@ -871,7 +871,23 @@ function EditorContent() {
               <h3 className="font-bold text-slate-800 mb-1 flex items-center gap-2">
                 <Mic size={16} className="text-purple-500" /> Narasi Audio AI
               </h3>
-              <p className="text-xs text-slate-400 mb-4">Generate narasi dari blok konten, download MP3, lalu upload kembali.</p>
+              <p className="text-xs text-slate-400 mb-3">Generate narasi dari blok konten, download MP3, lalu upload kembali.</p>
+
+              {/* Audio Mode Status Indicator */}
+              <div className={`rounded-xl p-3 mb-4 border text-xs font-bold flex items-center gap-2 ${
+                !enableAudio
+                  ? 'bg-slate-50 border-slate-200 text-slate-500'
+                  : audioUrl
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : 'bg-amber-50 border-amber-200 text-amber-700'
+              }`}>
+                <span>{!enableAudio ? '⚫' : audioUrl ? '🟢' : '🟡'}</span>
+                <div>
+                  <p>{!enableAudio ? 'Audio Nonaktif — pengunjung tidak mendengar audio' : audioUrl ? 'Mode: Narasi MP3 (Premium)' : 'Mode: Browser TTS (Gratis)'}</p>
+                  {enableAudio && audioUrl && <p className="font-normal opacity-70 mt-0.5">Untuk beralih ke Browser TTS, hapus narasi di bawah</p>}
+                  {!enableAudio && <p className="font-normal opacity-70 mt-0.5">Aktifkan checkbox Audio di toolbar untuk mengaktifkan</p>}
+                </div>
+              </div>
 
               {enableAudio && blocks.filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video').length > 0 ? (
                 <div className="bg-purple-50 rounded-xl p-3 mb-3 space-y-1">
