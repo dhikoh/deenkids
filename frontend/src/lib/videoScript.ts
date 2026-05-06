@@ -31,6 +31,13 @@ function detectMode(content: any): PromptMode {
 function getSceneCount(content: any, mode: PromptMode, isShorts: boolean): string {
   const blocks = getBlockCount(content);
   if (mode === 'AMBIENT') return isShorts ? '4-6' : '5-8';
+  // NARRATIVE (KISAH) wajib minimum 5 scene untuk memastikan 5 fase arc punya alokasi masing-masing
+  if (mode === 'NARRATIVE') {
+    if (blocks <= 3) return isShorts ? '5-7'  : '5-7';
+    if (blocks <= 6) return isShorts ? '6-9'  : '7-9';
+    return isShorts ? '8-12' : '9-12';
+  }
+  // EXPLAINER
   if (blocks <= 3) return isShorts ? '4-6' : '4-6';
   if (blocks <= 6) return isShorts ? '6-8' : '6-8';
   return isShorts ? '8-12' : '8-10';
@@ -47,6 +54,22 @@ function getBlockCount(content: any): number {
   }
   if (content.articleDetail?.blocks) count += content.articleDetail.blocks.length;
   return Math.max(count, 1);
+}
+
+// Fix A1: Deteksi apakah konten sumber memiliki blok analogi nyata
+// Jika tidak ada → instruksi analogi harus MELARANG AI membuat analogi baru
+function hasAnalogyBlock(content: any): boolean {
+  if (content.qnaDetail) {
+    // Cek via blocks array (format baru)
+    const blocks = content.qnaDetail.blocks || [];
+    if (blocks.some((b: any) => b.type === 'analogy')) return true;
+    // Cek via legacy analogyBlocks
+    if ((content.qnaDetail.analogyBlocks || []).length > 0) return true;
+  }
+  if (content.articleDetail?.blocks) {
+    if (content.articleDetail.blocks.some((b: any) => b.type === 'analogy')) return true;
+  }
+  return false;
 }
 
 // ─── Extract content blocks as text ──────────────────────────────────────────
@@ -368,6 +391,7 @@ function buildExplainerPrompt(content: any, aspectRatio: AspectRatio): string {
   }
 
   // Teknik section berbeda per tipe
+  const hasAnalogy = hasAnalogyBlock(content);
   let teknikSection = '';
   if (isQna) {
     teknikSection = `
@@ -400,11 +424,16 @@ PANDUAN DIALOG (WAJIB):
 - Jika ada LANGKAH-LANGKAH: tampilkan STEP-BY-STEP dengan nomor urut visual.
 - JANGAN buat narasi dramatik berlebihan — tone INFORMATIF dan CERIA.
 
-ANALOGI (dari konten sumber):
-- Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam konten sumber — bukan analogi generik.
+ANALOGI${hasAnalogy ? ' (dari konten sumber)' : ''}:
+${hasAnalogy
+  ? `- Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam konten sumber — bukan analogi generik.
 - Test mandiri: jika analogimu bisa dipakai untuk topik LAIN tanpa perubahan → buat ulang.
 - Contoh ✅: QNA tentang wudhu → analogi menggunakan air/bersih yang sudah ada dalam konten.
-- Contoh ❌: QNA tentang wudhu → "seperti mengisi bensin di SPBU" (tidak muncul dalam konten).`;
+- Contoh ❌: QNA tentang wudhu → "seperti mengisi bensin di SPBU" (tidak muncul dalam konten).`
+  : `- Konten sumber TIDAK memiliki blok analogi.
+- JANGAN buat analogi baru. Gunakan langsung jawaban/dalil yang ada.
+- Lewati urutan langkah ANALOGI di atas.`
+}`;
   } else if (isPembelajaran) {
     teknikSection = `
 ════════════════════════════════════════
@@ -429,11 +458,16 @@ KUNCI: Setiap scene harus menjawab "lalu apa?" dari scene sebelumnya — satu al
 - Setiap poin penting: HIGHLIGHT dengan efek visual (zoom, glow, underline).
 - JANGAN buat narasi dramatik berlebihan — tone INFORMATIF dan CERIA.
 
-ANALOGI (dari konten sumber):
-- Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam konten sumber — bukan analogi generik.
+ANALOGI${hasAnalogy ? ' (dari konten sumber)' : ''}:
+${hasAnalogy
+  ? `- Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam konten sumber — bukan analogi generik.
 - Test mandiri: jika analogimu bisa dipakai untuk topik LAIN tanpa perubahan → buat ulang.
 - Contoh ✅: materi tentang sholat → analogi menggunakan ritual/waktu yang sudah disebutkan dalam konten.
-- Contoh ❌: materi tentang sholat → analogi yang tidak ada hubungannya dengan isi konten.`;
+- Contoh ❌: materi tentang sholat → analogi yang tidak ada hubungannya dengan isi konten.`
+  : `- Konten sumber TIDAK memiliki blok analogi.
+- JANGAN buat analogi baru. Lewati blok ANALOGI dalam urutan pedagogis.
+- Langsung lanjut ke PRAKTIK setelah DALIL.`
+}`;
   } else {
     // ARTIKEL
     teknikSection = `
@@ -449,9 +483,12 @@ ${povSection}
 - Gunakan INFOGRAFIS ANIMASI untuk poin-poin penting.
 - JANGAN buat narasi dramatik berlebihan — tone sesuai POV (reflektif untuk ORTU, segar untuk ANAK).
 
-ANALOGI (dari konten sumber):
-- Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam konten sumber.
-- Test mandiri: jika analogimu bisa dipakai untuk topik LAIN tanpa perubahan → buat ulang.`;
+ANALOGI${hasAnalogy ? ' (dari konten sumber)' : ''}:
+${hasAnalogy
+  ? `- Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam konten sumber.
+- Test mandiri: jika analogimu bisa dipakai untuk topik LAIN tanpa perubahan → buat ulang.`
+  : `- Konten sumber TIDAK memiliki blok analogi. JANGAN buat analogi baru.`
+}`;
   }
 
   return `=== PROMPT VIDEO — MODE EXPLAINER (EDUKASI) ===
@@ -491,14 +528,9 @@ ATURAN OUTPUT:
 - Kamera BERVARIASI. Total durasi = ${durationLabel}.
 - Sesuaikan jumlah scene dengan KEPADATAN konten — jangan paksakan banyak scene jika konten pendek.
 
-⚠️ KESETIAAN KONTEN (WAJIB):
-- Dalil (ayat/hadits) WAJIB ditulis LENGKAP — teks Arab UTUH + terjemahan UTUH + sumber LENGKAP.
-  DILARANG memotong ayat, menulis "...", atau meringkas terjemahan.
-- Jawaban, analogi, tips, hikmah: gunakan PERSIS seperti di konten sumber di atas.
-  DILARANG mengarang, memparafrase, atau menambah informasi yang tidak ada di konten sumber.
-- Jika konten sumber TIDAK menyebutkan suatu fakta/dalil, JANGAN masukkan ke narasi video.
-- Narasi boleh menyusun ulang URUTAN, tapi ISI harus 100% dari konten sumber.`;
+(Lihat FONDASI WAJIB di atas untuk aturan kesetiaan konten, dalil, dan karakter visual.)`;
 }
+
 
 // ─── MODE: AMBIENT (Doa, Dzikir) ────────────────────────────────────────────
 

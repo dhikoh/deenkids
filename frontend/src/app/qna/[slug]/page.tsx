@@ -6,21 +6,32 @@ import { EngagementBar } from "@/components/ui/EngagementBar";
 import { ROLE_CONFIG } from "@/components/DialogIcons";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
 import type { Metadata } from "next";
+import { JsonLd, buildFaqPageSchema, buildBreadcrumbSchema } from "@/components/seo/JsonLd";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://adably.id';
   try {
     const content = await fetchContentBySlug(slug);
+    const canonical = `${SITE_URL}/qna/${slug}`;
+    // Format judul SEO-friendly untuk halaman QNA (pertanyaan biasanya judul)
+    const seoTitle = content.title.endsWith('?') ? content.title : `${content.title}?`;
     return {
-      title: content.title,
+      title: seoTitle,
       description: content.description || content.title,
+      alternates: { canonical },
       openGraph: {
-        title: content.title,
+        title: seoTitle,
         description: content.description || content.title,
         type: "article",
-        images: [{ url: content.thumbnailUrl || "/og-image.png", width: 1200, height: 630 }],
+        url: canonical,
+        images: [{ url: content.thumbnailUrl || `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: content.title }],
+        publishedTime: content.publishedAt ? new Date(content.publishedAt).toISOString() : undefined,
+        modifiedTime: content.updatedAt ? new Date(content.updatedAt).toISOString() : undefined,
+        authors: [content.displayAuthorName || content.author?.name || 'Adably'],
+        section: 'Tanya Jawab Islam Anak',
       },
-      twitter: { card: "summary_large_image", title: content.title, description: content.description || "" },
+      twitter: { card: "summary_large_image", title: seoTitle, description: content.description || "" },
     };
   } catch {
     return { title: "Konten" };
@@ -29,6 +40,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function QnaDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://adably.id';
 
   let content: any;
   try {
@@ -39,9 +51,25 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
 
   const qna = content.qnaDetail;
   const authorName = content.authorName || content.displayAuthorName || content.author?.name || 'Anonim';
+  const pageUrl = `${SITE_URL}/qna/${slug}`;
+
+  // FAQPage schema — mendukung rich snippet di Google
+  const faqSchema = buildFaqPageSchema({
+    question: content.title,
+    answer: qna?.answerQuick || content.description || content.title,
+    url: pageUrl,
+  });
+
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: 'Beranda', url: SITE_URL },
+    { name: 'Tanya Jawab', url: `${SITE_URL}/qna` },
+    { name: content.title, url: pageUrl },
+  ]);
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 pt-28 max-w-3xl">
+      <JsonLd schema={faqSchema} />
+      <JsonLd schema={breadcrumbSchema} />
       <Link href={content.type === 'QNA' ? '/qna' : '/artikel'} className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-8 font-bold text-sm">
         <ChevronLeft className="h-4 w-4 mr-1" /> Kembali
       </Link>

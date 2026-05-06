@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Amiri } from "next/font/google";
 import "./globals.css";
 import ClientProviders from "@/components/ClientProviders";
+import { JsonLd, buildOrganizationSchema, buildWebSiteSchema } from "@/components/seo/JsonLd";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const amiri = Amiri({ weight: ["400", "700"], subsets: ["arabic"], variable: "--font-amiri" });
@@ -30,6 +31,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <meta name="theme-color" content="#10b981" />
       </head>
       <body className={`${inter.variable} ${amiri.variable} font-sans antialiased bg-slate-50 text-slate-800 flex flex-col min-h-screen`}>
+        <JsonLd schema={buildOrganizationSchema()} />
+        <JsonLd schema={buildWebSiteSchema()} />
         <ClientProviders>{children}</ClientProviders>
         <script
           dangerouslySetInnerHTML={{
