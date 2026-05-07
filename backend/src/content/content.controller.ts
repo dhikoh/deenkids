@@ -12,16 +12,27 @@ export class ContentController {
   ) {}
 
   @Get('homepage-config')
-  @ApiOperation({ summary: 'Get homepage section visibility config (public, no auth)' })
+  @ApiOperation({ summary: 'Get homepage section visibility config (public, no auth) — merges admin toggle + content existence' })
   async getHomepageConfig() {
+    // 1. Admin toggle settings
     const keys = ['section_pembelajaran_visible', 'section_qna_visible', 'section_kisah_visible', 'section_article_visible'];
     const settings = await this.prisma.setting.findMany({ where: { key: { in: keys } } });
     const get = (k: string) => settings.find(s => s.key === k)?.value;
+
+    // 2. Content existence check — 1 efficient groupBy query for all types
+    const counts = await this.prisma.contentItem.groupBy({
+      by: ['type'],
+      where: { status: 'PUBLISHED', deletedAt: null },
+      _count: true,
+    });
+    const hasContent = (type: string) => counts.some(c => c.type === type && c._count > 0);
+
+    // 3. Merge: visible = admin says ON + published content exists
     return {
-      pembelajaran: get('section_pembelajaran_visible') !== 'false',
-      qna: get('section_qna_visible') !== 'false',
-      kisah: get('section_kisah_visible') !== 'false',
-      article: get('section_article_visible') !== 'false',
+      pembelajaran: get('section_pembelajaran_visible') !== 'false' && hasContent('PEMBELAJARAN'),
+      qna: get('section_qna_visible') !== 'false' && hasContent('QNA'),
+      kisah: get('section_kisah_visible') !== 'false' && hasContent('KISAH'),
+      article: get('section_article_visible') !== 'false' && hasContent('ARTICLE'),
     };
   }
 

@@ -203,9 +203,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
                 </Link>
               ))}
             </div>
-          ) : (
-            <EmptyState message="Belum ada modul pembelajaran untuk filter usia ini." />
-          )}
+          ) : null}
         </div>
       </section>
       )}
@@ -235,9 +233,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
                 <ContentCard key={item.id} item={item} index={i} />
               ))}
             </div>
-          ) : (
-            <EmptyState message="Belum ada tanya jawab untuk filter usia ini." />
-          )}
+          ) : null}
         </div>
       </section>
       )}
@@ -267,9 +263,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
                 <ContentCard key={item.id} item={item} index={i} />
               ))}
             </div>
-          ) : (
-            <EmptyState message="Belum ada artikel untuk filter usia ini." />
-          )}
+          ) : null}
         </div>
       </section>
       )}
@@ -316,9 +310,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
                 </Link>
               ))}
             </div>
-          ) : (
-            <EmptyState message="Belum ada sub-kategori kisah yang tersedia." />
-          )}
+          ) : null}
         </div>
       </section>
       )}
@@ -351,9 +343,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
                 <ContentCard key={item.id} item={item} index={i} />
               ))}
             </div>
-          ) : (
-            <EmptyState message="Belum ada kisah yang dipublikasikan." />
-          )}
+          ) : null}
         </div>
       </section>
       )}
