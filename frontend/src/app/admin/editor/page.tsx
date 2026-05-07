@@ -941,16 +941,24 @@ function EditorContent() {
               type="button"
               disabled={!enableAudio || blocks.filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video').length === 0}
               onClick={() => {
-                const scriptText = blocks
+                const parts: string[] = [];
+                // Include title if audioTitle toggle is ON
+                if (audioTitle && title.trim()) parts.push(title.trim());
+                // Include description if audioDescription toggle is ON
+                if (audioDescription && description.trim()) parts.push(description.trim());
+                // Extract text from all audio-enabled blocks
+                const blockTexts = blocks
                   .filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video')
                   .map(b => {
                     if (b.type === 'dalil') return (b.data.entries || []).map((e: any) => e.translation || '').filter(Boolean).join('. ');
                     if (b.type === 'dialog') return (b.data.lines || []).map((l: any) => l.text || '').filter(Boolean).join('\n');
-                    if (b.type === 'doa') return b.data.translation || '';
+                    if (b.type === 'doa') return [b.data.title, b.data.translation].filter(Boolean).join('. ');
+                    if (b.type === 'analogy') return [b.data.title, b.data.text].filter(Boolean).join('. ');
                     return b.data.text || '';
                   })
-                  .filter((t: string) => t.trim())
-                  .join('\n\n');
+                  .filter((t: string) => t.trim());
+                parts.push(...blockTexts);
+                const scriptText = parts.join('\n\n');
                 if (!scriptText.trim()) return toast.error('Tidak ada teks untuk diekspor');
                 setExportScriptText(scriptText);
                 setShowExportScript(true);
