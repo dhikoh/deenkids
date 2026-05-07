@@ -787,7 +787,8 @@ function generateImagePrompt(
   const engActivity = extras.activity.trim() ? `, performing: ${extras.activity.trim()}` : "";
   const engSetting = extras.setting.trim() ? `, set in: ${extras.setting.trim()}` : "";
   const engColors = extras.colorPalette.trim() ? `, dominant colors: ${extras.colorPalette.trim()}` : "";
-  prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${style}. ${charSpec.en}${engActivity}${engSetting}${engColors}. Warm lighting, vibrant child-friendly colors. Resolution: ${arOption.size}. ${includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, negative space for manual text."} ${arOption.arFlag}"`;
+  prompt += `\n- WATERMARK: Tambahkan teks kecil "adably.id" di sudut kanan bawah gambar dengan font tipis semi-transparan (opacity 40-60%). Ukuran kecil, tidak mengganggu komposisi utama.`;
+  prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${style}. ${charSpec.en}${engActivity}${engSetting}${engColors}. Warm lighting, vibrant child-friendly colors. Resolution: ${arOption.size}. ${includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, negative space for manual text."} Small semi-transparent "adably.id" watermark at bottom-right corner. ${arOption.arFlag}"`;
   return prompt;
 }
 
