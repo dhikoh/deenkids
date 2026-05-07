@@ -526,8 +526,8 @@ export class SocialService {
       this.prisma.setting.findUnique({ where: { key: lastRunKey } }),
     ]);
 
-    // Check enabled (default: true if no setting exists)
-    if (enabledSetting?.value === 'false') return false;
+    // Check enabled (default: OFF — must be explicitly enabled by SuperAdmin)
+    if (enabledSetting?.value !== 'true') return false;
 
     // Check interval
     const interval = parseInt(intervalSetting?.value || (type === 'publish' ? '1' : '24'), 10);

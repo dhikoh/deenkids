@@ -13,18 +13,6 @@ const AGE_FILTERS = [
   { label: "Pra-Remaja (10-13)", value: "10-13" },
 ];
 
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
-      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-        <BookOpen className="h-8 w-8 text-slate-300" />
-      </div>
-      <p className="text-slate-400 font-medium">{message}</p>
-      <p className="text-slate-300 text-sm mt-1">Nantikan pembaruan dari tim Adably.</p>
-    </div>
-  );
-}
-
 function ContentCard({ item, index }: { item: any; index: number }) {
   const isQna = item.type === "QNA";
   const isPembelajaran = item.type === "PEMBELAJARAN";
