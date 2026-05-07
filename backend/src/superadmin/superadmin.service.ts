@@ -240,4 +240,40 @@ export class SuperadminService {
     this.logger.log('Announcement settings updated');
     return { message: 'Pengaturan pengumuman berhasil disimpan' };
   }
+
+  // ── Homepage Visibility Config ──
+  private readonly HOMEPAGE_KEYS = {
+    pembelajaran: 'section_pembelajaran_visible',
+    qna: 'section_qna_visible',
+    kisah: 'section_kisah_visible',
+    article: 'section_article_visible',
+  };
+
+  async getHomepageConfig() {
+    const keys = Object.values(this.HOMEPAGE_KEYS);
+    const settings = await this.prisma.setting.findMany({ where: { key: { in: keys } } });
+    const get = (k: string) => settings.find(s => s.key === k)?.value;
+    return {
+      pembelajaran: get(this.HOMEPAGE_KEYS.pembelajaran) !== 'false', // default visible
+      qna: get(this.HOMEPAGE_KEYS.qna) !== 'false',
+      kisah: get(this.HOMEPAGE_KEYS.kisah) !== 'false',
+      article: get(this.HOMEPAGE_KEYS.article) !== 'false',
+    };
+  }
+
+  async updateHomepageConfig(body: { pembelajaran?: boolean; qna?: boolean; kisah?: boolean; article?: boolean }) {
+    const upsert = (key: string, value: string) => this.prisma.setting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value, group: 'homepage' },
+    });
+    const ops: Promise<any>[] = [];
+    if (body.pembelajaran !== undefined) ops.push(upsert(this.HOMEPAGE_KEYS.pembelajaran, body.pembelajaran.toString()));
+    if (body.qna !== undefined) ops.push(upsert(this.HOMEPAGE_KEYS.qna, body.qna.toString()));
+    if (body.kisah !== undefined) ops.push(upsert(this.HOMEPAGE_KEYS.kisah, body.kisah.toString()));
+    if (body.article !== undefined) ops.push(upsert(this.HOMEPAGE_KEYS.article, body.article.toString()));
+    await Promise.all(ops);
+    this.logger.log('Homepage visibility config updated');
+    return { message: 'Pengaturan visibilitas beranda berhasil disimpan' };
+  }
 }

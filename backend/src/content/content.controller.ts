@@ -11,6 +11,21 @@ export class ContentController {
     private readonly prisma: PrismaService,
   ) {}
 
+  @Get('homepage-config')
+  @ApiOperation({ summary: 'Get homepage section visibility config (public, no auth)' })
+  async getHomepageConfig() {
+    const keys = ['section_pembelajaran_visible', 'section_qna_visible', 'section_kisah_visible', 'section_article_visible'];
+    const settings = await this.prisma.setting.findMany({ where: { key: { in: keys } } });
+    const get = (k: string) => settings.find(s => s.key === k)?.value;
+    return {
+      pembelajaran: get('section_pembelajaran_visible') !== 'false',
+      qna: get('section_qna_visible') !== 'false',
+      kisah: get('section_kisah_visible') !== 'false',
+      article: get('section_article_visible') !== 'false',
+    };
+  }
+
+
   @Get('tree')
   @ApiOperation({ summary: 'Get Pembelajaran Curriculum Tree (group=PEMBELAJARAN)' })
   @ApiQuery({ name: 'age', required: false, description: 'Filter by age group e.g. 3-5' })

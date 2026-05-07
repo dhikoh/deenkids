@@ -477,10 +477,10 @@ export class SocialService {
     const get = (k: string) => settings.find(s => s.key === k)?.value;
 
     return {
-      publishEnabled: get(this.CRON_KEYS.publishEnabled) !== 'false', // default true
+      publishEnabled: get(this.CRON_KEYS.publishEnabled) === 'true', // default false — SuperAdmin must enable
       publishInterval: parseInt(get(this.CRON_KEYS.publishInterval) || '1', 10),
       publishLastRun: get(this.CRON_KEYS.publishLastRun) || null,
-      validateEnabled: get(this.CRON_KEYS.validateEnabled) !== 'false', // default true
+      validateEnabled: get(this.CRON_KEYS.validateEnabled) === 'true', // default false — SuperAdmin must enable
       validateInterval: parseInt(get(this.CRON_KEYS.validateInterval) || '24', 10),
       validateLastRun: get(this.CRON_KEYS.validateLastRun) || null,
     };

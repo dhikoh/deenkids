@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BookOpen, Star, ArrowRight, MessageCircleQuestion, FileText, Eye, Heart, ChevronRight, Scroll } from "lucide-react";
-import { fetchContentTree, fetchContentList, fetchKisahTree } from "@/lib/api";
+import { fetchContentTree, fetchContentList, fetchKisahTree, fetchHomepageConfig } from "@/lib/api";
 
 const AGE_FILTERS = [
   { label: "Semua Usia", value: "Semua" },
@@ -89,43 +89,58 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
   const [loadingArticle, setLoadingArticle] = useState(true);
   const [loadingKisah, setLoadingKisah] = useState(true);
   const [loadingKisahPopular, setLoadingKisahPopular] = useState(true);
+  const [visibility, setVisibility] = useState({ pembelajaran: true, qna: true, kisah: true, article: true });
 
-  // Fetch QnA, Articles, Pembelajaran nodes — re-runs when age filter changes
+  // Fetch homepage visibility config once on mount
+  useEffect(() => {
+    fetchHomepageConfig()
+      .then(config => setVisibility(config))
+      .catch(() => { /* keep defaults — all visible */ });
+  }, []);
+
+  // Fetch QnA, Articles, Pembelajaran nodes — re-runs when age filter or visibility changes
   useEffect(() => {
     const ageParam = selectedAge === "Semua" ? undefined : selectedAge;
 
-    setLoadingNodes(true);
-    setLoadingQna(true);
-    setLoadingArticle(true);
+    if (visibility.pembelajaran) {
+      setLoadingNodes(true);
+      fetchContentTree(ageParam)
+        .then((res) => setNodes(res?.data || res || []))
+        .catch(() => setNodes([]))
+        .finally(() => setLoadingNodes(false));
+    }
 
-    fetchContentTree(ageParam)
-      .then((res) => setNodes(res?.data || res || []))
-      .catch(() => setNodes([]))
-      .finally(() => setLoadingNodes(false));
+    if (visibility.qna) {
+      setLoadingQna(true);
+      fetchContentList({ type: "QNA", sort: "popular", limit: 6, age: ageParam })
+        .then((res) => setQnaItems(res?.data || []))
+        .catch(() => setQnaItems([]))
+        .finally(() => setLoadingQna(false));
+    }
 
-    fetchContentList({ type: "QNA", sort: "popular", limit: 6, age: ageParam })
-      .then((res) => setQnaItems(res?.data || []))
-      .catch(() => setQnaItems([]))
-      .finally(() => setLoadingQna(false));
+    if (visibility.article) {
+      setLoadingArticle(true);
+      fetchContentList({ type: "ARTICLE", sort: "newest", limit: 6, age: ageParam })
+        .then((res) => setArticleItems(res?.data || []))
+        .catch(() => setArticleItems([]))
+        .finally(() => setLoadingArticle(false));
+    }
+  }, [selectedAge, visibility]);
 
-    fetchContentList({ type: "ARTICLE", sort: "newest", limit: 6, age: ageParam })
-      .then((res) => setArticleItems(res?.data || []))
-      .catch(() => setArticleItems([]))
-      .finally(() => setLoadingArticle(false));
-  }, [selectedAge]);
-
-  // Fetch Kisah sub-categories and popular kisah ONCE on mount
+  // Fetch Kisah sub-categories and popular kisah ONCE on mount (if visible)
   useEffect(() => {
-    fetchKisahTree()
-      .then((res) => setKisahNodes(Array.isArray(res) ? res : (res?.data || [])))
-      .catch(() => setKisahNodes([]))
-      .finally(() => setLoadingKisah(false));
+    if (visibility.kisah) {
+      fetchKisahTree()
+        .then((res) => setKisahNodes(Array.isArray(res) ? res : (res?.data || [])))
+        .catch(() => setKisahNodes([]))
+        .finally(() => setLoadingKisah(false));
 
-    fetchContentList({ type: "KISAH", sort: "popular", limit: 6 })
-      .then((res) => setKisahPopular(res?.data || []))
-      .catch(() => setKisahPopular([]))
-      .finally(() => setLoadingKisahPopular(false));
-  }, []);
+      fetchContentList({ type: "KISAH", sort: "popular", limit: 6 })
+        .then((res) => setKisahPopular(res?.data || []))
+        .catch(() => setKisahPopular([]))
+        .finally(() => setLoadingKisahPopular(false));
+    }
+  }, [visibility.kisah]);
 
   const flatNodes = Array.isArray(nodes) ? nodes : [];
 
@@ -150,6 +165,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
       </div>
 
       {/* Pembelajaran Utama */}
+      {visibility.pembelajaran && (
       <section className="py-24 bg-white relative z-20 -mt-10 rounded-t-[3rem] shadow-[0_-10px_40px_rgb(0,0,0,0.03)] border-t border-slate-100">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
@@ -192,8 +208,10 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
           )}
         </div>
       </section>
+      )}
 
       {/* Tanya Jawab Populer */}
+      {visibility.qna && (
       <section className="py-20 bg-gradient-to-b from-white to-slate-50">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
@@ -222,8 +240,10 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
           )}
         </div>
       </section>
+      )}
 
       {/* Artikel Terbaru */}
+      {visibility.article && (
       <section className="py-20 bg-slate-50">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
@@ -252,8 +272,10 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
           )}
         </div>
       </section>
+      )}
 
       {/* Kisah Islami */}
+      {visibility.kisah && (
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
@@ -299,8 +321,10 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
           )}
         </div>
       </section>
+      )}
 
       {/* Kisah Islami Populer */}
+      {visibility.kisah && (
       <section className="py-16 bg-gradient-to-b from-white to-amber-50/30">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
@@ -332,6 +356,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
           )}
         </div>
       </section>
+      )}
     </>
   );
 }

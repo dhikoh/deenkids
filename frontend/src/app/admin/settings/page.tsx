@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   fetchAiToggle, updateAiToggle, fetchRewardSettings, updateRewardSettings,
   fetchLeaderboard, fetchApiSettings, updateApiSettings,
+  fetchHomepageConfigAdmin, updateHomepageConfig,
 } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
@@ -60,6 +61,10 @@ export default function SettingsPage() {
   const [showAiKey, setShowAiKey] = useState(false);
   const [isSavingApi, setIsSavingApi] = useState(false);
 
+  // ── Homepage Visibility Config ──
+  const [homepageConfig, setHomepageConfig] = useState({ pembelajaran: true, qna: true, kisah: true, article: true });
+  const [isSavingHomepage, setIsSavingHomepage] = useState(false);
+
   useEffect(() => { loadSettings(); }, []);
 
   const loadSettings = async () => {
@@ -97,11 +102,27 @@ export default function SettingsPage() {
         setAiProvider(ai.provider || "openai");
         setAiHasKey(ai.hasApiKey || false);
       }
+
+      // Load homepage visibility config (SuperAdmin only)
+      try {
+        const hpConfig = await fetchHomepageConfigAdmin(token);
+        setHomepageConfig(hpConfig);
+      } catch { /* non-fatal — keep defaults */ }
     } catch {
       toast.error("Gagal memuat pengaturan");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSaveHomepage = async () => {
+    setIsSavingHomepage(true);
+    try {
+      const token = Cookies.get("_at"); if (!token) return;
+      await updateHomepageConfig(homepageConfig, token);
+      toast.success("Pengaturan visibilitas beranda berhasil disimpan");
+    } catch { toast.error("Gagal menyimpan"); }
+    finally { setIsSavingHomepage(false); }
   };
 
   const handleSaveAi = async () => {
@@ -273,6 +294,43 @@ export default function SettingsPage() {
               </table>
             </div>
           </div>
+
+          {/* Homepage Visibility Config — SuperAdmin only */}
+          {isSuperAdmin && (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <h2 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                🏠 Visibilitas Beranda
+              </h2>
+              <p className="text-sm text-slate-500 mb-6">Kontrol kategori konten yang tampil di halaman beranda, navigasi, dan pencarian.</p>
+              <div className="space-y-4 mb-6">
+                {[
+                  { key: 'pembelajaran' as const, label: '📚 Pembelajaran', desc: 'Kurikulum pendidikan Islam terstruktur' },
+                  { key: 'qna' as const, label: '❓ Tanya Jawab', desc: 'Pertanyaan dan jawaban parenting islami' },
+                  { key: 'kisah' as const, label: '📖 Kisah', desc: 'Kisah teladan nabi, sahabat, dan inspiratif' },
+                  { key: 'article' as const, label: '📝 Artikel', desc: 'Artikel panduan untuk orang tua dan anak' },
+                ].map(item => (
+                  <div key={item.key} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                    <div>
+                      <p className="font-semibold text-slate-700 text-sm">{item.label}</p>
+                      <p className="text-xs text-slate-400">{item.desc}</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={homepageConfig[item.key]}
+                        onChange={e => setHomepageConfig(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                      />
+                      <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-600" />
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <button onClick={handleSaveHomepage} disabled={isSavingHomepage} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 disabled:opacity-70">
+                <Save size={18} /> {isSavingHomepage ? "Menyimpan..." : "Simpan Visibilitas"}
+              </button>
+            </div>
+          )}
         </>
       )}
 

@@ -16,6 +16,8 @@ export default function ReviewPage() {
   const [expandedPreview, setExpandedPreview] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<Record<string, any>>({});
   const [loadingPreview, setLoadingPreview] = useState<string | null>(null);
+  const [pointAdjustment, setPointAdjustment] = useState(0);
+  const [adjustmentReason, setAdjustmentReason] = useState("");
 
   useEffect(() => {
     loadQueue();
@@ -58,15 +60,25 @@ export default function ReviewPage() {
     setShowNotesFor(id);
     setActionType(action);
     setActiveNotes("");
+    setPointAdjustment(0);
+    setAdjustmentReason("");
   };
 
   const submitAction = async (id: string) => {
     if (!actionType) return;
+    if (pointAdjustment !== 0 && adjustmentReason.trim().length < 3) {
+      toast.error("Alasan penyesuaian poin wajib diisi (min. 3 karakter)");
+      return;
+    }
     setProcessingId(id);
     try {
       const token = Cookies.get("_at");
       if (!token) return;
-      await processReview(id, actionType, activeNotes, token);
+      await processReview(
+        id, actionType, activeNotes, token,
+        pointAdjustment !== 0 ? pointAdjustment : undefined,
+        pointAdjustment !== 0 ? adjustmentReason : undefined,
+      );
       toast.success(`Konten berhasil di-${actionType}`);
       setShowNotesFor(null);
       loadQueue();
@@ -227,16 +239,52 @@ export default function ReviewPage() {
               </button>
 
               {showNotesFor === item.id ? (
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Catatan untuk AUTHOR ({actionType === 'approve' ? 'Opsional' : 'Wajib'})
-                  </label>
-                  <textarea
-                    value={activeNotes}
-                    onChange={(e) => setActiveNotes(e.target.value)}
-                    placeholder="Tambahkan alasan atau saran perbaikan..."
-                    className="w-full border-slate-300 rounded-lg p-3 text-sm focus:ring-emerald-500 focus:border-emerald-500 min-h-[100px] mb-3"
-                  />
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Catatan untuk AUTHOR ({actionType === 'approve' ? 'Opsional' : 'Wajib'})
+                    </label>
+                    <textarea
+                      value={activeNotes}
+                      onChange={(e) => setActiveNotes(e.target.value)}
+                      placeholder="Tambahkan alasan atau saran perbaikan..."
+                      className="w-full border-slate-300 rounded-lg p-3 text-sm focus:ring-emerald-500 focus:border-emerald-500 min-h-[100px]"
+                    />
+                  </div>
+
+                  {/* Point Adjustment Section */}
+                  <div className="bg-white rounded-lg border border-slate-200 p-3 space-y-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase">
+                      Penyesuaian Poin (Opsional)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        value={pointAdjustment}
+                        onChange={(e) => setPointAdjustment(parseInt(e.target.value) || 0)}
+                        className="w-28 border-slate-300 rounded-lg p-2 text-sm text-center focus:ring-emerald-500 focus:border-emerald-500"
+                        placeholder="0"
+                      />
+                      <span className="text-xs text-slate-400">
+                        Positif = bonus, Negatif = penalti
+                      </span>
+                    </div>
+                    {pointAdjustment !== 0 && (
+                      <div>
+                        <input
+                          type="text"
+                          value={adjustmentReason}
+                          onChange={(e) => setAdjustmentReason(e.target.value)}
+                          placeholder="Alasan penyesuaian poin (wajib)..."
+                          className="w-full border-slate-300 rounded-lg p-2 text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                        />
+                        <p className={`mt-1 text-xs font-semibold ${pointAdjustment > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {pointAdjustment > 0 ? `+${pointAdjustment} poin bonus` : `${pointAdjustment} poin penalti`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => setShowNotesFor(null)}
@@ -246,7 +294,7 @@ export default function ReviewPage() {
                     </button>
                     <button
                       onClick={() => submitAction(item.id)}
-                      disabled={processingId === item.id || (actionType !== 'approve' && !activeNotes.trim())}
+                      disabled={processingId === item.id || (actionType !== 'approve' && !activeNotes.trim()) || (pointAdjustment !== 0 && adjustmentReason.trim().length < 3)}
                       className={`px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors disabled:opacity-50 ${
                         actionType === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' :
                         actionType === 'reject' ? 'bg-rose-600 hover:bg-rose-700' :

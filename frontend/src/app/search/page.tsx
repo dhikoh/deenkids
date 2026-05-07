@@ -3,14 +3,14 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search, BookOpen, HelpCircle, Eye, Heart, Star, GraduationCap } from "lucide-react";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, fetchHomepageConfig } from "@/lib/api";
 
-const TYPE_OPTIONS = [
-  { value: "", label: "Semua Tipe" },
-  { value: "QNA", label: "Tanya Jawab" },
-  { value: "PEMBELAJARAN", label: "Pembelajaran" },
-  { value: "ARTICLE", label: "Artikel" },
-  { value: "KISAH", label: "Kisah" },
+const ALL_TYPE_OPTIONS = [
+  { value: "", label: "Semua Tipe", visKey: null },
+  { value: "QNA", label: "Tanya Jawab", visKey: "qna" as const },
+  { value: "PEMBELAJARAN", label: "Pembelajaran", visKey: "pembelajaran" as const },
+  { value: "ARTICLE", label: "Artikel", visKey: "article" as const },
+  { value: "KISAH", label: "Kisah", visKey: "kisah" as const },
 ];
 
 const AGE_OPTIONS = [
@@ -20,6 +20,12 @@ const AGE_OPTIONS = [
   { value: "7-10", label: "Pramuka (7-10 thn)" },
   { value: "10-13", label: "Pra-Remaja (10-13 thn)" },
 ];
+
+// Map content type to visibility key
+const TYPE_VIS_MAP: Record<string, keyof typeof defaultVis> = {
+  QNA: 'qna', PEMBELAJARAN: 'pembelajaran', ARTICLE: 'article', KISAH: 'kisah',
+};
+const defaultVis = { pembelajaran: true, qna: true, kisah: true, article: true };
 
 function SearchContent() {
   const params = useSearchParams();
@@ -31,6 +37,15 @@ function SearchContent() {
   const [type, setType] = useState("");
   const [age, setAge] = useState("");
   const [pov, setPov] = useState(""); // POV filter — only for ARTICLE type
+  const [visibility, setVisibility] = useState(defaultVis);
+
+  // Fetch visibility config once
+  useEffect(() => {
+    fetchHomepageConfig().then(c => setVisibility(c)).catch(() => {});
+  }, []);
+
+  // Filter type options based on visibility
+  const TYPE_OPTIONS = ALL_TYPE_OPTIONS.filter(opt => !opt.visKey || visibility[opt.visKey]);
 
   const search = async (searchQ?: string) => {
     const sq = searchQ ?? query;
@@ -43,7 +58,12 @@ function SearchContent() {
       if (pov && type === 'ARTICLE') p.set("pov", pov);
       const r = await fetch(`${API_BASE_URL}/content/search?${p}`);
       const data = await r.json();
-      setResults(data.data || []); setTotal(data.meta?.total || 0);
+      // Filter out hidden types from results
+      const filtered = (data.data || []).filter((item: any) => {
+        const vk = TYPE_VIS_MAP[item.type];
+        return !vk || visibility[vk];
+      });
+      setResults(filtered); setTotal(filtered.length);
     } catch {} finally { setLoading(false); }
   };
 

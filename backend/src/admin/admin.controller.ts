@@ -35,20 +35,20 @@ export class AdminController {
 
   @Post('review/:id/approve')
   @Roles('ADMIN', 'SUPERADMIN')
-  async approveContent(@Param('id') id: string, @Req() req: any, @Body() body: { notes?: string, manualScore?: number }) {
-    return this.reviewService.reviewContent(id, req.user.id, ReviewAction.APPROVED, body.notes, body.manualScore);
+  async approveContent(@Param('id') id: string, @Req() req: any, @Body() body: { notes?: string; manualScore?: number; pointAdjustment?: number; adjustmentReason?: string }) {
+    return this.reviewService.reviewContent(id, req.user.id, ReviewAction.APPROVED, body.notes, body.manualScore, body.pointAdjustment, body.adjustmentReason);
   }
 
   @Post('review/:id/reject')
   @Roles('ADMIN', 'SUPERADMIN')
-  async rejectContent(@Param('id') id: string, @Req() req: any, @Body() body: { notes: string }) {
-    return this.reviewService.reviewContent(id, req.user.id, ReviewAction.REJECTED, body.notes);
+  async rejectContent(@Param('id') id: string, @Req() req: any, @Body() body: { notes: string; pointAdjustment?: number; adjustmentReason?: string }) {
+    return this.reviewService.reviewContent(id, req.user.id, ReviewAction.REJECTED, body.notes, undefined, body.pointAdjustment, body.adjustmentReason);
   }
 
   @Post('review/:id/revision')
   @Roles('ADMIN', 'SUPERADMIN')
-  async requestRevision(@Param('id') id: string, @Req() req: any, @Body() body: { notes: string }) {
-    return this.reviewService.reviewContent(id, req.user.id, ReviewAction.REVISION_REQUESTED, body.notes);
+  async requestRevision(@Param('id') id: string, @Req() req: any, @Body() body: { notes: string; pointAdjustment?: number; adjustmentReason?: string }) {
+    return this.reviewService.reviewContent(id, req.user.id, ReviewAction.REVISION_REQUESTED, body.notes, undefined, body.pointAdjustment, body.adjustmentReason);
   }
 
   @Post('review/:id/unpublish')

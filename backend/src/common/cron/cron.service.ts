@@ -236,13 +236,25 @@ export class CronService {
   async purgeExpiredTrash() {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
+
+    // Cleanup MinIO files before deleting records
+    const toDelete = await this.prisma.contentItem.findMany({
+      where: { deletedAt: { lt: cutoff, not: null } },
+      select: { audioUrl: true, thumbnailUrl: true, socialThumbnailUrl: true },
+    });
+    for (const item of toDelete) {
+      if (item.audioUrl) await this.storageService.deleteFile(item.audioUrl).catch(() => {});
+      if (item.thumbnailUrl) await this.storageService.deleteFile(item.thumbnailUrl).catch(() => {});
+      if (item.socialThumbnailUrl) await this.storageService.deleteFile(item.socialThumbnailUrl).catch(() => {});
+    }
+
     const result = await this.prisma.contentItem.deleteMany({
       where: {
         deletedAt: { lt: cutoff, not: null },
       },
     });
     if (result.count > 0) {
-      this.logger.log(`🗑️ Purged ${result.count} trash items older than 30 days`);
+      this.logger.log(`🗑️ Purged ${result.count} trash items older than 30 days (files cleaned from MinIO)`);
     }
   }
 

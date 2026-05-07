@@ -262,6 +262,22 @@ export class EditorService {
       );
     }
 
+    // Cleanup old thumbnail from MinIO if being replaced or cleared
+    if (existing.thumbnailUrl && updateData.thumbnailUrl !== undefined
+        && updateData.thumbnailUrl !== existing.thumbnailUrl) {
+      this.storageService.deleteFile(existing.thumbnailUrl).catch(err =>
+        this.logger.warn(`⚠️  Failed to cleanup old thumbnail: ${err.message}`),
+      );
+    }
+
+    // Cleanup old social thumbnail from MinIO if being replaced or cleared
+    if (existing.socialThumbnailUrl && updateData.socialThumbnailUrl !== undefined
+        && updateData.socialThumbnailUrl !== existing.socialThumbnailUrl) {
+      this.storageService.deleteFile(existing.socialThumbnailUrl).catch(err =>
+        this.logger.warn(`⚠️  Failed to cleanup old social thumbnail: ${err.message}`),
+      );
+    }
+
     const updated = await this.prisma.contentItem.update({
       where: { id: contentId },
       data: updateData,
@@ -559,10 +575,20 @@ export class EditorService {
     if (!content) throw new NotFoundException('Konten tidak ditemukan');
     if (!content.deletedAt) throw new BadRequestException('Konten harus ada di Tempat Sampah terlebih dahulu');
 
-    // Cleanup audio file from MinIO before hard delete
+    // Cleanup all MinIO files before hard delete
     if (content.audioUrl) {
       await this.storageService.deleteFile(content.audioUrl).catch(err =>
         this.logger.warn(`⚠️  Failed to cleanup audio on permanent delete: ${err.message}`),
+      );
+    }
+    if (content.thumbnailUrl) {
+      await this.storageService.deleteFile(content.thumbnailUrl).catch(err =>
+        this.logger.warn(`⚠️  Failed to cleanup thumbnail on permanent delete: ${err.message}`),
+      );
+    }
+    if (content.socialThumbnailUrl) {
+      await this.storageService.deleteFile(content.socialThumbnailUrl).catch(err =>
+        this.logger.warn(`⚠️  Failed to cleanup social thumbnail on permanent delete: ${err.message}`),
       );
     }
 
@@ -578,15 +604,25 @@ export class EditorService {
       throw new ForbiddenException('Hanya SuperAdmin yang bisa mengosongkan Tempat Sampah');
     }
 
-    // Cleanup all audio files from MinIO before bulk delete
-    const trashedWithAudio = await this.prisma.contentItem.findMany({
-      where: { deletedAt: { not: null }, audioUrl: { not: null } },
-      select: { audioUrl: true },
+    // Cleanup all MinIO files from trashed content before bulk delete
+    const trashedWithFiles = await this.prisma.contentItem.findMany({
+      where: { deletedAt: { not: null } },
+      select: { audioUrl: true, thumbnailUrl: true, socialThumbnailUrl: true },
     });
-    for (const item of trashedWithAudio) {
+    for (const item of trashedWithFiles) {
       if (item.audioUrl) {
         await this.storageService.deleteFile(item.audioUrl).catch(err =>
           this.logger.warn(`⚠️  Failed to cleanup audio in emptyTrash: ${err.message}`),
+        );
+      }
+      if (item.thumbnailUrl) {
+        await this.storageService.deleteFile(item.thumbnailUrl).catch(err =>
+          this.logger.warn(`⚠️  Failed to cleanup thumbnail in emptyTrash: ${err.message}`),
+        );
+      }
+      if (item.socialThumbnailUrl) {
+        await this.storageService.deleteFile(item.socialThumbnailUrl).catch(err =>
+          this.logger.warn(`⚠️  Failed to cleanup social thumbnail in emptyTrash: ${err.message}`),
         );
       }
     }

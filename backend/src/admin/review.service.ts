@@ -35,7 +35,7 @@ export class ReviewService {
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 
-  async reviewContent(contentId: string, reviewerId: string, action: ReviewAction, notes?: string, manualScore?: number) {
+  async reviewContent(contentId: string, reviewerId: string, action: ReviewAction, notes?: string, manualScore?: number, pointAdjustment?: number, adjustmentReason?: string) {
     const content = await this.prisma.contentItem.findUnique({
       where: { id: contentId, deletedAt: null },
       include: { aiCheckResults: { orderBy: { checkedAt: 'desc' }, take: 1 } },
@@ -54,6 +54,11 @@ export class ReviewService {
     const reviewer = await this.prisma.user.findUnique({ where: { id: reviewerId }, select: { role: true } });
     if (content.authorId === reviewerId && reviewer?.role !== 'SUPERADMIN') {
       throw new ForbiddenException('Anda tidak bisa mereview konten sendiri');
+    }
+
+    // Validate pointAdjustment if provided
+    if (pointAdjustment && pointAdjustment !== 0 && (!adjustmentReason || adjustmentReason.trim().length < 3)) {
+      throw new BadRequestException('Alasan wajib diisi jika ada penyesuaian poin');
     }
 
     const aiCheck = content.aiCheckResults[0];
@@ -84,6 +89,7 @@ export class ReviewService {
     ]);
 
     // Award points to author when content is published (prevent double reward)
+    let totalPointsAwarded = 0;
     if (action === 'APPROVED') {
       const alreadyRewarded = await this.rewardService.hasRewardedForContent(contentId);
       if (!alreadyRewarded) {
@@ -95,16 +101,34 @@ export class ReviewService {
           `Konten dipublikasikan: ${content.title}`,
           contentId,
         );
+        totalPointsAwarded += settings.pointPerApproved;
       } else {
         this.logger.log(`Content ${contentId} already rewarded, skipping double reward`);
       }
     }
 
+    // Apply point adjustment if provided (works for all actions: approve, reject, revision)
+    if (pointAdjustment && pointAdjustment !== 0) {
+      const adjType = pointAdjustment > 0 ? PointType.BONUS : PointType.DEDUCTION;
+      const adjLabel = pointAdjustment > 0 ? 'Bonus' : 'Penalti';
+      await this.rewardService.addPoints(
+        content.authorId,
+        pointAdjustment,
+        adjType,
+        `${adjLabel} review: ${adjustmentReason || notes || content.title}`,
+        contentId,
+      );
+      totalPointsAwarded += pointAdjustment;
+    }
+
     // Notify author about review result
+    const pointInfo = totalPointsAwarded !== 0
+      ? ` (${totalPointsAwarded > 0 ? '+' : ''}${totalPointsAwarded} poin)`
+      : '';
     const notifMap: Record<string, { type: any; title: string; msg: string }> = {
-      APPROVED: { type: 'CONTENT_APPROVED', title: 'Konten Anda Dipublikasikan ✅', msg: `Konten "${content.title}" telah disetujui dan dipublikasikan.${notes ? ' Catatan: ' + notes : ''}` },
-      REJECTED: { type: 'CONTENT_REJECTED', title: 'Konten Ditolak ❌', msg: `Konten "${content.title}" ditolak. Alasan: ${notes || '-'}` },
-      REVISION_REQUESTED: { type: 'REVISION_NEEDED', title: 'Revisi Diminta ✏️', msg: `Konten "${content.title}" perlu direvisi. Catatan: ${notes || '-'}` },
+      APPROVED: { type: 'CONTENT_APPROVED', title: 'Konten Anda Dipublikasikan ✅', msg: `Konten "${content.title}" telah disetujui dan dipublikasikan.${pointInfo}${notes ? ' Catatan: ' + notes : ''}` },
+      REJECTED: { type: 'CONTENT_REJECTED', title: 'Konten Ditolak ❌', msg: `Konten "${content.title}" ditolak.${pointInfo} Alasan: ${notes || '-'}` },
+      REVISION_REQUESTED: { type: 'REVISION_NEEDED', title: 'Revisi Diminta ✏️', msg: `Konten "${content.title}" perlu direvisi.${pointInfo} Catatan: ${notes || '-'}` },
     };
     const notif = notifMap[action];
     if (notif) {
@@ -118,7 +142,7 @@ export class ReviewService {
       });
     }
 
-    return { message: `Konten berhasil di-${action.toLowerCase().replace('_', ' ')}` };
+    return { message: `Konten berhasil di-${action.toLowerCase().replace('_', ' ')}${pointInfo}` };
   }
 
   async unpublishContent(contentId: string, reviewerId: string, notes?: string) {

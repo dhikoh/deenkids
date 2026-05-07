@@ -93,6 +93,11 @@ async function resetForLaunch() {
   const delStats = await prisma.authorStat.deleteMany({});
   console.log(`   ✓ Author stats: ${delStats.count}`);
 
+  // Social media data (explicit cleanup before user cascade)
+  const delSocialLogs = await prisma.socialPublishLog.deleteMany({});
+  const delSocialAccounts = await prisma.socialAccount.deleteMany({});
+  console.log(`   ✓ Social: ${delSocialLogs.count} publish logs, ${delSocialAccounts.count} accounts`);
+
   // Auth data (must delete before users)
   const delTokens = await prisma.refreshToken.deleteMany({});
   const delHistory = await prisma.loginHistory.deleteMany({});

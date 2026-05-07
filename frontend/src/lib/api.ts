@@ -345,11 +345,11 @@ export async function fetchReviewQueue(token: string, page = 1) {
   });
 }
 
-export async function processReview(id: string, action: 'approve' | 'reject' | 'revision', notes: string, token: string) {
+export async function processReview(id: string, action: 'approve' | 'reject' | 'revision', notes: string, token: string, pointAdjustment?: number, adjustmentReason?: string) {
   return apiFetch(`${API_BASE_URL}/admin/review/${id}/${action}`, {
     method: 'POST',
     headers: authHeaders(token),
-    body: JSON.stringify({ notes }),
+    body: JSON.stringify({ notes, pointAdjustment, adjustmentReason }),
   });
 }
 
@@ -936,4 +936,24 @@ export async function uploadAudioFile(
     throw new Error(err.message || `Upload error ${res.status}`);
   }
   return res.json();
+}
+
+// ── Homepage Visibility Config ──
+
+export async function fetchHomepageConfig(): Promise<{ pembelajaran: boolean; qna: boolean; kisah: boolean; article: boolean }> {
+  return apiFetch(`${API_BASE_URL}/content/homepage-config`);
+}
+
+export async function fetchHomepageConfigAdmin(token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/settings/homepage`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function updateHomepageConfig(config: { pembelajaran?: boolean; qna?: boolean; kisah?: boolean; article?: boolean }, token: string) {
+  return apiFetch(`${API_BASE_URL}/superadmin/settings/homepage`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(config),
+  });
 }

@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { Search, Menu, UserCircle, BookOpen, X, Bookmark, LayoutDashboard } from "lucide-react";
 import { useState, useEffect } from "react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { fetchHomepageConfig } from "@/lib/api";
 
 export function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [visibility, setVisibility] = useState({ pembelajaran: true, qna: true, kisah: true, article: true });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,14 +46,23 @@ export function Navbar() {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
-  const navLinks = [
-    { name: "Beranda", href: "/" },
-    { name: "Pembelajaran", href: "/pembelajaran" },
-    { name: "Tanya Jawab", href: "/qna" },
-    { name: "Kisah", href: "/kisah" },
-    { name: "Artikel", href: "/artikel" },
-    { name: "Tentang Kami", href: "/tentang-kami" },
+  // Fetch homepage visibility config
+  useEffect(() => {
+    fetchHomepageConfig()
+      .then(config => setVisibility(config))
+      .catch(() => { /* keep defaults */ });
+  }, []);
+
+  // Map nav links to visibility keys for filtering
+  const allNavLinks = [
+    { name: "Beranda", href: "/", visKey: null },
+    { name: "Pembelajaran", href: "/pembelajaran", visKey: "pembelajaran" as const },
+    { name: "Tanya Jawab", href: "/qna", visKey: "qna" as const },
+    { name: "Kisah", href: "/kisah", visKey: "kisah" as const },
+    { name: "Artikel", href: "/artikel", visKey: "article" as const },
+    { name: "Tentang Kami", href: "/tentang-kami", visKey: null },
   ];
+  const navLinks = allNavLinks.filter(link => !link.visKey || visibility[link.visKey]);
 
   return (
     <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-lg shadow-sm border-b border-white/20' : 'bg-transparent'}`}>

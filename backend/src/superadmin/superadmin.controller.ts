@@ -101,4 +101,19 @@ export class SuperadminController {
   async updateAnnouncement(@Body() body: { enabled: boolean; text?: string; type?: string; link?: string }) {
     return this.superadminService.updateAnnouncementSettings(body);
   }
+
+  // ── Homepage Visibility Config ──
+  @Get('settings/homepage')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Get homepage section visibility config' })
+  async getHomepageConfig() {
+    return this.superadminService.getHomepageConfig();
+  }
+
+  @Put('settings/homepage')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Update homepage section visibility config' })
+  async updateHomepageConfig(@Body() body: { pembelajaran?: boolean; qna?: boolean; kisah?: boolean; article?: boolean }) {
+    return this.superadminService.updateHomepageConfig(body);
+  }
 }
