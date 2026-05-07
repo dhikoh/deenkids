@@ -400,6 +400,11 @@ export class EditorService {
       throw new ForbiddenException('Editor tidak bisa menghapus konten yang sudah dipublikasikan');
     }
 
+    // Deduct points if content was PUBLISHED (prevent earning poin tanpa konten publik)
+    if (existing.status === 'PUBLISHED') {
+      await this.rewardService.deductPointsForContent(contentId, existing.authorId, existing.title);
+    }
+
     // Soft delete: move to trash
     await this.prisma.contentItem.update({
       where: { id: contentId },
