@@ -110,6 +110,31 @@ export class EditorController {
     return { url };
   }
 
+  // ── Audio Upload — stored in MinIO object storage ─────────────────────
+  @Post('audio/upload')
+  @ApiOperation({ summary: 'Upload audio MP3 for content narration — all roles' })
+  @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
+  @UseInterceptors(FileInterceptor('audio', {
+    storage: memoryStorage(),
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    fileFilter: (_req, file, cb) => {
+      if (!file.mimetype.match(/^audio\/(mpeg|mp3|mp4|ogg|wav|x-m4a|webm)/)) {
+        return cb(new BadRequestException('Hanya file audio MP3/OGG/WAV yang diizinkan'), false);
+      }
+      cb(null, true);
+    },
+  }))
+  async uploadAudio(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('File audio tidak ditemukan dalam request');
+    const url = await this.storageService.uploadFile(
+      file.buffer,
+      file.mimetype,
+      file.originalname,
+      'audio',
+    );
+    return { url, filename: file.originalname, size: file.size, message: 'Audio berhasil di-upload' };
+  }
+
   // ═══════════════════════════════════════════════════════
   // TRASH / RECYCLE BIN
   // ═══════════════════════════════════════════════════════

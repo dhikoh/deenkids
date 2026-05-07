@@ -108,7 +108,7 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
         <div className="space-y-8">
           {/* Audio Player — enableAudio is master gate; MP3 takes priority over browser TTS */}
           {content.enableAudio && content.audioUrl ? (
-            <NarrationAudioPlayer audioUrl={content.audioUrl} />
+            <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
           ) : (
             <AudioPlayerWrapper blocks={[
               ...(content.audioTitle !== false && content.title ? [{ type: 'paragraph', text: content.title, enableAudio: true }] : []),

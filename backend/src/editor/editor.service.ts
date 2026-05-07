@@ -62,7 +62,7 @@ export class EditorService {
         enableAudio: dto.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio || false),
         audioTitle: dto.audioTitle !== undefined ? dto.audioTitle : true,
         audioDescription: dto.audioDescription !== undefined ? dto.audioDescription : true,
-        audioUrl: author?.role === 'SUPERADMIN' ? (dto.audioUrl ? sanitizeText(dto.audioUrl) : null) : null,
+        audioUrl: dto.audioUrl ? sanitizeText(dto.audioUrl) : null,
         pov: dto.type === 'ARTICLE' ? (dto.pov || null) : null,
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : undefined,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : undefined,
@@ -238,9 +238,7 @@ export class EditorService {
         enableAudio: existing.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio ?? existing.enableAudio),
         audioTitle: dto.audioTitle !== undefined ? dto.audioTitle : existing.audioTitle,
         audioDescription: dto.audioDescription !== undefined ? dto.audioDescription : existing.audioDescription,
-        audioUrl: user?.role === 'SUPERADMIN'
-          ? (dto.audioUrl !== undefined ? (dto.audioUrl ? sanitizeText(dto.audioUrl) : null) : existing.audioUrl)
-          : existing.audioUrl, // non-SUPERADMIN: always preserve existing audioUrl — cannot overwrite
+        audioUrl: dto.audioUrl !== undefined ? (dto.audioUrl ? sanitizeText(dto.audioUrl) : null) : existing.audioUrl,
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : dto.metaTitle,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : dto.metaDesc,
         pov: existing.type === 'ARTICLE' ? (dto.pov !== undefined ? (dto.pov || null) : existing.pov) : null,
@@ -258,7 +256,7 @@ export class EditorService {
     }
 
     // Cleanup old audio file from MinIO if audioUrl is being replaced or cleared
-    if (user?.role === 'SUPERADMIN' && existing.audioUrl && updateData.audioUrl !== existing.audioUrl) {
+    if (existing.audioUrl && updateData.audioUrl !== existing.audioUrl) {
       this.storageService.deleteFile(existing.audioUrl).catch(err =>
         this.logger.warn(`⚠️  Failed to cleanup old audio: ${err.message}`),
       );

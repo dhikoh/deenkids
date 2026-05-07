@@ -107,7 +107,7 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
 
       {/* Audio Player — enableAudio is master gate; MP3 takes priority over browser TTS */}
       {content.enableAudio && content.audioUrl ? (
-        <NarrationAudioPlayer audioUrl={content.audioUrl} />
+        <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
       ) : (
         <AudioPlayerWrapper blocks={
           content.articleDetail?.blocks || [

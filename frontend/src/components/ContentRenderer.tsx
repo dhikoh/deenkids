@@ -57,7 +57,7 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
 
       {/* Audio Player — enableAudio is master gate; MP3 takes priority over browser TTS */}
       {content.enableAudio && content.audioUrl ? (
-        <NarrationAudioPlayer audioUrl={content.audioUrl} />
+        <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
       ) : (
         <AudioPlayerWrapper blocks={audioBlocks} enableAudio={content.enableAudio} contentType={content.type} />
       )}

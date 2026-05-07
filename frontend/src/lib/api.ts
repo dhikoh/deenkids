@@ -916,7 +916,7 @@ export async function generateTtsAudio(
 }
 
 // ─────────────────────────────────────────────
-// Audio Upload (SuperAdmin Only)
+// Audio Upload (All Roles — AUTHOR, ADMIN, SUPERADMIN)
 // Upload MP3 file → returns { url, filename, size }
 // ─────────────────────────────────────────────
 
@@ -926,7 +926,7 @@ export async function uploadAudioFile(
 ): Promise<{ url: string; filename: string; size: number; message: string }> {
   const formData = new FormData();
   formData.append('audio', file);
-  const res = await fetch(`${API_BASE_URL}/superadmin/audio/upload`, {
+  const res = await fetch(`${API_BASE_URL}/editor/audio/upload`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: formData,

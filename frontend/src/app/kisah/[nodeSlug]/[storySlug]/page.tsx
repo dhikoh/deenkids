@@ -96,7 +96,7 @@ export default async function KisahDetailPage({
       {/* Audio Player — enableAudio is master gate; MP3 takes priority over browser TTS */}
       {content.enableAudio && content.audioUrl ? (
         <div className="mb-6">
-          <NarrationAudioPlayer audioUrl={content.audioUrl} />
+          <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
         </div>
       ) : content.enableAudio && (
         <div className="mb-6">

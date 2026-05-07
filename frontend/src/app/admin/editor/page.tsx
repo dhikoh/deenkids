@@ -69,6 +69,8 @@ function EditorContent() {
   const [audioUrl, setAudioUrl] = useState(""); // uploaded MP3 narration URL
   const [generatingTts, setGeneratingTts] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [showExportScript, setShowExportScript] = useState(false);
+  const [exportScriptText, setExportScriptText] = useState("");
   const [pov, setPov] = useState(""); // 'ORTU' | 'ANAK' | '' — hanya untuk ARTICLE
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
@@ -865,29 +867,108 @@ function EditorContent() {
             </div>
           </div>
 
-          {/* SuperAdmin TTS Narration Panel */}
+          {/* ═══════════════════════════════════════════════════
+              Panel 1: Audio Narasi — ALL ROLES
+              Upload MP3, preview, status, export script
+              ═══════════════════════════════════════════════════ */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-purple-200">
+            <h3 className="font-bold text-slate-800 mb-1 flex items-center gap-2">
+              <Music size={16} className="text-purple-500" /> Audio Narasi
+            </h3>
+            <p className="text-xs text-slate-400 mb-3">Upload file MP3 untuk narasi konten ini.</p>
+
+            {/* Audio Mode Status Indicator */}
+            <div className={`rounded-xl p-3 mb-4 border text-xs font-bold flex items-center gap-2 ${
+              !enableAudio
+                ? 'bg-slate-50 border-slate-200 text-slate-500'
+                : audioUrl
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-amber-50 border-amber-200 text-amber-700'
+            }`}>
+              <span>{!enableAudio ? '⚫' : audioUrl ? '🟢' : '🟡'}</span>
+              <div>
+                <p>{!enableAudio ? 'Audio Nonaktif — pengunjung tidak mendengar audio' : audioUrl ? 'Mode: Narasi MP3 (Premium)' : 'Mode: Browser TTS (Gratis)'}</p>
+                {enableAudio && audioUrl && <p className="font-normal opacity-70 mt-0.5">Untuk beralih ke Browser TTS, hapus narasi di bawah</p>}
+                {!enableAudio && <p className="font-normal opacity-70 mt-0.5">Aktifkan checkbox Audio di toolbar untuk mengaktifkan</p>}
+              </div>
+            </div>
+
+            {/* Upload MP3 */}
+            <label className={`flex items-center gap-2 justify-center border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors mb-3 ${uploadingAudio ? 'border-purple-300 bg-purple-50' : audioUrl ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 hover:border-purple-300 hover:bg-purple-50/50'}`}>
+              <Upload size={14} className={audioUrl ? 'text-emerald-500' : 'text-slate-400'} />
+              <span className="text-xs font-bold text-slate-600">
+                {uploadingAudio ? 'Mengupload...' : audioUrl ? '✓ Audio ter-upload — klik ganti' : 'Upload file MP3 narasi'}
+              </span>
+              <input type="file" accept="audio/mp3,audio/mpeg,audio/*" className="hidden" disabled={uploadingAudio}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]; if (!file) return;
+                  if (file.size > 50 * 1024 * 1024) return toast.error('Ukuran maks 50MB');
+                  const token = Cookies.get("_at"); if (!token) return;
+                  setUploadingAudio(true);
+                  try {
+                    const result = await uploadAudioFile(file, token);
+                    setAudioUrl(result.url);
+                    toast.success('🎵 Audio berhasil di-upload!');
+                  } catch (err: any) { toast.error(err.message || 'Upload audio gagal'); }
+                  finally { setUploadingAudio(false); e.target.value = ''; }
+                }}
+              />
+            </label>
+
+            {/* Audio Preview */}
+            {audioUrl && (
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Volume2 size={13} className="text-purple-500" />
+                  <span className="text-xs font-bold text-slate-600">Preview Narasi</span>
+                  <button type="button" onClick={() => setAudioUrl('')} className="ml-auto text-xs text-rose-400 hover:text-rose-600 font-bold">Hapus</button>
+                </div>
+                <audio
+                  controls
+                  src={
+                    audioUrl.startsWith('http://') || audioUrl.startsWith('https://')
+                      ? audioUrl
+                      : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '')}${audioUrl}`
+                  }
+                  className="w-full h-8"
+                />
+              </div>
+            )}
+
+            {/* Export Script Audio */}
+            <button
+              type="button"
+              disabled={!enableAudio || blocks.filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video' && b.type !== 'heading').length === 0}
+              onClick={() => {
+                const scriptText = blocks
+                  .filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video' && b.type !== 'heading')
+                  .map(b => {
+                    if (b.type === 'dalil') return (b.data.entries || []).map((e: any) => e.translation || '').filter(Boolean).join('. ');
+                    if (b.type === 'dialog') return (b.data.lines || []).map((l: any) => l.text || '').filter(Boolean).join('\n');
+                    if (b.type === 'doa') return b.data.translation || '';
+                    return b.data.text || '';
+                  })
+                  .filter((t: string) => t.trim())
+                  .join('\n\n');
+                if (!scriptText.trim()) return toast.error('Tidak ada teks untuk diekspor');
+                setExportScriptText(scriptText);
+                setShowExportScript(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 py-2 rounded-xl font-bold text-xs transition-colors"
+            >
+              📋 Export Script Audio
+            </button>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════
+              Panel 2: Generate AI TTS — SUPERADMIN ONLY
+              ═══════════════════════════════════════════════════ */}
           {isSuperAdmin && (
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-purple-200">
               <h3 className="font-bold text-slate-800 mb-1 flex items-center gap-2">
-                <Mic size={16} className="text-purple-500" /> Narasi Audio AI
+                <Mic size={16} className="text-purple-500" /> Generate AI TTS
               </h3>
-              <p className="text-xs text-slate-400 mb-3">Generate narasi dari blok konten, download MP3, lalu upload kembali.</p>
-
-              {/* Audio Mode Status Indicator */}
-              <div className={`rounded-xl p-3 mb-4 border text-xs font-bold flex items-center gap-2 ${
-                !enableAudio
-                  ? 'bg-slate-50 border-slate-200 text-slate-500'
-                  : audioUrl
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                    : 'bg-amber-50 border-amber-200 text-amber-700'
-              }`}>
-                <span>{!enableAudio ? '⚫' : audioUrl ? '🟢' : '🟡'}</span>
-                <div>
-                  <p>{!enableAudio ? 'Audio Nonaktif — pengunjung tidak mendengar audio' : audioUrl ? 'Mode: Narasi MP3 (Premium)' : 'Mode: Browser TTS (Gratis)'}</p>
-                  {enableAudio && audioUrl && <p className="font-normal opacity-70 mt-0.5">Untuk beralih ke Browser TTS, hapus narasi di bawah</p>}
-                  {!enableAudio && <p className="font-normal opacity-70 mt-0.5">Aktifkan checkbox Audio di toolbar untuk mengaktifkan</p>}
-                </div>
-              </div>
+              <p className="text-xs text-slate-400 mb-3">Generate narasi dari blok konten menggunakan AI.</p>
 
               {enableAudio && blocks.filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video').length > 0 ? (
                 <div className="bg-purple-50 rounded-xl p-3 mb-3 space-y-1">
@@ -935,54 +1016,50 @@ function EditorContent() {
                   } catch (e: any) { toast.error(e.message || 'Generate TTS gagal'); }
                   finally { setGeneratingTts(false); }
                 }}
-                className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white py-2.5 rounded-xl font-bold text-sm transition-colors mb-3"
+                className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white py-2.5 rounded-xl font-bold text-sm transition-colors"
               >
                 <Mic size={15} /> {generatingTts ? 'Generating...' : '🎙️ Generate Narasi AI'}
               </button>
-
-              <label className={`flex items-center gap-2 justify-center border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors mb-3 ${uploadingAudio ? 'border-purple-300 bg-purple-50' : audioUrl ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 hover:border-purple-300 hover:bg-purple-50/50'}`}>
-                <Upload size={14} className={audioUrl ? 'text-emerald-500' : 'text-slate-400'} />
-                <span className="text-xs font-bold text-slate-600">
-                  {uploadingAudio ? 'Mengupload...' : audioUrl ? '✓ Audio ter-upload — klik ganti' : 'Upload MP3 hasil generate'}
-                </span>
-                <input type="file" accept="audio/mp3,audio/mpeg,audio/*" className="hidden" disabled={uploadingAudio}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]; if (!file) return;
-                    if (file.size > 50 * 1024 * 1024) return toast.error('Ukuran maks 50MB');
-                    const token = Cookies.get("_at"); if (!token) return;
-                    setUploadingAudio(true);
-                    try {
-                      const result = await uploadAudioFile(file, token);
-                      setAudioUrl(result.url);
-                      toast.success('🎵 Audio berhasil di-upload!');
-                    } catch (err: any) { toast.error(err.message || 'Upload audio gagal'); }
-                    finally { setUploadingAudio(false); e.target.value = ''; }
-                  }}
-                />
-              </label>
-
-              {audioUrl && (
-                <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Music size={13} className="text-purple-500" />
-                    <span className="text-xs font-bold text-slate-600">Preview Narasi</span>
-                    <button type="button" onClick={() => setAudioUrl('')} className="ml-auto text-xs text-rose-400 hover:text-rose-600 font-bold">Hapus</button>
-                  </div>
-                  <audio
-                    controls
-                    src={
-                      audioUrl.startsWith('http://') || audioUrl.startsWith('https://')
-                        ? audioUrl
-                        : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '')}${audioUrl}`
-                    }
-                    className="w-full h-8"
-                  />
-                </div>
-              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Export Script Audio Modal */}
+      {showExportScript && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-500 to-violet-500 p-5 text-white flex items-center gap-3">
+              <span className="text-xl">📋</span>
+              <h3 className="text-lg font-extrabold">Export Script Audio</h3>
+              <button onClick={() => setShowExportScript(false)} className="ml-auto text-white/80 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-500">Teks narasi dari blok konten yang audio-nya dinyalakan. Salin untuk digunakan di TTS eksternal.</p>
+              <textarea
+                readOnly
+                value={exportScriptText}
+                className="w-full h-48 border border-slate-200 rounded-xl p-4 text-sm text-slate-700 leading-relaxed resize-none bg-slate-50 focus:outline-none"
+              />
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>📊 {exportScriptText.length} karakter · ~{exportScriptText.split(/\s+/).filter(Boolean).length} kata · Estimasi: ±{Math.max(1, Math.round(exportScriptText.split(/\s+/).filter(Boolean).length / 150 * 60))} detik</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(exportScriptText);
+                    toast.success('📋 Script berhasil disalin ke clipboard!');
+                  }}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  📋 Salin ke Clipboard
+                </button>
+                <button onClick={() => setShowExportScript(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-sm transition-colors">Tutup</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Terms Modal */}
       {showTerms && (
