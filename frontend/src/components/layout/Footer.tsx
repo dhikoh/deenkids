@@ -17,7 +17,7 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="bg-slate-900 text-slate-400 mt-auto">
+    <footer className="bg-slate-900 text-slate-400 mt-auto safe-bottom">
       <div className="container mx-auto px-4 md:px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>

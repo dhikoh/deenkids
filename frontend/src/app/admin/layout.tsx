@@ -214,7 +214,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-50 font-sans overflow-hidden safe-top">
       {sidebarOpen && <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />}
       <aside className="hidden md:flex w-60 my-4 ml-4 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex-col z-20 overflow-hidden">
         <SidebarContent />
@@ -223,7 +223,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <button onClick={() => setSidebarOpen(false)} className="absolute top-4 right-4 p-1 text-slate-400"><X size={20} /></button>
         <SidebarContent />
       </aside>
-      <main className="flex-1 flex flex-col overflow-hidden relative">
+      <main className="flex-1 flex flex-col overflow-hidden relative min-w-0">
         <header className="h-16 md:h-20 flex items-center justify-between px-4 md:px-8 z-10">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-xl"><Menu size={22} /></button>
@@ -250,7 +250,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
           </div>
         </header>
-        <div className="flex-1 overflow-auto px-4 md:px-8 pb-4 md:pb-8">
+        <div className="flex-1 overflow-auto px-4 md:px-8 pb-4 md:pb-8 safe-bottom">
           <div className="bg-white rounded-2xl md:rounded-3xl min-h-full shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 p-4 md:p-8">
             {children}
           </div>

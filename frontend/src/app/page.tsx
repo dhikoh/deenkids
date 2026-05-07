@@ -4,6 +4,7 @@ import LandingFeedback from "@/components/LandingFeedback";
 import HeroSearchForm from "@/components/HeroSearchForm";
 import HomepageContent from "@/components/HomepageContent";
 import SponsorBannerPopup from "@/components/SponsorBannerPopup";
+import InstallPrompt from "@/components/InstallPrompt";
 
 export default async function Home() {
   let curriculumNodes: any[] = [];
@@ -45,6 +46,9 @@ export default async function Home() {
 
       {/* Feedback Section */}
       <LandingFeedback />
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
 
       {/* Sponsor Banner Popup */}
       <SponsorBannerPopup />
