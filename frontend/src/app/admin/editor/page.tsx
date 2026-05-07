@@ -939,10 +939,10 @@ function EditorContent() {
             {/* Export Script Audio */}
             <button
               type="button"
-              disabled={!enableAudio || blocks.filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video' && b.type !== 'heading').length === 0}
+              disabled={!enableAudio || blocks.filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video').length === 0}
               onClick={() => {
                 const scriptText = blocks
-                  .filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video' && b.type !== 'heading')
+                  .filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video')
                   .map(b => {
                     if (b.type === 'dalil') return (b.data.entries || []).map((e: any) => e.translation || '').filter(Boolean).join('. ');
                     if (b.type === 'dialog') return (b.data.lines || []).map((l: any) => l.text || '').filter(Boolean).join('\n');
