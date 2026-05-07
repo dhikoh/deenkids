@@ -115,7 +115,7 @@ export class CreateContentDto {
   @IsOptional()
   pov?: string;
 
-  @ApiProperty({ required: false, description: 'URL file MP3 narasi hasil TTS generate yang di-upload (SuperAdmin only)' })
+  @ApiProperty({ required: false, description: 'URL file MP3 narasi yang di-upload (All roles)' })
   @IsString()
   @IsOptional()
   audioUrl?: string;

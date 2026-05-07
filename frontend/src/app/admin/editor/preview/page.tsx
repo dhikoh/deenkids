@@ -70,6 +70,7 @@ export default function PreviewPage() {
     audioTitle: content.audioTitle !== undefined ? content.audioTitle : true,
     audioDescription: content.audioDescription !== undefined ? content.audioDescription : true,
     audioUrl: content.audioUrl || null, // Forward uploaded MP3 URL to ContentRenderer
+    thumbnailUrl: content.thumbnailUrl || null, // For Media Session artwork on lock screen
     qnaDetail: content.contentType === "QNA" ? {
       question: content.title,
       answerQuick: content.blocks?.find((b: any) => b.type === "quick_answer")?.data?.text || "",

@@ -1,15 +1,12 @@
 import {
   Controller, Get, Put, Post, Body, UseGuards, Res, HttpCode,
-  UseInterceptors, UploadedFile, BadRequestException, Logger,
+  BadRequestException, Logger,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
 import { Response } from 'express';
 import { SuperadminService } from './superadmin.service';
-import { StorageService } from '../common/storage/storage.service';
 import { RolesGuard, JwtAuthGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('SuperAdmin')
 @ApiBearerAuth()
@@ -20,7 +17,6 @@ export class SuperadminController {
 
   constructor(
     private readonly superadminService: SuperadminService,
-    private readonly storageService: StorageService,
   ) {}
 
   // ── AI Settings (legacy toggle) ──
@@ -69,38 +65,6 @@ export class SuperadminController {
     res.setHeader('Content-Disposition', `attachment; filename="${safeName}.mp3"`);
     res.setHeader('Content-Length', audioBuffer.length);
     res.send(audioBuffer);
-  }
-
-  // ── Audio Upload — uses StorageService (MinIO) same as banners/thumbnails ──
-  @Post('audio/upload')
-  @Roles('SUPERADMIN')
-  @ApiOperation({ summary: 'Upload MP3 audio to MinIO storage — returns full public URL' })
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(
-    FileInterceptor('audio', {
-      storage: memoryStorage(), // In-memory buffer — same pattern as banner.controller.ts
-      fileFilter: (_req, file, cb) => {
-        if (!file.mimetype.match(/^audio\/(mpeg|mp3|mp4|ogg|wav|x-m4a|webm)/)) {
-          return cb(new BadRequestException('Hanya file audio MP3/OGG/WAV yang diizinkan'), false);
-        }
-        cb(null, true);
-      },
-      limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB max
-    }),
-  )
-  async uploadAudio(@UploadedFile() file: Express.Multer.File) {
-    if (!file) throw new BadRequestException('File audio tidak ditemukan dalam request');
-
-    // Upload to MinIO via StorageService — consistent with all other file uploads in the app
-    const url = await this.storageService.uploadFile(
-      file.buffer,
-      file.mimetype,
-      file.originalname,
-      'audio', // subfolder prefix in bucket: adably/audio/filename.mp3
-    );
-
-    this.logger.log(`Audio uploaded to MinIO: ${url} (${file.size} bytes)`);
-    return { url, filename: file.originalname, size: file.size, message: 'Audio berhasil di-upload ke cloud storage' };
   }
 
   // ── Donation Settings ──

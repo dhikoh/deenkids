@@ -222,13 +222,13 @@ function EditorContent() {
     if (editId) return; // Don't auto-save when editing existing content
     const timer = setInterval(() => {
       if (title || blocks.length > 0) {
-        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, thumbnailUrl, pov, savedAt: new Date().toISOString() };
+        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, audioUrl, thumbnailUrl, pov, savedAt: new Date().toISOString() };
         localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft));
         setLastAutoSave(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
       }
     }, 30000);
     return () => clearInterval(timer);
-  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, thumbnailUrl, pov, editId]);
+  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, audioUrl, thumbnailUrl, pov, editId]);
 
   const recoverDraft = () => {
     try {
@@ -247,6 +247,7 @@ function EditorContent() {
         if (d.audioTitle !== undefined) setAudioTitle(d.audioTitle);
         if (d.audioDescription !== undefined) setAudioDescription(d.audioDescription);
         if (d.thumbnailUrl) setThumbnailUrl(d.thumbnailUrl);
+        if (d.audioUrl) setAudioUrl(d.audioUrl);
         if (d.pov && d.contentType === 'ARTICLE') setPov(d.pov);
         toast.success("Draft berhasil dipulihkan!");
       }
