@@ -1004,9 +1004,24 @@ function EditorContent() {
                 const blockTexts = blocks
                   .filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video')
                   .map(b => {
-                    if (b.type === 'dalil') return (b.data.entries || []).map((e: any) => e.translation || '').filter(Boolean).join('. ');
+                    if (b.type === 'dalil') {
+                      return (b.data.entries || []).map((e: any) => {
+                        const parts: string[] = [];
+                        if (e.arabic) parts.push(e.arabic);
+                        if (e.translation) parts.push(`Yang artinya: ${e.translation}`);
+                        if (e.source) parts.push(`Dalil ini bersumber dari ${e.source}.`);
+                        return parts.join('\n');
+                      }).filter(Boolean).join('\n\n');
+                    }
                     if (b.type === 'dialog') return (b.data.lines || []).map((l: any) => l.text || '').filter(Boolean).join('\n');
-                    if (b.type === 'doa') return [b.data.title, b.data.translation].filter(Boolean).join('. ');
+                    if (b.type === 'doa') {
+                      const parts: string[] = [];
+                      if (b.data.title) parts.push(`Berikut ini adalah ${b.data.title}.`);
+                      if (b.data.arabic) parts.push(b.data.arabic);
+                      if (b.data.translation) parts.push(`Yang artinya, ${b.data.translation}`);
+                      if (b.data.source) parts.push(`Doa ini bersumber dari ${b.data.source}.`);
+                      return parts.join('\n');
+                    }
                     if (b.type === 'analogy') return [b.data.title, b.data.text].filter(Boolean).join('. ');
                     return b.data.text || '';
                   })

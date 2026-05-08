@@ -42,10 +42,11 @@ function extractReadableText(blocks: any[], contentType?: string): string[] {
     if (type === "dalil") {
       const entries = block.entries || [block];
       for (const entry of entries) {
-        // Only read translation, NOT arabic text or source
-        if (entry.translation) {
-          segments.push(entry.translation);
-        }
+        const parts: string[] = [];
+        if (entry.arabic) parts.push(entry.arabic);
+        if (entry.translation) parts.push(`Yang artinya: ${entry.translation}`);
+        if (entry.source) parts.push(`Dalil ini bersumber dari ${entry.source}.`);
+        if (parts.length > 0) segments.push(parts.join('. '));
       }
     }
 
@@ -62,8 +63,12 @@ function extractReadableText(blocks: any[], contentType?: string): string[] {
     }
 
     if (type === "doa") {
-      // Baca terjemahan saja (teks arab di-skip untuk TTS)
-      if (block.translation) segments.push(block.translation);
+      const parts: string[] = [];
+      if (block.title) parts.push(`Berikut ini adalah ${block.title}.`);
+      if (block.arabic) parts.push(block.arabic);
+      if (block.translation) parts.push(`Yang artinya, ${block.translation}`);
+      if (block.source) parts.push(`Doa ini bersumber dari ${block.source}.`);
+      if (parts.length > 0) segments.push(parts.join(' '));
     }
     // Skip: image, video, headings, titles, sources, arabic text
   }
