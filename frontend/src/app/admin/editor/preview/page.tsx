@@ -87,6 +87,10 @@ export default function PreviewPage() {
     articleDetail: content.contentType !== "QNA" ? {
       blocks: content.blocks?.map((b: any) => ({ type: b.type, ...b.data })) || [],
     } : undefined,
+    openingText: content.openingText || null,
+    closingText: content.closingText || null,
+    openingAudio: content.openingAudio !== undefined ? content.openingAudio : true,
+    closingAudio: content.closingAudio !== undefined ? content.closingAudio : true,
   };
 
   return (

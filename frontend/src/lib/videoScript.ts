@@ -77,6 +77,9 @@ function hasAnalogyBlock(content: any): boolean {
 function extractContentBlocks(content: any): string[] {
   const blocks: string[] = [];
 
+  // Opening / Mukadimah
+  if (content.openingText) blocks.push(`PEMBUKAAN (MUKADIMAH):\n${content.openingText}`);
+
   if (content.qnaDetail) {
     const q = content.qnaDetail;
     if (q.answerQuick) blocks.push(`JAWABAN RINGKAS:\n${q.answerQuick}`);
@@ -122,6 +125,10 @@ function extractContentBlocks(content: any): string[] {
       if (b.type === 'doa') blocks.push(`DOA:\n${b.arabic || ''}\n${b.translation || ''}\n— ${b.source || ''}`);
     }
   }
+
+  // Closing / Penutupan
+  if (content.closingText) blocks.push(`PENUTUPAN:\n${content.closingText}`);
+
   return blocks;
 }
 
@@ -364,7 +371,12 @@ ATURAN OUTPUT:
 - Jawaban, analogi, tips, hikmah: gunakan PERSIS seperti di konten sumber di atas.
   DILARANG mengarang, memparafrase, atau menambah informasi yang tidak ada di konten sumber.
 - Jika konten sumber TIDAK menyebutkan suatu fakta/dalil, JANGAN masukkan ke narasi video.
-- Narasi boleh menyusun ulang URUTAN, tapi ISI harus 100% dari konten sumber.`;
+- Narasi boleh menyusun ulang URUTAN, tapi ISI harus 100% dari konten sumber.
+
+⚠️ SALAM PEMBUKA & PENUTUP:
+- Jika konten sumber memiliki PEMBUKAAN (mukadimah): Scene PERTAMA narasi WAJIB dibuka dengan salam pembuka tersebut.
+- Jika konten sumber memiliki PENUTUPAN: Scene TERAKHIR narasi WAJIB diakhiri dengan penutup tersebut.
+- Salam harus terasa NATURAL dalam alur narasi, bukan ditempel secara kaku.`;
 }
 
 // ─── MODE: EXPLAINER (QNA, Pembelajaran, Fikih) ──────────────────────────────
@@ -528,7 +540,12 @@ ATURAN OUTPUT:
 - Kamera BERVARIASI. Total durasi = ${durationLabel}.
 - Sesuaikan jumlah scene dengan KEPADATAN konten — jangan paksakan banyak scene jika konten pendek.
 
-(Lihat FONDASI WAJIB di atas untuk aturan kesetiaan konten, dalil, dan karakter visual.)`;
+(Lihat FONDASI WAJIB di atas untuk aturan kesetiaan konten, dalil, dan karakter visual.)
+
+⚠️ SALAM PEMBUKA & PENUTUP:
+- Jika konten sumber memiliki PEMBUKAAN (mukadimah): Scene PERTAMA narasi WAJIB dibuka dengan salam pembuka tersebut.
+- Jika konten sumber memiliki PENUTUPAN: Scene TERAKHIR narasi WAJIB diakhiri dengan penutup tersebut.
+- Salam harus terasa NATURAL dalam alur narasi.`;
 }
 
 
@@ -585,6 +602,11 @@ ATURAN OUTPUT:
 - Setiap image prompt akhiri: "faceless, no face features, 3D Pixar Disney style, ${aspectRatio}, serene, warm"
 - Kamera SANGAT LAMBAT. Total durasi = ${durationLabel}.
 - Setiap scene bertransisi dengan DISSOLVE atau FADE — tidak ada cut keras.
+
+⚠️ SALAM PEMBUKA & PENUTUP:
+- Jika konten sumber memiliki PEMBUKAAN (mukadimah): Buka narasi dengan salam pembuka tersebut.
+- Jika konten sumber memiliki PENUTUPAN: Tutup narasi dengan penutup tersebut.
+- Salam harus menyatu dengan suasana tenang dan khusyuk.
 
 ⚠️ KESETIAAN KONTEN (WAJIB):
 - Teks doa/dzikir WAJIB ditulis LENGKAP — teks Arab UTUH + terjemahan UTUH + sumber LENGKAP.

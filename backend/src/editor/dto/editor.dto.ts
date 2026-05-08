@@ -119,5 +119,25 @@ export class CreateContentDto {
   @IsString()
   @IsOptional()
   audioUrl?: string;
+
+  @ApiProperty({ required: false, description: 'Teks pembukaan/mukadimah (salam + pengantar)' })
+  @IsString()
+  @IsOptional()
+  openingText?: string;
+
+  @ApiProperty({ required: false, description: 'Teks penutupan (penutup + salam)' })
+  @IsString()
+  @IsOptional()
+  closingText?: string;
+
+  @ApiProperty({ required: false, description: 'Enable audio for opening text' })
+  @IsBoolean()
+  @IsOptional()
+  openingAudio?: boolean;
+
+  @ApiProperty({ required: false, description: 'Enable audio for closing text' })
+  @IsBoolean()
+  @IsOptional()
+  closingAudio?: boolean;
 }
 export class UpdateContentDto extends PartialType(CreateContentDto) {}

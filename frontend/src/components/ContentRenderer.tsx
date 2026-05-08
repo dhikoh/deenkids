@@ -16,6 +16,7 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
 
   // Build audio blocks for AudioPlayerWrapper (respecting audioTitle, audioDescription, and per-block enableAudio)
   const titleDescBlocks = [
+    ...(content.openingAudio !== false && content.openingText ? [{ type: 'paragraph', text: content.openingText, enableAudio: true }] : []),
     ...(content.audioTitle !== false && content.title ? [{ type: 'paragraph', text: content.title, enableAudio: true }] : []),
     ...(content.audioDescription !== false && content.description ? [{ type: 'paragraph', text: content.description, enableAudio: true }] : []),
   ];
@@ -30,6 +31,7 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
         ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
       ]),
     ] : (content.articleDetail?.blocks || [])),
+    ...(content.closingAudio !== false && content.closingText ? [{ type: 'paragraph', text: content.closingText, enableAudio: true }] : []),
   ];
 
   return (
@@ -61,6 +63,15 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
       ) : (
         <AudioPlayerWrapper blocks={audioBlocks} enableAudio={content.enableAudio} contentType={content.type} />
       )}
+
+      {/* Opening / Mukadimah */}
+      {content.openingText && (
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6 mb-6">
+          <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">🕌 Pembukaan</p>
+          <p className="text-emerald-900 font-medium leading-relaxed whitespace-pre-line">{content.openingText}</p>
+        </div>
+      )}
+
 
       {/* QNA Content */}
       {qna && (
@@ -325,6 +336,14 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
             }
             return null;
           })}
+        </div>
+      )}
+
+      {/* Closing / Penutupan */}
+      {content.closingText && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 mt-6">
+          <p className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">🤲 Penutupan</p>
+          <p className="text-amber-900 font-medium leading-relaxed whitespace-pre-line">{content.closingText}</p>
         </div>
       )}
     </div>

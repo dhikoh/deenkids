@@ -110,6 +110,14 @@ export default function ReviewPage() {
           </div>
         )}
 
+        {/* Opening / Mukadimah */}
+        {data.openingText && (
+          <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-3">
+            <h4 className="text-xs font-bold text-emerald-700 mb-1">🕌 Pembukaan (Mukadimah)</h4>
+            <p className="text-sm text-slate-700 whitespace-pre-line">{data.openingText}</p>
+          </div>
+        )}
+
         {/* QnA Detail */}
         {data.qnaDetail && (
           <div className="space-y-3">
@@ -167,6 +175,14 @@ export default function ReviewPage() {
                 {block.text && block.type !== 'paragraph' && <p className="text-sm text-slate-700 mt-1">{block.text}</p>}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Closing / Penutupan */}
+        {data.closingText && (
+          <div className="bg-amber-50/50 border border-amber-200 rounded-xl p-3">
+            <h4 className="text-xs font-bold text-amber-700 mb-1">🤲 Penutupan</h4>
+            <p className="text-sm text-slate-700 whitespace-pre-line">{data.closingText}</p>
           </div>
         )}
 

@@ -64,6 +64,10 @@ export class EditorService {
         audioDescription: dto.audioDescription !== undefined ? dto.audioDescription : true,
         audioUrl: dto.audioUrl ? sanitizeText(dto.audioUrl) : null,
         pov: dto.type === 'ARTICLE' ? (dto.pov || null) : null,
+        openingText: dto.openingText ? sanitizeText(dto.openingText) : null,
+        closingText: dto.closingText ? sanitizeText(dto.closingText) : null,
+        openingAudio: dto.openingAudio !== undefined ? dto.openingAudio : true,
+        closingAudio: dto.closingAudio !== undefined ? dto.closingAudio : true,
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : undefined,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : undefined,
         // Set publishedAt if SuperAdmin directly creates as PUBLISHED
@@ -242,6 +246,10 @@ export class EditorService {
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : dto.metaTitle,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : dto.metaDesc,
         pov: existing.type === 'ARTICLE' ? (dto.pov !== undefined ? (dto.pov || null) : existing.pov) : null,
+        openingText: dto.openingText !== undefined ? (dto.openingText ? sanitizeText(dto.openingText) : null) : existing.openingText,
+        closingText: dto.closingText !== undefined ? (dto.closingText ? sanitizeText(dto.closingText) : null) : existing.closingText,
+        openingAudio: dto.openingAudio !== undefined ? dto.openingAudio : existing.openingAudio,
+        closingAudio: dto.closingAudio !== undefined ? dto.closingAudio : existing.closingAudio,
         status: newStatus,
     };
 

@@ -136,6 +136,10 @@ model ContentItem {
   audioDescription  Boolean           @default(true)
   audioUrl          String?           // URL file MP3 narasi yang di-upload (hasil TTS generate)
   pov               String?           // 'ORTU' | 'ANAK' — Point of view, hanya untuk ARTICLE type
+  openingText       String?           // Mukadimah/pembukaan: teks salam + pengantar
+  closingText       String?           // Penutupan: teks penutup + salam
+  openingAudio      Boolean           @default(true) // Enable audio for opening
+  closingAudio      Boolean           @default(true) // Enable audio for closing
   deletedAt         DateTime? // Soft delete timestamp, null = active
   previousStatus    String? // Status before deletion, for trash UI display
   socialThumbnailUrl String?          // Thumbnail 1:1 untuk IG/FB post

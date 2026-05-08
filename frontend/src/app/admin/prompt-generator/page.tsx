@@ -410,6 +410,17 @@ Format (jika digunakan):
   const framework = generateIntellectualFramework(selectedThinkers, true);
   if (framework) prompt += framework;
 
+  prompt += `\n\n━━━ 🕌 PEMBUKAAN / MUKADIMAH (opening) ━━━
+Tulis salam pembuka yang hangat dan relevan dengan tema kisah.
+- Awali dengan "Assalamualaikum warahmatullahi wabarakatuh"
+- Lanjutkan dengan 1-2 kalimat pengantar singkat yang mengaitkan pembaca/pendengar dengan kisah yang akan diceritakan.
+- Nada: ramah, mengundang, dan membangkitkan rasa ingin tahu.
+
+━━━ 🤲 PENUTUPAN (closing) ━━━
+Tulis penutup yang menyentuh dan menginspirasi.
+- Rangkum pelajaran utama dalam 1-2 kalimat.
+- Akhiri dengan "Wallahu a'lam bishawab" dan "Wassalamualaikum warahmatullahi wabarakatuh"\n`;
+
   return prompt;
 }
 
@@ -694,6 +705,17 @@ Sumber URL: https://quran.com/20/114
   // Inject intellectual framework if thinkers selected
   const framework = generateIntellectualFramework(selectedThinkers, false);
   if (framework) prompt += framework;
+
+  prompt += `\n\n━━━ 🕌 PEMBUKAAN / MUKADIMAH (opening) ━━━
+Tulis salam pembuka yang hangat dan relevan dengan topik.
+- Awali dengan "Assalamualaikum warahmatullahi wabarakatuh"
+- Lanjutkan dengan 1-2 kalimat pengantar singkat yang sesuai tema dan usia target.
+- Nada: ramah, hangat, dan membangkitkan rasa ingin tahu anak.
+
+━━━ 🤲 PENUTUPAN (closing) ━━━
+Tulis penutup yang menginspirasi.
+- Rangkum pelajaran utama dalam 1-2 kalimat.
+- Akhiri dengan "Wallahu a'lam bishawab" dan "Wassalamualaikum warahmatullahi wabarakatuh"\n`;
 
   return prompt;
 }

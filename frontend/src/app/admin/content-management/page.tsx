@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { FileText, Trash2, Edit2, Film, BookOpen, Search, RotateCcw, X, Send, Share2 } from "lucide-react";
+import { FileText, Trash2, Edit2, Film, Search, RotateCcw, X, Send, Share2 } from "lucide-react";
 import { copyVideoScript } from "@/lib/videoScript";
 import { fetchAllContents, deleteContent, fetchContentForEdit, unpublishContent, submitContentForReview } from "@/lib/api";
 import SocialPublishModal from "@/components/SocialPublishModal";
@@ -137,8 +137,8 @@ export default function ContentManagementPage() {
                   <Link href={`/admin/editor?id=${item.id}`} className="p-2 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100" title="Edit">
                     <Edit2 size={16} />
                   </Link>
-                  <button onClick={() => item.type === 'KISAH' ? handleExportScript(item.id) : setExportTarget(item.id)} className={`p-2 rounded-lg ${item.type === 'KISAH' ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-purple-50 text-purple-600 hover:bg-purple-100'}`} title={item.type === 'KISAH' ? 'Export Naskah Kisah' : 'Export Script Video'}>
-                    {item.type === 'KISAH' ? <BookOpen size={16} /> : <Film size={16} />}
+                  <button onClick={() => setExportTarget(item.id)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100" title="Export Script Video">
+                    <Film size={16} />
                   </button>
                   {item.status === "PUBLISHED" && (
                     <button onClick={() => setUnpublishTarget(item)} className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100" title="Unpublish — Tarik untuk revisi">

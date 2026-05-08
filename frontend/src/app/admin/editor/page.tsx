@@ -72,6 +72,10 @@ function EditorContent() {
   const [showExportScript, setShowExportScript] = useState(false);
   const [exportScriptText, setExportScriptText] = useState("");
   const [pov, setPov] = useState(""); // 'ORTU' | 'ANAK' | '' — hanya untuk ARTICLE
+  const [openingText, setOpeningText] = useState("");
+  const [closingText, setClosingText] = useState("");
+  const [openingAudio, setOpeningAudio] = useState(true);
+  const [closingAudio, setClosingAudio] = useState(true);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [cropperSrc, setCropperSrc] = useState<string | null>(null);
@@ -139,6 +143,10 @@ function EditorContent() {
               setAudioUrl(c.audioUrl || "");
               setThumbnailUrl(c.thumbnailUrl || "");
               setSocialThumbnailUrl(c.socialThumbnailUrl || "");
+              setOpeningText(c.openingText || "");
+              setClosingText(c.closingText || "");
+              setOpeningAudio(c.openingAudio !== undefined ? c.openingAudio : true);
+              setClosingAudio(c.closingAudio !== undefined ? c.closingAudio : true);
               setEditStatus(c.status || null);
               setTags(c.tags?.map((t: any) => t.tag?.name || t.name).filter(Boolean) || []);
               const cType: ContentTypeOption = c.type === 'PEMBELAJARAN' ? 'PEMBELAJARAN' : c.type === 'QNA' ? 'QNA' : c.type === 'KISAH' ? 'KISAH' : 'ARTICLE';
@@ -222,13 +230,13 @@ function EditorContent() {
     if (editId) return; // Don't auto-save when editing existing content
     const timer = setInterval(() => {
       if (title || blocks.length > 0) {
-        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, audioUrl, thumbnailUrl, pov, savedAt: new Date().toISOString() };
+        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, audioUrl, thumbnailUrl, pov, openingText, closingText, openingAudio, closingAudio, savedAt: new Date().toISOString() };
         localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft));
         setLastAutoSave(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
       }
     }, 30000);
     return () => clearInterval(timer);
-  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, audioUrl, thumbnailUrl, pov, editId]);
+  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, audioUrl, thumbnailUrl, pov, openingText, closingText, openingAudio, closingAudio, editId]);
 
   const recoverDraft = () => {
     try {
@@ -248,6 +256,10 @@ function EditorContent() {
         if (d.audioDescription !== undefined) setAudioDescription(d.audioDescription);
         if (d.thumbnailUrl) setThumbnailUrl(d.thumbnailUrl);
         if (d.audioUrl) setAudioUrl(d.audioUrl);
+        if (d.openingText) setOpeningText(d.openingText);
+        if (d.closingText) setClosingText(d.closingText);
+        if (d.openingAudio !== undefined) setOpeningAudio(d.openingAudio);
+        if (d.closingAudio !== undefined) setClosingAudio(d.closingAudio);
         if (d.pov && d.contentType === 'ARTICLE') setPov(d.pov);
         toast.success("Draft berhasil dipulihkan!");
       }
@@ -316,6 +328,10 @@ function EditorContent() {
         nodeId: (contentType === 'PEMBELAJARAN' || contentType === 'KISAH') ? nodeId : (nodeId || undefined),
         displayAuthorName: isSuperAdmin ? (displayAuthorName || undefined) : undefined,
         pov: contentType === 'ARTICLE' ? (pov || null) : undefined,
+        openingText: openingText || null,
+        closingText: closingText || null,
+        openingAudio,
+        closingAudio,
       };
       // SuperAdmin can set status directly (e.g., PUBLISHED)
       if (isSuperAdmin && targetStatus) {
@@ -520,7 +536,7 @@ function EditorContent() {
             <span className="text-sm font-medium flex items-center gap-1">{enableAudio ? <Volume2 className="h-4 w-4 text-purple-500" /> : <VolumeX className="h-4 w-4 text-slate-400" />} Audio</span>
           </label>
           <button onClick={() => {
-            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, audioTitle, audioDescription, audioUrl, displayAuthorName };
+            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, audioTitle, audioDescription, audioUrl, displayAuthorName, openingText, closingText, openingAudio, closingAudio };
             localStorage.setItem('adably_preview_data', JSON.stringify(previewData));
             window.open('/admin/editor/preview', '_blank');
           }} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2">
@@ -812,6 +828,24 @@ function EditorContent() {
             </div>
           </div>
 
+          {/* ═══ Card Pembukaan (Fixed — selalu di bawah metadata) ═══ */}
+          <div className="relative bg-white border-2 border-emerald-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100">
+              <span className="text-base">🕌</span>
+              <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Pembukaan (Mukadimah)</span>
+              <span className="text-[10px] text-emerald-500 bg-emerald-100 px-2 py-0.5 rounded-full font-bold ml-1">Posisi tetap</span>
+              <div className="ml-auto flex items-center gap-1">
+                {enableAudio && (
+                  <button type="button" onClick={() => setOpeningAudio(!openingAudio)} title={openingAudio ? 'Audio: ON' : 'Audio: OFF'} className={`p-1 rounded transition-colors ${openingAudio ? 'text-purple-500 hover:text-purple-700' : 'text-slate-300 hover:text-slate-500'}`}>{openingAudio ? <Volume2 size={14} /> : <VolumeX size={14} />}</button>
+                )}
+              </div>
+            </div>
+            <div className="p-4">
+              <textarea value={openingText} onChange={e => setOpeningText(e.target.value)} placeholder="Assalamualaikum warahmatullahi wabarakatuh.\n\nBismillahirrahmanirrahim..." className="w-full border-slate-200 rounded-lg p-3 min-h-[80px] focus:border-emerald-500 focus:ring-emerald-500 text-sm" />
+              <p className="text-[10px] text-slate-400 mt-1">Opsional — salam pembuka dan pengantar singkat terkait tema konten.</p>
+            </div>
+          </div>
+
           {/* Dynamic Content Blocks */}
           <div className="space-y-4">
             {blocks.map((block, index) => renderBlockEditor(block, index))}
@@ -838,6 +872,24 @@ function EditorContent() {
                   {bt.icon} {bt.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* ═══ Card Penutupan (Fixed — selalu di akhir blok) ═══ */}
+          <div className="relative bg-white border-2 border-amber-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100">
+              <span className="text-base">🤲</span>
+              <span className="text-xs font-bold text-amber-700 uppercase tracking-wide">Penutupan</span>
+              <span className="text-[10px] text-amber-500 bg-amber-100 px-2 py-0.5 rounded-full font-bold ml-1">Posisi tetap</span>
+              <div className="ml-auto flex items-center gap-1">
+                {enableAudio && (
+                  <button type="button" onClick={() => setClosingAudio(!closingAudio)} title={closingAudio ? 'Audio: ON' : 'Audio: OFF'} className={`p-1 rounded transition-colors ${closingAudio ? 'text-purple-500 hover:text-purple-700' : 'text-slate-300 hover:text-slate-500'}`}>{closingAudio ? <Volume2 size={14} /> : <VolumeX size={14} />}</button>
+                )}
+              </div>
+            </div>
+            <div className="p-4">
+              <textarea value={closingText} onChange={e => setClosingText(e.target.value)} placeholder="Wallahu a'lam bishawab.\n\nWassalamualaikum warahmatullahi wabarakatuh." className="w-full border-slate-200 rounded-lg p-3 min-h-[80px] focus:border-emerald-500 focus:ring-emerald-500 text-sm" />
+              <p className="text-[10px] text-slate-400 mt-1">Opsional — penutup dan salam penutup.</p>
             </div>
           </div>
         </div>
@@ -942,6 +994,8 @@ function EditorContent() {
               disabled={!enableAudio || blocks.filter(b => b.data?.enableAudio !== false && b.type !== 'image' && b.type !== 'video').length === 0}
               onClick={() => {
                 const parts: string[] = [];
+                // Include opening text if audio enabled
+                if (openingAudio && openingText.trim()) parts.push(openingText.trim());
                 // Include title if audioTitle toggle is ON
                 if (audioTitle && title.trim()) parts.push(title.trim());
                 // Include description if audioDescription toggle is ON
@@ -958,6 +1012,8 @@ function EditorContent() {
                   })
                   .filter((t: string) => t.trim());
                 parts.push(...blockTexts);
+                // Include closing text if audio enabled
+                if (closingAudio && closingText.trim()) parts.push(closingText.trim());
                 const scriptText = parts.join('\n\n');
                 if (!scriptText.trim()) return toast.error('Tidak ada teks untuk diekspor');
                 setExportScriptText(scriptText);
