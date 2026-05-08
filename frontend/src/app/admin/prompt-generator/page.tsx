@@ -361,6 +361,7 @@ PANDUAN PENULISAN — GAYA PENCERITA
 ✅ Setiap babak harus punya KONFLIK kecil dan RESOLUSI yang memuaskan
 ✅ Bahasa SEDERHANA tapi KAYA — anak usia 3–10 tahun bisa memahaminya saat didengarkan
 ✅ Konten ini akan DIBACAKAN audio — pastikan kalimat enak didengar & mengalir
+✅ Gunakan sapaan langsung ke anak di mukadimah: "Teman-teman...", "Adik-adik..."
 ✅ Nilai Islam terasa ALAMI dalam cerita — tidak dipaksakan
 ✅ Akhiri dengan kehangatan, rasa syukur, atau motivasi yang menyentuh
 ❌ JANGAN terlalu singkat — ini bukan ringkasan, ini KISAH LENGKAP
@@ -411,12 +412,17 @@ Format (jika digunakan):
   if (framework) prompt += framework;
 
   prompt += `\n\n━━━ 🕌 PEMBUKAAN / MUKADIMAH (opening) ━━━
+⚠️ INI BUKAN BLOK KONTEN. Teks ini harus di-copy ke field "Pembukaan (Mukadimah)" yang ada di Editor — BUKAN ditempel di blok konten isi.
+
 Tulis salam pembuka yang hangat dan relevan dengan tema kisah.
 - Awali dengan "Assalamualaikum warahmatullahi wabarakatuh"
 - Lanjutkan dengan 1-2 kalimat pengantar singkat yang mengaitkan pembaca/pendengar dengan kisah yang akan diceritakan.
+- Sapa anak langsung: "Teman-teman...", "Adik-adik..."
 - Nada: ramah, mengundang, dan membangkitkan rasa ingin tahu.
 
 ━━━ 🤲 PENUTUPAN (closing) ━━━
+⚠️ INI BUKAN BLOK KONTEN. Teks ini harus di-copy ke field "Penutupan" yang ada di Editor — BUKAN ditempel di blok konten isi.
+
 Tulis penutup yang menyentuh dan menginspirasi.
 - Rangkum pelajaran utama dalam 1-2 kalimat.
 - Akhiri dengan "Wallahu a'lam bishawab" dan "Wassalamualaikum warahmatullahi wabarakatuh"\n`;
@@ -432,6 +438,14 @@ function generatePrompt(type: ContentType, title: string, ages: string[], option
 
   // === BAGIAN 1: ROLE & KORIDOR ===
   let prompt = `Kamu adalah penulis konten islami untuk platform edukasi anak bernama Adably. Platform ini menyajikan konten parenting islami untuk anak-anak.
+
+⚠️ PERSPEKTIF TTS (TEXT-TO-SPEECH):
+Konten ini akan DIBACAKAN langsung kepada anak melalui fitur audio.
+Tulis seolah-olah kamu sedang BERCERITA kepada anak — bukan menulis artikel untuk dewasa.
+- Gunakan nada hangat, akrab, dan penuh semangat
+- Boleh sapa anak: "Teman-teman...", "Nah, kamu tahu nggak...", "Yuk kita belajar..."
+- Hindari bahasa kaku/formal yang terasa seperti buku teks
+- Kalimat harus enak DIDENGAR, bukan hanya enak dibaca
 
 KORIDOR KONTEN YANG WAJIB DIIKUTI:
 1. Seluruh konten HARUS bersumber dari Al-Quran dan Hadits Shahih sesuai pemahaman Salafus Shalih (Sahabat, Tabi'in, Tabi'ut Tabi'in).
@@ -533,6 +547,11 @@ DIALOG:
 8. 🤲 DOA — doa yang relevan (doa)
 
 KUNCI: Setiap blok harus menjawab "lalu apa?" dari blok sebelumnya — sehingga terasa satu alur yang mengalir.
+
+⚠️ PERSPEKTIF AUDIO: Konten ini akan DIBACAKAN kepada anak via TTS.
+Tulis seperti guru yang sedang bercerita di kelas — bukan menulis diktat.
+Sapa anak langsung: "Teman-teman...", "Coba bayangkan...", "Keren ya?"
+Pastikan kalimat mengalir natural ketika didengarkan, bukan hanya enak dibaca.
 
 📝 BLOK: ISI KONTEN (paragraph)
 Gunakan bahasa yang mudah dipahami anak. Buka dengan HOOK terlebih dulu, lalu penjelasan inti, lalu langkah praktik.
@@ -707,12 +726,17 @@ Sumber URL: https://quran.com/20/114
   if (framework) prompt += framework;
 
   prompt += `\n\n━━━ 🕌 PEMBUKAAN / MUKADIMAH (opening) ━━━
+⚠️ INI BUKAN BLOK KONTEN. Teks ini harus di-copy ke field "Pembukaan (Mukadimah)" yang ada di Editor — BUKAN ditempel di blok konten isi.
+
 Tulis salam pembuka yang hangat dan relevan dengan topik.
 - Awali dengan "Assalamualaikum warahmatullahi wabarakatuh"
 - Lanjutkan dengan 1-2 kalimat pengantar singkat yang sesuai tema dan usia target.
 - Nada: ramah, hangat, dan membangkitkan rasa ingin tahu anak.
+- Sapa anak langsung: "Teman-teman...", "Adik-adik..."
 
 ━━━ 🤲 PENUTUPAN (closing) ━━━
+⚠️ INI BUKAN BLOK KONTEN. Teks ini harus di-copy ke field "Penutupan" yang ada di Editor — BUKAN ditempel di blok konten isi.
+
 Tulis penutup yang menginspirasi.
 - Rangkum pelajaran utama dalam 1-2 kalimat.
 - Akhiri dengan "Wallahu a'lam bishawab" dan "Wassalamualaikum warahmatullahi wabarakatuh"\n`;

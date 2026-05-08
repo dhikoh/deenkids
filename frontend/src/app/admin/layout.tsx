@@ -153,9 +153,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       { name: "Kelola Struktur", icon: <FolderTree size={20} />, href: "/admin/structure", show: isAdminOrSuper },
       { name: "Kelola Struktur Kisah", icon: <BookOpen size={20} />, href: "/admin/kisah-structure", show: isAdminOrSuper },
       { name: "Manajemen User", icon: <Users size={20} />, href: "/admin/users", show: isAdminOrSuper },
+      { name: "Prompt Generator", icon: <Wand2 size={20} />, href: "/admin/prompt-generator", show: isAdminOrSuper },
     ]},
     { label: "SuperAdmin", items: [
-      { name: "Prompt Generator", icon: <Wand2 size={20} />, href: "/admin/prompt-generator", show: isSuperAdmin },
       { name: "Tentang Kami", icon: <FileText size={20} />, href: "/admin/about-editor", show: isSuperAdmin },
       { name: "Kontak CS", icon: <MessageSquare size={20} />, href: "/admin/contact-editor", show: isSuperAdmin },
       { name: "Donasi Masuk", icon: <DollarSign size={20} />, href: "/admin/donation-inbox", show: isSuperAdmin },

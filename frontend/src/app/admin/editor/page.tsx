@@ -842,7 +842,7 @@ function EditorContent() {
             </div>
             <div className="p-4">
               <textarea value={openingText} onChange={e => setOpeningText(e.target.value)} placeholder="Assalamualaikum warahmatullahi wabarakatuh.\n\nBismillahirrahmanirrahim..." className="w-full border-slate-200 rounded-lg p-3 min-h-[80px] focus:border-emerald-500 focus:ring-emerald-500 text-sm" />
-              <p className="text-[10px] text-slate-400 mt-1">Opsional — salam pembuka dan pengantar singkat terkait tema konten.</p>
+              <p className="text-[10px] text-slate-400 mt-1">Opsional — salam pembuka (Assalamualaikum...) dan pengantar singkat yang mengundang anak untuk menyimak. Teks ini ditampilkan terpisah dari blok konten.</p>
             </div>
           </div>
 
@@ -889,7 +889,7 @@ function EditorContent() {
             </div>
             <div className="p-4">
               <textarea value={closingText} onChange={e => setClosingText(e.target.value)} placeholder="Wallahu a'lam bishawab.\n\nWassalamualaikum warahmatullahi wabarakatuh." className="w-full border-slate-200 rounded-lg p-3 min-h-[80px] focus:border-emerald-500 focus:ring-emerald-500 text-sm" />
-              <p className="text-[10px] text-slate-400 mt-1">Opsional — penutup dan salam penutup.</p>
+              <p className="text-[10px] text-slate-400 mt-1">Opsional — rangkum pelajaran + salam penutup (Wallahu a'lam, Wassalamualaikum...). Teks ini ditampilkan terpisah dari blok konten.</p>
             </div>
           </div>
         </div>

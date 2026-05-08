@@ -1,7 +1,6 @@
 "use client";
 
-import { Star, ThumbsUp, Eye, BookOpen, Lightbulb, Quote, MessageCircle, User, Sparkles } from "lucide-react";
-import { ROLE_CONFIG } from "@/components/DialogIcons";
+import { Lightbulb, User } from "lucide-react";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
 import NarrationAudioPlayer from "@/components/NarrationAudioPlayer";
 import UnifiedBlockRenderer, { type BlockVariant } from "@/components/UnifiedBlockRenderer";
