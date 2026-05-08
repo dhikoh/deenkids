@@ -51,7 +51,10 @@ function extractReadableText(blocks: any[], contentType?: string): string[] {
     }
 
     if (type === "analogy") {
-      if (block.text) segments.push(block.text);
+      const intros = ["Coba bayangkan,","Misalnya begini,","Pernahkah kamu membayangkan,","Seperti halnya,","Nah, ini mirip seperti,","Bisa diibaratkan,","Tahukah kamu,"];
+      const intro = intros[Math.floor(Math.random() * intros.length)];
+      const body = [block.title, block.text].filter(Boolean).join('. ');
+      if (body) segments.push(`${intro} ${body}`);
     }
 
     if (type === "tip") {

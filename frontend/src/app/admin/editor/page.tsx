@@ -1029,7 +1029,12 @@ function EditorContent() {
                       if (b.data.source) parts.push(`Doa ini bersumber dari ${b.data.source}.`);
                       return parts.join('\n');
                     }
-                    if (b.type === 'analogy') return [b.data.title, b.data.text].filter(Boolean).join('. ');
+                    if (b.type === 'analogy') {
+                      const intros = ["Coba bayangkan,","Misalnya begini,","Pernahkah kamu membayangkan,","Seperti halnya,","Nah, ini mirip seperti,","Bisa diibaratkan,","Tahukah kamu,"];
+                      const intro = intros[Math.floor(Math.random() * intros.length)];
+                      const body = [b.data.title, b.data.text].filter(Boolean).join('. ');
+                      return body ? `${intro} ${body}` : '';
+                    }
                     return b.data.text || '';
                   })
                   .filter((t: string) => t.trim());
