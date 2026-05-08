@@ -536,7 +536,7 @@ function EditorContent() {
             <span className="text-sm font-medium flex items-center gap-1">{enableAudio ? <Volume2 className="h-4 w-4 text-purple-500" /> : <VolumeX className="h-4 w-4 text-slate-400" />} Audio</span>
           </label>
           <button onClick={() => {
-            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, audioTitle, audioDescription, audioUrl, displayAuthorName, openingText, closingText, openingAudio, closingAudio };
+            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, audioTitle, audioDescription, audioUrl, displayAuthorName, openingText, closingText, openingAudio, closingAudio, thumbnailUrl, socialThumbnailUrl, pov };
             localStorage.setItem('adably_preview_data', JSON.stringify(previewData));
             window.open('/admin/editor/preview', '_blank');
           }} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2">

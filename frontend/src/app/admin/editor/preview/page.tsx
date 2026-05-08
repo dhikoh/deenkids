@@ -58,7 +58,10 @@ export default function PreviewPage() {
     );
   }
 
-  // Build preview content object matching the shape ContentRenderer expects
+  // Build preview content object matching the shape ContentRenderer expects.
+  // ContentRenderer now uses a unified approach:
+  // - For QNA: reads qnaDetail.blocks[] (unified) or legacy fields as fallback
+  // - For ARTICLE/PEMBELAJARAN/KISAH: reads articleDetail.blocks[]
   const previewContent = {
     title: content.title,
     description: content.description,
@@ -69,17 +72,14 @@ export default function PreviewPage() {
     enableAudio: content.enableAudio,
     audioTitle: content.audioTitle !== undefined ? content.audioTitle : true,
     audioDescription: content.audioDescription !== undefined ? content.audioDescription : true,
-    audioUrl: content.audioUrl || null, // Forward uploaded MP3 URL to ContentRenderer
-    thumbnailUrl: content.thumbnailUrl || null, // For Media Session artwork on lock screen
+    audioUrl: content.audioUrl || null,
+    thumbnailUrl: content.thumbnailUrl || null,
+    pov: content.pov || null,
     qnaDetail: content.contentType === "QNA" ? {
       question: content.title,
       answerQuick: content.blocks?.find((b: any) => b.type === "quick_answer")?.data?.text || "",
       answerQuickReferenceUrl: content.blocks?.find((b: any) => b.type === "quick_answer")?.data?.referenceUrl || "",
-      dialogBlocks: content.blocks?.filter((b: any) => b.type === "dialog").map((b: any) => b.data) || [],
-      dalilBlocks: content.blocks?.filter((b: any) => b.type === "dalil").map((b: any) => b.data) || [],
-      analogyBlocks: content.blocks?.filter((b: any) => b.type === "analogy").map((b: any) => b.data) || [],
-      tipsBlocks: content.blocks?.filter((b: any) => b.type === "tip").map((b: any) => b.data) || [],
-      // Unified blocks[] — forwards ALL block types including hikmah, doa, paragraph etc.
+      // Unified blocks[] — ALL block types except quick_answer
       blocks: content.blocks
         ?.filter((b: any) => b.type !== "quick_answer")
         .map((b: any) => ({ type: b.type, ...b.data })) || [],
@@ -103,7 +103,7 @@ export default function PreviewPage() {
           </div>
           <div>
             <h2 className="font-bold text-amber-800 text-sm">Mode Preview</h2>
-            <p className="text-xs text-amber-600">Tampilan konten di mata pengunjung website</p>
+            <p className="text-xs text-amber-600">Tampilan konten persis seperti yang akan dilihat pengunjung website</p>
           </div>
         </div>
         <div className="flex gap-2">

@@ -1,8 +1,9 @@
 import { fetchContentBySlug } from "@/lib/api";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Star, ThumbsUp, Eye, User, Volume2, Lightbulb, Quote } from "lucide-react";
+import { ChevronLeft, Star, ThumbsUp, Eye, User, Volume2 } from "lucide-react";
 import { EngagementBar } from "@/components/ui/EngagementBar";
+import UnifiedBlockRenderer from "@/components/UnifiedBlockRenderer";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
 import NarrationAudioPlayer from "@/components/NarrationAudioPlayer";
 import type { Metadata } from "next";
@@ -114,88 +115,8 @@ export default async function KisahDetailPage({
         </div>
       )}
 
-      {/* Story Block Renderer — NO dialog blocks for Kisah */}
-      <div className="prose prose-slate max-w-none">
-        {blocks.map((block: any, i: number) => {
-          if (block.type === "heading") return (
-            <h2 key={i} className="text-2xl font-extrabold text-slate-800 mt-10 mb-4 border-b border-amber-100 pb-2">
-              {block.text}
-            </h2>
-          );
-
-          if (block.type === "paragraph") return (
-            <div key={i} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-5">
-              <p className="text-slate-700 leading-[1.9] text-base whitespace-pre-line">{block.text}</p>
-              {block.referenceUrl && (
-                <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-amber-600 underline hover:text-amber-800 mt-2 inline-block">
-                  📎 Sumber referensi ↗
-                </a>
-              )}
-            </div>
-          );
-
-          if (block.type === "dalil") {
-            const entries = block.entries || [{ arabic: block.arabic, translation: block.translation, source: block.source, sourceUrl: block.sourceUrl }];
-            return (
-              <div key={i} className="space-y-3 my-6">
-                {entries.map((dalil: any, j: number) => (
-                  <blockquote key={j} className="border-l-4 border-amber-400 bg-amber-50 rounded-r-2xl px-6 py-5 shadow-sm">
-                    {dalil.arabic && <p className="text-right text-xl font-serif text-slate-800 mb-3 leading-loose" dir="rtl">{dalil.arabic}</p>}
-                    <p className="text-slate-700 italic font-medium leading-relaxed">&ldquo;{dalil.translation || dalil.text}&rdquo;</p>
-                    <cite className="block mt-2 text-sm font-bold text-amber-700 not-italic">
-                      — {dalil.sourceUrl ? <a href={dalil.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900">{dalil.source} ↗</a> : dalil.source}
-                    </cite>
-                  </blockquote>
-                ))}
-              </div>
-            );
-          }
-
-          if (block.type === "tip") return (
-            <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 my-5 flex gap-3">
-              <Lightbulb className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-emerald-800 font-semibold text-sm leading-relaxed">{block.text}</p>
-                {block.referenceUrl && (
-                  <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline mt-1 inline-block hover:text-emerald-800">Sumber ↗</a>
-                )}
-              </div>
-            </div>
-          );
-
-          if (block.type === "analogy") return (
-            <div key={i} className="bg-orange-50 border border-orange-200 rounded-2xl p-5 my-5">
-              <p className="text-xs font-bold text-orange-500 uppercase tracking-wider mb-2">✨ Perumpamaan</p>
-              <p className="text-orange-900 font-medium leading-relaxed">{block.text}</p>
-              {block.explanation && <p className="text-sm text-orange-700 mt-2 italic">{block.explanation}</p>}
-            </div>
-          );
-
-          if (block.type === "quote") return (
-            <blockquote key={i} className="border-l-4 border-slate-300 pl-5 my-5 text-slate-600 italic">
-              <Quote className="h-4 w-4 text-slate-400 mb-1" />
-              <p className="leading-relaxed font-medium">{block.text}</p>
-              {block.source && <cite className="block mt-2 text-xs font-bold text-slate-500 not-italic">— {block.source}</cite>}
-            </blockquote>
-          );
-
-          if (block.type === "image") return (
-            <figure key={i} className="my-6">
-              <img src={block.url} alt={block.caption || ""} className="w-full rounded-2xl shadow-md object-cover" />
-              {block.caption && <figcaption className="text-center text-xs text-slate-400 mt-2 italic">{block.caption}</figcaption>}
-            </figure>
-          );
-
-          if (block.type === "video") return (
-            <div key={i} className="my-6 aspect-video rounded-2xl overflow-hidden shadow-md">
-              <iframe src={block.url} className="w-full h-full" allowFullScreen title={block.caption || "Video"} />
-            </div>
-          );
-
-          // Skip dialog blocks — Kisah does not use dialog format
-          return null;
-        })}
-      </div>
+      {/* Story Block Renderer — shared renderer (includes hikmah, doa, dalil, analogy, tip) */}
+      <UnifiedBlockRenderer blocks={blocks} variant="kisah" />
 
       {/* Closing / Penutupan */}
       {content.closingText && (
