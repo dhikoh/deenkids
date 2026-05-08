@@ -292,8 +292,15 @@ function EditorContent() {
   };
 
   const addTag = () => {
-    const t = tagInput.trim();
-    if (t && !tags.includes(t)) { setTags([...tags, t]); setTagInput(""); }
+    const raw = tagInput.trim();
+    if (!raw) return;
+    // Split by comma, trim each, filter empty/duplicate
+    const newTags = raw
+      .split(',')
+      .map(t => t.trim())
+      .filter(t => t && !tags.includes(t));
+    if (newTags.length > 0) setTags([...tags, ...newTags]);
+    setTagInput("");
   };
 
   const handleImageUpload = async (blockId: string, file: File) => {
@@ -820,7 +827,7 @@ function EditorContent() {
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())} placeholder="Ketik tag lalu Enter" className="flex-1 border border-slate-300 rounded-lg shadow-sm p-2 text-sm focus:border-emerald-500" list="tag-suggestions" />
+                  <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(); } }} onPaste={(e) => { e.preventDefault(); const pasted = e.clipboardData.getData('text'); const newTags = pasted.split(',').map(t => t.trim()).filter(t => t && !tags.includes(t)); if (newTags.length > 0) setTags(prev => [...prev, ...newTags]); setTagInput(''); }} placeholder="Ketik tag, pisahkan dengan koma" className="flex-1 border border-slate-300 rounded-lg shadow-sm p-2 text-sm focus:border-emerald-500" list="tag-suggestions" />
                   <datalist id="tag-suggestions">{availableTags.map(t => <option key={t.id} value={t.name} />)}</datalist>
                   <button onClick={addTag} className="px-3 py-2 bg-slate-100 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-200"><Plus size={16} /></button>
                 </div>
