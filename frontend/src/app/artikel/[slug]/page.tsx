@@ -110,14 +110,26 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
         <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
       ) : (
         <AudioPlayerWrapper blocks={
-          content.articleDetail?.blocks || [
-            ...(content.qnaDetail?.answerQuick ? [{ type: 'quick_answer', text: content.qnaDetail.answerQuick }] : []),
-            ...(content.qnaDetail?.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
-            ...(content.qnaDetail?.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
-            ...(content.qnaDetail?.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
-            ...(content.qnaDetail?.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+          [
+            ...(content.openingAudio !== false && content.openingText ? [{ type: 'paragraph', text: content.openingText, enableAudio: true }] : []),
+            ...(content.articleDetail?.blocks || [
+              ...(content.qnaDetail?.answerQuick ? [{ type: 'quick_answer', text: content.qnaDetail.answerQuick }] : []),
+              ...(content.qnaDetail?.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
+              ...(content.qnaDetail?.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
+              ...(content.qnaDetail?.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
+              ...(content.qnaDetail?.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+            ]),
+            ...(content.closingAudio !== false && content.closingText ? [{ type: 'paragraph', text: content.closingText, enableAudio: true }] : []),
           ]
         } enableAudio={content.enableAudio} contentType={content.type} />
+      )}
+
+      {/* Opening / Mukadimah */}
+      {content.openingText && (
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6 mb-6">
+          <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">🕌 Pembukaan</p>
+          <p className="text-emerald-900 font-medium leading-relaxed whitespace-pre-line">{content.openingText}</p>
+        </div>
       )}
 
       {/* Article Blocks Renderer */}
@@ -282,6 +294,14 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
               </ul>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Closing / Penutupan */}
+      {content.closingText && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 mt-6 mb-6">
+          <p className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">🤲 Penutupan</p>
+          <p className="text-amber-900 font-medium leading-relaxed whitespace-pre-line">{content.closingText}</p>
         </div>
       )}
 
