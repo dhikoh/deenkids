@@ -59,11 +59,13 @@ export class StructureService {
       data: {
         title: body.title ? sanitizeText(body.title) : existing.title,
         description: body.description !== undefined ? sanitizeText(body.description || '') : existing.description,
+        type: body.type ?? existing.type,
         ageGroups: body.ageGroups ?? existing.ageGroups,
         icon: body.icon ?? existing.icon,
         order: body.order ?? existing.order,
         isActive: body.isActive ?? existing.isActive,
         parentId: body.parentId !== undefined ? body.parentId : existing.parentId,
+        group: body.group ?? existing.group,
       },
     });
 
