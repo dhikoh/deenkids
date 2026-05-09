@@ -18,6 +18,7 @@ export interface SaveContentPayload {
   title: string;
   description?: string;
   type: 'QNA' | 'ARTICLE' | 'PEMBELAJARAN' | 'KISAH';
+  subType?: string;
   ageGroups?: string[];
   tags?: string[];
   openingText?: string;
@@ -53,6 +54,27 @@ export class N8nService {
     const blocks = payload.blocks || this.parseRawContent(payload.rawContent || '');
     const slug = slugify(payload.title, { lower: true, strict: true }) + '-' + Date.now().toString(36);
 
+    // Extract metadata (description, tags, ageGroups) from raw Gemini output
+    if (payload.rawContent) {
+      const meta = this.extractGeminiMetadata(payload.rawContent);
+      if (meta.description && !payload.description) payload.description = meta.description;
+      if (meta.tags.length > 0 && (!payload.tags || payload.tags.length === 0)) payload.tags = meta.tags;
+      if (meta.ageGroups.length > 0 && (!payload.ageGroups || payload.ageGroups.length === 0)) payload.ageGroups = meta.ageGroups;
+    }
+
+    // Auto-add Kisah subType as tag
+    if (contentType === ContentType.KISAH && payload.subType) {
+      const subTypeTagMap: Record<string, string> = {
+        SIRAH: 'Sirah Nabawiyah', QASHASH: 'Qashashul Anbiya',
+        TELADAN: 'Teladan Sahabat', FIKSI: 'Cerita Fiksi Islami',
+      };
+      const subTag = subTypeTagMap[payload.subType.toUpperCase()];
+      if (subTag) {
+        if (!payload.tags) payload.tags = [];
+        if (!payload.tags.includes(subTag)) payload.tags.push(subTag);
+      }
+    }
+
     // Step 1: Create the content item
     const content = await this.prisma.contentItem.create({
       data: {
@@ -66,6 +88,11 @@ export class N8nService {
         openingText: payload.openingText || null,
         closingText: payload.closingText || null,
         pov: contentType === ContentType.ARTICLE ? (payload.pov || null) : null,
+        enableAudio: true,
+        audioTitle: true,
+        audioDescription: true,
+        openingAudio: true,
+        closingAudio: true,
       },
     });
 
@@ -291,6 +318,53 @@ export class N8nService {
     if (openingMatch) result.openingText = openingMatch[1].trim();
     const closingMatch = raw.match(/\(closing\)\s*━*\s*\n([\s\S]*?)$/i);
     if (closingMatch) result.closingText = closingMatch[1].trim();
+    return result;
+  }
+
+  // ═══════════════════════════════════════════════
+  // Extract metadata (description, tags, ageGroups) from Gemini output
+  // ═══════════════════════════════════════════════
+
+  private extractGeminiMetadata(raw: string): { description: string; tags: string[]; ageGroups: string[] } {
+    const result = { description: '', tags: [] as string[], ageGroups: [] as string[] };
+
+    // Extract description: "Deskripsi Singkat: ..." or "Deskripsi: ..."
+    const descMatch = raw.match(/(?:Deskripsi(?:\s*Singkat)?)\s*:\s*(.+)/i);
+    if (descMatch) {
+      result.description = descMatch[1].replace(/^[\["'""]+|[\]"'""]+$/g, '').trim();
+    }
+
+    // Extract tags: "Tag: sholat, ibadah, anak, islam"
+    const tagMatch = raw.match(/Tag\s*:\s*(.+)/i);
+    if (tagMatch) {
+      result.tags = tagMatch[1]
+        .split(/[,،]/)
+        .map(t => t.replace(/^[\["'""]+|[\]"'""]+$/g, '').trim())
+        .filter(t => t.length > 0 && t.length < 50);
+    }
+
+    // Extract age groups: "Kelompok Usia: 3-5, 5-7 tahun" or "Usia: 3–10 tahun"
+    const ageMatch = raw.match(/(?:Kelompok\s*)?Usia\s*:\s*(.+)/i);
+    if (ageMatch) {
+      const ageText = ageMatch[1];
+      const validAges = ['3-5', '5-7', '7-10', '10-13'];
+      for (const age of validAges) {
+        if (ageText.includes(age) || ageText.includes(age.replace('-', '–'))) {
+          result.ageGroups.push(age);
+        }
+      }
+      // Handle range like "3–10" → includes 3-5, 5-7, 7-10
+      const rangeMatch = ageText.match(/(\d+)[–\-](\d+)/);
+      if (rangeMatch && result.ageGroups.length === 0) {
+        const lo = parseInt(rangeMatch[1]);
+        const hi = parseInt(rangeMatch[2]);
+        if (lo <= 5 && hi >= 3) result.ageGroups.push('3-5');
+        if (lo <= 7 && hi >= 5) result.ageGroups.push('5-7');
+        if (lo <= 10 && hi >= 7) result.ageGroups.push('7-10');
+        if (lo <= 13 && hi >= 10) result.ageGroups.push('10-13');
+      }
+    }
+
     return result;
   }
 
