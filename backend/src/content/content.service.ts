@@ -56,9 +56,11 @@ export class ContentService {
     const allNodes = await this.prisma.contentNode.findMany({
       where: { isActive: true, group: 'KISAH' },
     });
-    const getDescendantIds = (parentId: string): string[] => {
+    const getDescendantIds = (parentId: string, visited = new Set<string>()): string[] => {
+      if (visited.has(parentId)) return []; // Prevent circular reference
+      visited.add(parentId);
       const children = allNodes.filter(n => n.parentId === parentId);
-      return [parentId, ...children.flatMap(c => getDescendantIds(c.id))];
+      return [parentId, ...children.flatMap(c => getDescendantIds(c.id, visited))];
     };
     const nodeIds = getDescendantIds(node.id);
 
@@ -176,9 +178,11 @@ export class ContentService {
       const allNodes = await this.prisma.contentNode.findMany({ where: { isActive: true } });
       const targetNode = allNodes.find(n => n.slug === nodeSlug);
       if (targetNode) {
-        const getDescendantIds = (parentId: string): string[] => {
+        const getDescendantIds = (parentId: string, visited = new Set<string>()): string[] => {
+          if (visited.has(parentId)) return []; // Prevent circular reference
+          visited.add(parentId);
           const children = allNodes.filter(n => n.parentId === parentId);
-          return [parentId, ...children.flatMap(c => getDescendantIds(c.id))];
+          return [parentId, ...children.flatMap(c => getDescendantIds(c.id, visited))];
         };
         where.nodeId = { in: getDescendantIds(targetNode.id) };
       } else {
