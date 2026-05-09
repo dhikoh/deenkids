@@ -188,20 +188,59 @@ export class N8nService {
   // Parse Raw Gemini Output into Blocks
   // ═══════════════════════════════════════════════
 
+  // Header keyword → block type mapping (for fallback when Gemini drops markers)
+  private static readonly HEADER_TYPE_MAP: Record<string, string> = {
+    'ISI KONTEN': 'paragraph', 'KONTEN': 'paragraph',
+    'ANALOGI': 'analogy', 'ANALOGI ORGANIK': 'analogy', 'ANALOGI KONTEKSTUAL': 'analogy',
+    'TIPS': 'tip', 'CATATAN': 'tip', 'CATATAN / TIPS': 'tip',
+    'HIKMAH': 'hikmah', 'HIKMAH / PELAJARAN': 'hikmah', 'PELAJARAN': 'hikmah',
+    'DOA': 'doa',
+    'DALIL': 'dalil', 'LANDASAN': 'dalil', 'DALIL / LANDASAN': 'dalil',
+    'DIALOG': 'dialog', 'SIMULASI DIALOG': 'dialog',
+    'PEMBUKAAN': 'opening', 'MUKADIMAH': 'opening', 'PEMBUKAAN / MUKADIMAH': 'opening',
+    'PENUTUPAN': 'closing',
+    'JAWABAN INSTAN': 'quick_answer',
+    'REFERENSI': 'dalil', 'REFERENSI SUMBER': 'dalil',
+  };
+
+  private static readonly VALID_TYPES = ['quick_answer', 'paragraph', 'dalil', 'analogy', 'tip', 'hikmah', 'doa', 'dialog', 'heading', 'opening', 'closing'];
+
   parseRawContent(raw: string): ParsedBlock[] {
     const blocks: ParsedBlock[] = [];
     if (!raw.trim()) return blocks;
 
-    // Find all marker positions using (type) pattern in lines
+    // Strategy 1: Find markers using (type) pattern — e.g. "(paragraph)", "(dalil)"
     const markers: { type: string; index: number }[] = [];
     const lineMarkerRegex = /^.*\((\w+)\).*$/gm;
     let match: RegExpExecArray | null;
 
     while ((match = lineMarkerRegex.exec(raw)) !== null) {
       const type = match[1].toLowerCase();
-      if (['quick_answer', 'paragraph', 'dalil', 'analogy', 'tip', 'hikmah', 'doa', 'dialog', 'heading', 'opening', 'closing'].includes(type)) {
+      if (N8nService.VALID_TYPES.includes(type)) {
         markers.push({ type, index: match.index + match[0].length });
       }
+    }
+
+    // Strategy 2: If few markers found, try fallback header pattern ━━━ KEYWORD ━━━
+    if (markers.filter(m => m.type !== 'opening' && m.type !== 'closing').length < 2) {
+      const headerRegex = /^[━─═]{2,}[^━─═\n]*$/gm;
+      let headerMatch: RegExpExecArray | null;
+      while ((headerMatch = headerRegex.exec(raw)) !== null) {
+        const line = headerMatch[0];
+        // Try to match known keywords in this header line
+        for (const [keyword, blockType] of Object.entries(N8nService.HEADER_TYPE_MAP)) {
+          if (line.toUpperCase().includes(keyword)) {
+            // Check if this marker already exists (from strategy 1)
+            const alreadyFound = markers.some(m => Math.abs(m.index - (headerMatch!.index + line.length)) < 50 && m.type === blockType);
+            if (!alreadyFound) {
+              markers.push({ type: blockType, index: headerMatch.index + line.length });
+            }
+            break; // First keyword match wins
+          }
+        }
+      }
+      // Sort markers by position after adding fallback markers
+      markers.sort((a, b) => a.index - b.index);
     }
 
     // Extract content between markers
@@ -217,12 +256,36 @@ export class N8nService {
       if (block) blocks.push(block);
     }
 
-    // Fallback: if no markers found, treat entire raw as one paragraph
-    if (blocks.length === 0 && raw.trim()) {
-      blocks.push({ type: 'paragraph', text: raw.trim() });
+    // Post-process: detect headings within paragraph blocks (short bold lines)
+    const finalBlocks: ParsedBlock[] = [];
+    for (const block of blocks) {
+      if (block.type === 'paragraph' && block.text) {
+        const lines = block.text.split('\n');
+        let currentParagraph = '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          // Heuristic: short line (≤60 chars), no period at end, not empty → heading
+          if (trimmed.length > 0 && trimmed.length <= 60 && !trimmed.endsWith('.') && !trimmed.endsWith('!') && !trimmed.endsWith('?') && !trimmed.startsWith('-') && !trimmed.startsWith('•') && /^[A-Z\u00C0-\u024F]/.test(trimmed) && currentParagraph.length > 100) {
+            // Flush current paragraph
+            if (currentParagraph.trim()) finalBlocks.push({ type: 'paragraph', text: currentParagraph.trim() });
+            finalBlocks.push({ type: 'heading', text: trimmed });
+            currentParagraph = '';
+          } else {
+            currentParagraph += (currentParagraph ? '\n' : '') + line;
+          }
+        }
+        if (currentParagraph.trim()) finalBlocks.push({ type: 'paragraph', text: currentParagraph.trim() });
+      } else {
+        finalBlocks.push(block);
+      }
     }
 
-    return blocks;
+    // Fallback: if no blocks found, treat entire raw as one paragraph
+    if (finalBlocks.length === 0 && raw.trim()) {
+      finalBlocks.push({ type: 'paragraph', text: raw.trim() });
+    }
+
+    return finalBlocks;
   }
 
   private parseSectionToBlock(type: string, section: string): ParsedBlock | null {
