@@ -1,12 +1,138 @@
 {
   "name": "Adably Content Bot",
-  "nodes": [],
-  "connections": {},
-  "active": false,
-  "settings": {
-    "timezone": "Asia/Jakarta"
+  "nodes": [
+    {
+      "parameters": { "updates": ["message", "callback_query"] },
+      "id": "t1", "name": "Telegram Trigger", "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1, "position": [200, 300],
+      "webhookId": "adably-bot",
+      "credentials": { "telegramApi": { "id": "", "name": "Telegram account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const sd = $getWorkflowStaticData('global');\nif (!sd.chats) sd.chats = {};\nconst inp = $input.first().json;\nconst isCb = !!inp.callback_query;\nconst chatId = isCb ? inp.callback_query.message.chat.id : inp.message?.chat?.id;\nconst text = isCb ? '' : (inp.message?.text || '').trim();\nconst cb = isCb ? inp.callback_query.data : '';\nconst cbId = isCb ? inp.callback_query.id : '';\nconst st = sd.chats[chatId] || {};\nconst r = { action:'reply', chatId, text:'', kb:null, cbId, title:'', type:'', subType:'', raw:'', cId:'' };\n\nconst MENU = [[{text:'📝 Buat Konten',callback_data:'m_create'},{text:'📊 Cek Status',callback_data:'m_status'}],[{text:'📤 Submit Review',callback_data:'m_submit'},{text:'🖼 Prompt Thumbnail',callback_data:'m_thumb'}],[{text:'🔗 Buka Web Adably',url:'https://adably.id/admin'},{text:'❓ Bantuan',callback_data:'m_help'}]];\n\nconst TYPES = [[{text:'❓ QNA',callback_data:'t_QNA'},{text:'📝 Artikel',callback_data:'t_ARTICLE'}],[{text:'📚 Pembelajaran',callback_data:'t_PEMBELAJARAN'},{text:'📖 Kisah',callback_data:'t_KISAH'}],[{text:'◀️ Menu',callback_data:'m_main'}]];\n\nconst KISAH = [[{text:'🕌 Sirah Nabawiyah',callback_data:'k_SIRAH'}],[{text:'📜 Qashashul Anbiya',callback_data:'k_QASHASH'}],[{text:'⭐ Teladan Sahabat',callback_data:'k_TELADAN'}],[{text:'✨ Cerita Fiksi',callback_data:'k_FIKSI'}],[{text:'◀️ Kembali',callback_data:'m_create'}]];\n\nconst RATIO = [[{text:'🖥 16:9 Website',callback_data:'r_16:9'}],[{text:'📱 1:1 IG/FB',callback_data:'r_1:1'}],[{text:'📲 4:5 IG Optimal',callback_data:'r_4:5'}],[{text:'◀️ Menu',callback_data:'m_main'}]];\n\nfunction prompt(type, sub, title) {\n  const base = `Buatkan konten islami untuk anak (usia 3-10 tahun) dengan judul: \"${title}\"\\n\\nGunakan format marker berikut untuk setiap bagian:\\n\\n`;\n  if (type === 'QNA') return base + '(quick_answer)\\nJawaban singkat 1-2 kalimat\\n\\n(paragraph)\\nPenjelasan detail yang mudah dipahami anak\\n\\n(dalil)\\nArab: (teks arab dalil)\\nTerjemahan: (terjemahan indonesia)\\nSumber: (sumber hadits/ayat)\\n\\n(analogy)\\nJudul: (judul analogi)\\nAnalogi sederhana menggunakan benda/pengalaman sehari-hari anak\\n\\n(doa)\\nJudul: (judul doa)\\nArab: (teks arab doa)\\nTerjemahan: (terjemahan)\\nSumber: (sumber)\\n\\n(tip)\\nTips praktis yang bisa dilakukan anak';\n  if (type === 'ARTICLE') return base + '(paragraph)\\nParagraf pembuka yang menarik\\n\\n(paragraph)\\nIsi artikel - penjelasan mendalam\\n\\n(dalil)\\nArab: (teks arab)\\nTerjemahan: (terjemahan)\\nSumber: (sumber)\\n\\n(analogy)\\nJudul: (judul analogi)\\nAnalogi untuk memudahkan pemahaman\\n\\n(tip)\\nTips praktis untuk anak';\n  if (type === 'PEMBELAJARAN') return base + '(paragraph)\\nPengantar materi pembelajaran\\n\\n(paragraph)\\nPenjelasan materi utama\\n\\n(dalil)\\nArab: (teks arab)\\nTerjemahan: (terjemahan)\\nSumber: (sumber)\\n\\n(analogy)\\nJudul: (judul analogi)\\nAnalogi untuk mempermudah belajar\\n\\n(hikmah)\\nHikmah dan pelajaran\\n\\n(tip)\\nTips belajar untuk anak';\n  if (type === 'KISAH') {\n    const subLabel = {SIRAH:'Sirah Nabawiyah',QASHASH:'Qashashul Anbiya',TELADAN:'Teladan Sahabat/Ulama',FIKSI:'Cerita Fiksi Islami'}[sub] || sub;\n    return `Buatkan kisah islami \"${subLabel}\" untuk anak (3-10 tahun)\\nJudul: \"${title}\"\\nGaya: pencerita — panjang, mengalir, penuh detail\\nMin 600 kata\\n\\nFormat:\\n(paragraph)\\nNarasi kisah bagian 1\\n\\n(paragraph)\\nNarasi kisah bagian 2\\n\\n(paragraph)\\nNarasi kisah bagian 3\\n\\n(hikmah)\\nHikmah dari kisah ini\\n\\n(doa)\\nJudul: (judul doa)\\nArab: (teks arab)\\nTerjemahan: (terjemahan)\\nSumber: (sumber)\\n\\nATURAN: ${sub==='FIKSI'?'Karakter fiktif, nilai Islam terselip alami, setting kehidupan anak muslim':'Ikuti HANYA fakta dari sumber mu\\'tabar. JANGAN tambahkan kejadian fiktif. Cantumkan sumber setiap dialog/riwayat.'}`;\n  }\n  return base + '(paragraph)\\nKonten utama';\n}\n\nfunction thumbPrompt(ratio, title) {\n  const size = {'16:9':'1280x720 landscape','1:1':'1080x1080 square','4:5':'1080x1350 portrait'}[ratio];\n  return `Buatkan thumbnail bergaya kartun islami anak-anak.\\nTema: \"${title}\"\\nRasio: ${ratio} (${size})\\nStyle: kartun lucu, warna cerah & vibrant, cocok edukasi Islam anak\\nTidak ada teks di dalam gambar.\\nBackground: simple, clean, eye-catching`;\n}\n\nif (isCb) {\n  switch(cb) {\n    case 'm_main': r.text='👋 *Menu Utama*\\nPilih menu:'; r.kb=MENU; break;\n    case 'm_create': r.text='📝 *Pilih tipe konten:*'; r.kb=TYPES; break;\n    case 'm_status': sd.chats[chatId]={step:'wait_status_id'}; r.text='📊 Ketik ID konten:'; break;\n    case 'm_submit': sd.chats[chatId]={step:'wait_submit_id'}; r.text='📤 Ketik ID konten yang ingin diajukan review:'; break;\n    case 'm_thumb': r.text='🖼 *Pilih rasio thumbnail:*'; r.kb=RATIO; break;\n    case 'm_help': r.text='❓ *Panduan Adably Bot*\\n\\n1️⃣ Klik 📝 Buat Konten → pilih tipe\\n2️⃣ Ketik judul → bot kirim prompt\\n3️⃣ Copy prompt → paste ke Gemini\\n4️⃣ Kirim hasil Gemini ke bot\\n5️⃣ Bot simpan otomatis ke DRAFT\\n6️⃣ Klik Submit Review\\n\\n🖼 Untuk thumbnail → pilih rasio → ketik judul → copy prompt ke AI image generator → upload manual di web Adably'; r.kb=[[{text:'◀️ Menu',callback_data:'m_main'}]]; break;\n    case 't_QNA': case 't_ARTICLE': case 't_PEMBELAJARAN':\n      const tp=cb.replace('t_',''); sd.chats[chatId]={step:'wait_title',type:tp};\n      r.text=`✅ Tipe: *${tp}*\\n\\n✏️ Ketik judul konten:`; break;\n    case 't_KISAH': r.text='📖 *Pilih sub-tipe Kisah:*'; r.kb=KISAH; break;\n    case 'k_SIRAH': case 'k_QASHASH': case 'k_TELADAN': case 'k_FIKSI':\n      const ks=cb.replace('k_',''); sd.chats[chatId]={step:'wait_title',type:'KISAH',sub:ks};\n      r.text=`✅ Kisah: *${ks}*\\n\\n✏️ Ketik judul kisah:`; break;\n    case 'r_16:9': case 'r_1:1': case 'r_4:5':\n      const rt=cb.replace('r_',''); sd.chats[chatId]={step:'wait_thumb_title',ratio:rt};\n      r.text=`✅ Rasio: *${rt}*\\n\\n✏️ Ketik judul/tema thumbnail:`; break;\n    default:\n      if(cb.startsWith('submit_')){r.action='submit';r.cId=cb.replace('submit_','');}\n      else if(cb.startsWith('status_')){r.action='status';r.cId=cb.replace('status_','');}\n      else{r.text='❓ Perintah tidak dikenali';r.kb=MENU;}\n  }\n} else if (text.startsWith('/start')) {\n  r.text='👋 *Assalamu\\'alaikum!*\\n\\nSaya *Adably Content Bot* 🤖\\nAsisten pembuatan konten islami anak.\\n\\nPilih menu:'; r.kb=MENU;\n} else if (st.step === 'wait_title') {\n  const p = prompt(st.type, st.sub, text);\n  sd.chats[chatId] = {step:'wait_content',type:st.type,sub:st.sub,title:text};\n  r.text=`📋 *Prompt ${st.type}*\\n_\"${text}\"_\\n\\n\\`\\`\\`\\n${p}\\n\\`\\`\\`\\n\\n👆 Copy → paste ke Gemini → kirim hasilnya ke sini`;\n} else if (st.step === 'wait_content') {\n  r.action='save'; r.type=st.type; r.title=st.title; r.raw=text;\n  delete sd.chats[chatId];\n} else if (st.step === 'wait_thumb_title') {\n  const tp = thumbPrompt(st.ratio, text);\n  delete sd.chats[chatId];\n  r.text=`🖼 *Prompt Thumbnail ${st.ratio}*\\n_\"${text}\"_\\n\\n\\`\\`\\`\\n${tp}\\n\\`\\`\\`\\n\\n👆 Copy → paste ke AI image generator\\nLalu upload manual di web Adably`;\n  r.kb=[[{text:'🖼 Rasio Lain',callback_data:'m_thumb'},{text:'◀️ Menu',callback_data:'m_main'}]];\n} else if (st.step === 'wait_status_id') {\n  r.action='status'; r.cId=text.trim(); delete sd.chats[chatId];\n} else if (st.step === 'wait_submit_id') {\n  r.action='submit'; r.cId=text.trim(); delete sd.chats[chatId];\n} else {\n  r.text='🤔 Saya tidak mengerti pesan ini.\\nGunakan menu di bawah:'; r.kb=MENU;\n}\n\nreturn [{json:r}];"
+      },
+      "id": "logic", "name": "Main Logic", "type": "n8n-nodes-base.code",
+      "typeVersion": 2, "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "rules": { "values": [
+          {"outputKey":"reply","conditions":{"conditions":[{"leftValue":"={{$json.action}}","rightValue":"reply","operator":{"type":"string","operation":"equals"}}]}},
+          {"outputKey":"save","conditions":{"conditions":[{"leftValue":"={{$json.action}}","rightValue":"save","operator":{"type":"string","operation":"equals"}}]}},
+          {"outputKey":"submit","conditions":{"conditions":[{"leftValue":"={{$json.action}}","rightValue":"submit","operator":{"type":"string","operation":"equals"}}]}},
+          {"outputKey":"status","conditions":{"conditions":[{"leftValue":"={{$json.action}}","rightValue":"status","operator":{"type":"string","operation":"equals"}}]}}
+        ]}, "fallbackOutput": "extra"
+      },
+      "id": "sw", "name": "Route Action", "type": "n8n-nodes-base.switch",
+      "typeVersion": 3, "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text, parse_mode: 'Markdown', reply_markup: $json.kb ? { inline_keyboard: $json.kb } : { inline_keyboard: [[{text:'📋 Menu',callback_data:'m_main'}]] } }) }}"
+      },
+      "id": "send1", "name": "Send Reply", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [920, 140]
+    },
+    {
+      "parameters": {
+        "method": "POST", "url": "https://api.adably.id/api/n8n/save-content",
+        "sendHeaders": true, "headerParameters": {"parameters":[{"name":"X-N8N-API-Key","value":"n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"},{"name":"Content-Type","value":"application/json"}]},
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.title, type: $json.type, rawContent: $json.raw }) }}"
+      },
+      "id": "apiSave", "name": "Save to Adably", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Main Logic').first().json;\nconst res = $input.first().json;\nconst ok = res.success;\nconst id = res.data?.id || '';\nconst kb = ok ? [[{text:'📤 Submit Review',callback_data:'submit_'+id},{text:'📊 Status',callback_data:'status_'+id}],[{text:'🔗 Buka Editor',url:'https://adably.id/admin/editor?id='+id},{text:'◀️ Menu',callback_data:'m_main'}]] : [[{text:'◀️ Menu',callback_data:'m_main'}]];\nconst text = ok ? `✅ *Konten tersimpan!*\\n\\nID: \\`${id}\\`\\nJudul: ${res.data?.title}\\nStatus: ${res.data?.status}\\nTipe: ${res.data?.type}` : `❌ Gagal menyimpan: ${res.message||'Error'}`;\nreturn [{json:{chatId:prev.chatId,text,kb}}];"
+      },
+      "id": "fmtSave", "name": "Format Save Reply", "type": "n8n-nodes-base.code",
+      "typeVersion": 2, "position": [1140, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text, parse_mode: 'Markdown', reply_markup: { inline_keyboard: $json.kb } }) }}"
+      },
+      "id": "send2", "name": "Send Save Reply", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [1360, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.adably.id/api/n8n/submit/{{ $json.cId }}",
+        "sendHeaders": true, "headerParameters": {"parameters":[{"name":"X-N8N-API-Key","value":"n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"}]}
+      },
+      "id": "apiSubmit", "name": "Submit to Adably", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [920, 460]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Main Logic').first().json;\nconst res = $input.first().json;\nconst text = res.success ? `✅ ${res.message}` : `❌ ${res.message||'Gagal submit'}`;\nconst kb = [[{text:'📊 Cek Status',callback_data:'status_'+prev.cId},{text:'◀️ Menu',callback_data:'m_main'}]];\nreturn [{json:{chatId:prev.chatId,text,kb}}];"
+      },
+      "id": "fmtSubmit", "name": "Format Submit Reply", "type": "n8n-nodes-base.code",
+      "typeVersion": 2, "position": [1140, 460]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text, parse_mode: 'Markdown', reply_markup: { inline_keyboard: $json.kb } }) }}"
+      },
+      "id": "send3", "name": "Send Submit Reply", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [1360, 460]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.adably.id/api/n8n/status/{{ $json.cId }}",
+        "sendHeaders": true, "headerParameters": {"parameters":[{"name":"X-N8N-API-Key","value":"n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"}]}
+      },
+      "id": "apiStatus", "name": "Get Status", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [920, 620]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Main Logic').first().json;\nconst res = $input.first().json;\nconst d = res.data || {};\nconst text = res.success ? `📊 *Status Konten*\\n\\nID: \\`${d.id}\\`\\nJudul: ${d.title}\\nTipe: ${d.type}\\nStatus: ${d.status}\\nUpdate: ${d.updatedAt?.substring(0,10)||'-'}\\nThumbnail: ${d.thumbnailUrl?'✅':'❌'}` : `❌ ${res.message||'Tidak ditemukan'}`;\nconst kb = res.success ? [[{text:'📤 Submit',callback_data:'submit_'+d.id},{text:'🔗 Editor',url:'https://adably.id/admin/editor?id='+d.id}],[{text:'◀️ Menu',callback_data:'m_main'}]] : [[{text:'◀️ Menu',callback_data:'m_main'}]];\nreturn [{json:{chatId:prev.chatId,text,kb}}];"
+      },
+      "id": "fmtStatus", "name": "Format Status Reply", "type": "n8n-nodes-base.code",
+      "typeVersion": 2, "position": [1140, 620]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text, parse_mode: 'Markdown', reply_markup: { inline_keyboard: $json.kb } }) }}"
+      },
+      "id": "send4", "name": "Send Status Reply", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [1360, 620]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {"main":[[{"node":"Main Logic","type":"main","index":0}]]},
+    "Main Logic": {"main":[[{"node":"Route Action","type":"main","index":0}]]},
+    "Route Action": {"main":[
+      [{"node":"Send Reply","type":"main","index":0}],
+      [{"node":"Save to Adably","type":"main","index":0}],
+      [{"node":"Submit to Adably","type":"main","index":0}],
+      [{"node":"Get Status","type":"main","index":0}]
+    ]},
+    "Save to Adably": {"main":[[{"node":"Format Save Reply","type":"main","index":0}]]},
+    "Format Save Reply": {"main":[[{"node":"Send Save Reply","type":"main","index":0}]]},
+    "Submit to Adably": {"main":[[{"node":"Format Submit Reply","type":"main","index":0}]]},
+    "Format Submit Reply": {"main":[[{"node":"Send Submit Reply","type":"main","index":0}]]},
+    "Get Status": {"main":[[{"node":"Format Status Reply","type":"main","index":0}]]},
+    "Format Status Reply": {"main":[[{"node":"Send Status Reply","type":"main","index":0}]]}
   },
-  "meta": {
-    "description": "Telegram bot workflow untuk Adably content automation. Import file ini ke n8n setelah setup selesai. Workflow akan dikonfigurasi setelah Telegram Bot Token dan n8n API Key tersedia."
-  }
+  "settings": {"executionOrder":"v1","timezone":"Asia/Jakarta"},
+  "active": false
 }
