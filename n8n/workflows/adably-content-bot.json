@@ -44,14 +44,14 @@
             {
               "outputKey": "reply",
               "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "combinator": "and",
                 "conditions": [
                   {
-                    "leftValue": "={{$json.action}}",
+                    "id": "cond_reply",
+                    "leftValue": "={{ $json.action }}",
                     "rightValue": "reply",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               }
@@ -59,14 +59,14 @@
             {
               "outputKey": "gen_prompt",
               "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "combinator": "and",
                 "conditions": [
                   {
-                    "leftValue": "={{$json.action}}",
+                    "id": "cond_gen_prompt",
+                    "leftValue": "={{ $json.action }}",
                     "rightValue": "gen_prompt",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               }
@@ -74,14 +74,14 @@
             {
               "outputKey": "gen_thumb",
               "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "combinator": "and",
                 "conditions": [
                   {
-                    "leftValue": "={{$json.action}}",
+                    "id": "cond_gen_thumb",
+                    "leftValue": "={{ $json.action }}",
                     "rightValue": "gen_thumb",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               }
@@ -89,14 +89,14 @@
             {
               "outputKey": "save",
               "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "combinator": "and",
                 "conditions": [
                   {
-                    "leftValue": "={{$json.action}}",
+                    "id": "cond_save",
+                    "leftValue": "={{ $json.action }}",
                     "rightValue": "save",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               }
@@ -104,14 +104,14 @@
             {
               "outputKey": "submit",
               "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "combinator": "and",
                 "conditions": [
                   {
-                    "leftValue": "={{$json.action}}",
+                    "id": "cond_submit",
+                    "leftValue": "={{ $json.action }}",
                     "rightValue": "submit",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               }
@@ -119,19 +119,22 @@
             {
               "outputKey": "status",
               "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "combinator": "and",
                 "conditions": [
                   {
-                    "leftValue": "={{$json.action}}",
+                    "id": "cond_status",
+                    "leftValue": "={{ $json.action }}",
                     "rightValue": "status",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ]
               }
             }
           ]
+        },
+        "options": {
+          "fallbackOutput": "none"
         }
       },
       "id": "sw",
