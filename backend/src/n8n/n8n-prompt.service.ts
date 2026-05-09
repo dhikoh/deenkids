@@ -11,6 +11,8 @@ export interface GeneratePromptDto {
   title: string;
   subType?: 'SIRAH' | 'QASHASH' | 'TELADAN' | 'FIKSI';
   ageGroups?: string[];
+  selectedThinkers?: string[];
+  pov?: string; // 'ORTU' | 'ANAK' — only for ARTICLE type
 }
 
 export interface GenerateThumbPromptDto {
@@ -26,9 +28,9 @@ export class N8nPromptService {
   // ═══════════════════════════════════════════════
 
   generatePrompt(dto: GeneratePromptDto): string {
-    const { type, title, subType, ageGroups } = dto;
-    if (type === 'KISAH') return this.generateKisahPrompt(subType || 'SIRAH', title);
-    return this.generateContentPrompt(type, title, ageGroups || ['3-5', '5-7', '7-10']);
+    const { type, title, subType, ageGroups, selectedThinkers, pov } = dto;
+    if (type === 'KISAH') return this.generateKisahPrompt(subType || 'SIRAH', title, selectedThinkers || []);
+    return this.generateContentPrompt(type, title, ageGroups || ['3-5', '5-7', '7-10'], selectedThinkers || [], pov || '');
   }
 
   // ═══════════════════════════════════════════════
@@ -60,9 +62,10 @@ Spesifikasi Wajib:
   // QNA / ARTICLE / PEMBELAJARAN Prompt
   // ═══════════════════════════════════════════════
 
-  private generateContentPrompt(type: string, title: string, ages: string[]): string {
+  private generateContentPrompt(type: string, title: string, ages: string[], selectedThinkers: string[], pov: string): string {
     const ageLabel = ages.length ? ages.map(a => a === 'Semua Usia' ? 'semua usia' : `${a} tahun`).join(', ') : 'semua usia';
     const typeLabel = type === 'QNA' ? 'Tanya Jawab' : type === 'PEMBELAJARAN' ? 'Pembelajaran' : 'Artikel';
+    const povText = type === 'ARTICLE' && pov ? (pov === 'ORTU' ? '\nPerspektif: Orang Tua (menulis untuk orang tua tentang anaknya)' : '\nPerspektif: Anak (menulis langsung untuk anak)') : '';
 
     let prompt = `Kamu adalah penulis konten islami untuk platform edukasi anak bernama Adably. Platform ini menyajikan konten parenting islami untuk anak-anak.
 
@@ -85,7 +88,7 @@ KORIDOR KONTEN YANG WAJIB DIIKUTI:
 ═══════════════════════════════════════
 TUGAS:
 Buatkan konten "${typeLabel}" dengan judul: "${title}"
-Target pembaca: anak usia ${ageLabel}
+Target pembaca: anak usia ${ageLabel}${povText}
 ═══════════════════════════════════════
 
 FORMAT OUTPUT YANG HARUS KAMU IKUTI:
@@ -219,12 +222,16 @@ Sumber URL: (URL — JANGAN mengarang)
 
 `;
 
-    // Age guidelines
+    // Age-specific detailed guidelines
     prompt += `═══ PANDUAN PENYESUAIAN USIA ═══\n`;
-    if (ages.includes('3-5')) prompt += `- Usia 3-5 tahun: Kalimat SANGAT sederhana. Analogi dari mainan, hewan, makanan.\n`;
-    if (ages.includes('5-7')) prompt += `- Usia 5-7 tahun: Kalimat sederhana. Analogi dari sekolah, teman, keluarga.\n`;
-    if (ages.includes('7-10')) prompt += `- Usia 7-10 tahun: Boleh lebih detail. Konsep sebab-akibat.\n`;
-    if (ages.includes('10-13')) prompt += `- Usia 10-13 tahun: Lebih kompleks dan mendalam. Berpikir kritis.\n`;
+    if (ages.includes('3-5')) prompt += `- Usia 3-5 tahun: Gunakan kalimat SANGAT sederhana (3-5 kata per kalimat). Analogi dari mainan, hewan, makanan kesukaan anak. Dialog sangat pendek dan lucu.\n`;
+    if (ages.includes('5-7')) prompt += `- Usia 5-7 tahun: Gunakan kalimat sederhana. Analogi dari sekolah, teman, keluarga. Boleh sedikit lebih panjang.\n`;
+    if (ages.includes('7-10')) prompt += `- Usia 7-10 tahun: Boleh lebih detail. Analogi dari kehidupan sehari-hari. Anak sudah bisa memahami konsep sebab-akibat.\n`;
+    if (ages.includes('10-13')) prompt += `- Usia 10-13 tahun: Bisa lebih kompleks dan mendalam. Boleh sertakan penjelasan ilmiah sederhana. Anak sudah bisa berpikir kritis.\n`;
+    if (ages.includes('Semua Usia') || ages.length === 0) prompt += `- Semua usia: Gunakan bahasa yang universal, mudah dipahami semua kalangan usia anak.\n`;
+
+    // Intellectual Persona Framework (Thinker)
+    prompt += this.generateIntellectualFramework(selectedThinkers, false);
 
     prompt += `
 ═══ CATATAN AKHIR ═══
@@ -254,7 +261,7 @@ Tulis penutup yang menginspirasi.
   // Kisah Prompt Generator (with sub-types)
   // ═══════════════════════════════════════════════
 
-  private generateKisahPrompt(subType: string, title: string): string {
+  private generateKisahPrompt(subType: string, title: string, selectedThinkers: string[]): string {
     const TARGET_USIA = '3–10 tahun';
     const subTypeLabel = subType === 'SIRAH' ? 'Sirah Nabawiyah (Nabi Muhammad ﷺ)'
       : subType === 'QASHASH' ? "Qashashul Anbiya' (Kisah Para Nabi)"
@@ -414,8 +421,12 @@ PANDUAN PENULISAN — GAYA PENCERITA
 ✅ Sapa anak di mukadimah: "Teman-teman...", "Adik-adik..."
 ✅ Nilai Islam terasa ALAMI dalam cerita
 ❌ JANGAN terlalu singkat — ini KISAH LENGKAP
-❌ JANGAN menggurui atau berceramah langsung
+❌ JANGAN menggurui atau berceramah langsung`;
 
+    // Intellectual Persona Framework (Thinker) for Kisah
+    prompt += this.generateIntellectualFramework(selectedThinkers, true);
+
+    prompt += `
 ━━━ 🕌 PEMBUKAAN / MUKADIMAH (opening) ━━━
 ⚠️ INI BUKAN BLOK KONTEN. Teks ini disimpan di field "Pembukaan (Mukadimah)".
 
@@ -431,5 +442,46 @@ Tulis penutup yang menyentuh dan menginspirasi.
 - Akhiri dengan "Wallahu a'lam bishawab" dan "Wassalamualaikum warahmatullahi wabarakatuh"`;
 
     return prompt;
+  }
+
+  // ═══════════════════════════════════════════════
+  // Intellectual Persona Framework Generator
+  // (mirrors frontend generateIntellectualFramework)
+  // ═══════════════════════════════════════════════
+
+  private generateIntellectualFramework(selectedIds: string[], forKisah = false): string {
+    const THINKERS: Record<string, { name: string; detail: string }> = {
+      aristotle: { name: 'Aristotle', detail: 'Bangun setiap argumen dengan logika sebab-akibat yang solid dan kategorisasi yang jelas. Gunakan struktur silogisme: premis besar → premis kecil → kesimpulan.' },
+      descartes: { name: 'René Descartes', detail: 'Mulai dari pertanyaan paling mendasar sebelum membangun penjelasan. Ragukan asumsi umum, lalu bangun argumen dari fondasi yang paling fundamental.' },
+      musk: { name: 'Elon Musk', detail: 'Pecah masalah ke elemen paling dasar, singkirkan asumsi konvensional, lalu bangun ulang solusi dari fondasi logis yang benar.' },
+      feynman: { name: 'Richard Feynman', detail: 'Sederhanakan konsep serumit apapun sehingga bisa dipahami oleh anak kelas 1 SD. Gunakan analogi konkret dari benda atau pengalaman sehari-hari yang dekat dengan anak.' },
+      sagan: { name: 'Carl Sagan', detail: 'Gunakan perumpamaan dari skala luas (alam semesta, waktu, kehidupan) untuk memberi perspektif yang mengagumkan. Buat pembaca merasa kecil namun bermakna.' },
+      suntzu: { name: 'Sun Tzu', detail: 'Susun argumen secara strategis. Antisipasi keberatan pembaca sebelum muncul. Identifikasi leverage point dan sampaikan pesan pada momen yang paling efektif.' },
+      thiel: { name: 'Peter Thiel', detail: "Temukan sudut pandang yang mengejutkan dan berlawanan dari asumsi mayoritas. Pertanyakan 'apa yang semua orang percaya tapi salah?' dalam topik ini." },
+      grove: { name: 'Andrew Grove', detail: 'Identifikasi momen perubahan kritis dalam topik. Bangun solusi yang scalable dan tahan terhadap tekanan. Fokus pada eksekusi dan hasil nyata.' },
+      anies: { name: 'Anies Baswedan', detail: 'Susun narasi yang menyentuh hati, dekat kehidupan sehari-hari, dan mudah dipahami semua kalangan. Mulai dengan konteks yang relatable, bangun emosi, akhiri dengan harapan.' },
+      nadiem: { name: 'Nadiem Makarim', detail: 'Dekati pembelajaran dengan cara yang segar dan membebaskan. Fokus pada kebutuhan nyata anak sebagai subjek belajar, bukan objek. Gunakan pendekatan project-based dan kontekstual.' },
+      gladwell: { name: 'Malcolm Gladwell', detail: 'Bangun narasi melalui anekdot yang kuat dan insight mengejutkan dari observasi perilaku manusia. Mulai dengan cerita kecil yang konkret, lalu tarik ke pelajaran universal yang besar.' },
+    };
+
+    const chosen = selectedIds.map(id => THINKERS[id]).filter(Boolean);
+    if (chosen.length === 0) return '';
+
+    let section = `\n\n══════════════════════════════════════════
+KERANGKA BERPIKIR (INTELLECTUAL PERSONA)
+══════════════════════════════════════════
+Gunakan STRUKTUR BERPIKIR dari tokoh-tokoh berikut — bukan gaya bahasa atau kepribadiannya:\n\n`;
+
+    chosen.forEach(t => {
+      section += `• ${t.name} → ${t.detail}\n`;
+    });
+
+    section += `\nCatatan Penting: Gabungkan framework ini menjadi reasoning yang seimbang dan saling melengkapi. Ambil logika dan cara berpikir mereka — BUKAN cara berbicara atau kepribadiannya.`;
+
+    if (forKisah) {
+      section += `\n⚠️ Untuk Kisah: Terapkan hanya pada struktur narasi, plot, kualitas analogi, dan penyajian hikmah. JANGAN gunakan untuk menambah atau memodifikasi fakta sejarah. Aturan sumber Sirah/Qashash/Teladan tetap berlaku penuh.`;
+    }
+
+    return section;
   }
 }

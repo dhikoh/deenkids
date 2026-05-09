@@ -2,215 +2,697 @@
   "name": "Adably Content Bot",
   "nodes": [
     {
-      "parameters": { "updates": ["message", "callback_query"] },
-      "id": "t1", "name": "Telegram Trigger", "type": "n8n-nodes-base.telegramTrigger",
-      "typeVersion": 1.1, "position": [200, 300],
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ]
+      },
+      "id": "t1",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ],
       "webhookId": "adably-bot",
-      "credentials": { "telegramApi": { "id": "", "name": "Telegram account" } }
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "const sd = $getWorkflowStaticData('global');\nif (!sd.chats) sd.chats = {};\nconst inp = $input.first().json;\nconst isCb = !!inp.callback_query;\nconst chatId = String(isCb ? inp.callback_query.message.chat.id : inp.message?.chat?.id);\nconst text = isCb ? '' : (inp.message?.text || '').trim();\nconst cb = isCb ? inp.callback_query.data : '';\nconst st = sd.chats[chatId] || {};\nconst r = { action:'reply', chatId, text:'', kb:null, title:'', type:'', subType:'', raw:'', cId:'', ratio:'' };\n\nconst MENU = [[{text:'Buat Konten',callback_data:'m_create'},{text:'Cek Status',callback_data:'m_status'}],[{text:'Submit Review',callback_data:'m_submit'},{text:'Prompt Thumbnail',callback_data:'m_thumb'}],[{text:'Buka Web Adably',url:'https://adably.id/admin'},{text:'Bantuan',callback_data:'m_help'}]];\nconst TYPES = [[{text:'QNA',callback_data:'t_QNA'},{text:'Artikel',callback_data:'t_ARTICLE'}],[{text:'Pembelajaran',callback_data:'t_PEMBELAJARAN'},{text:'Kisah',callback_data:'t_KISAH'}],[{text:'Kembali',callback_data:'m_main'}]];\nconst KISAH_MENU = [[{text:'Sirah Nabawiyah',callback_data:'k_SIRAH'}],[{text:'Qashashul Anbiya',callback_data:'k_QASHASH'}],[{text:'Teladan Sahabat',callback_data:'k_TELADAN'}],[{text:'Cerita Fiksi',callback_data:'k_FIKSI'}],[{text:'Kembali',callback_data:'m_create'}]];\nconst RATIO_MENU = [[{text:'16:9 Website',callback_data:'r_16:9'}],[{text:'1:1 IG/FB',callback_data:'r_1:1'}],[{text:'4:5 IG Optimal',callback_data:'r_4:5'}],[{text:'Kembali',callback_data:'m_main'}]];\n\nif (isCb) {\n  switch(cb) {\n    case 'm_main': delete sd.chats[chatId]; r.text='Menu Utama - Pilih menu:'; r.kb=MENU; break;\n    case 'm_create': r.text='Pilih tipe konten:'; r.kb=TYPES; break;\n    case 'm_status': sd.chats[chatId]={step:'wait_status_id'}; r.text='Ketik ID konten:'; break;\n    case 'm_submit': sd.chats[chatId]={step:'wait_submit_id'}; r.text='Ketik ID konten yang ingin diajukan review:'; break;\n    case 'm_thumb': r.text='Pilih rasio thumbnail:'; r.kb=RATIO_MENU; break;\n    case 'm_help': r.text='Panduan Adably Bot\\n\\n1. Buat Konten > pilih tipe\\n2. Ketik judul > bot kirim prompt\\n3. Copy prompt > paste ke Gemini\\n4. Kirim hasil Gemini ke bot\\n5. Bot simpan ke DRAFT\\n6. Klik Submit Review'; r.kb=[[{text:'Kembali',callback_data:'m_main'}]]; break;\n    case 't_QNA': case 't_ARTICLE': case 't_PEMBELAJARAN': {\n      const tp=cb.replace('t_','');\n      sd.chats[chatId]={step:'wait_title',type:tp};\n      r.text='Tipe dipilih: '+tp+'\\n\\nSilakan ketik judul konten:'; break; }\n    case 't_KISAH': r.text='Pilih sub-tipe Kisah:'; r.kb=KISAH_MENU; break;\n    case 'k_SIRAH': case 'k_QASHASH': case 'k_TELADAN': case 'k_FIKSI': {\n      const ks=cb.replace('k_','');\n      sd.chats[chatId]={step:'wait_title',type:'KISAH',sub:ks};\n      r.text='Kisah dipilih: '+ks+'\\n\\nSilakan ketik judul kisah:'; break; }\n    case 'r_16:9': case 'r_1:1': case 'r_4:5': {\n      const rt=cb.replace('r_','');\n      sd.chats[chatId]={step:'wait_thumb_title',ratio:rt};\n      r.text='Rasio dipilih: '+rt+'\\n\\nSilakan ketik judul/tema thumbnail:'; break; }\n    default:\n      if(cb.startsWith('submit_')){r.action='submit';r.cId=cb.replace('submit_','');}\n      else if(cb.startsWith('status_')){r.action='status';r.cId=cb.replace('status_','');}\n      else{r.text='Perintah tidak dikenali.';r.kb=MENU;}\n  }\n} else if (text === '/start' || text === '/menu') {\n  delete sd.chats[chatId];\n  r.text='Assalamualaikum!\\n\\nSaya Adably Content Bot.\\nAsisten pembuatan konten islami anak.\\n\\nPilih menu di bawah:'; r.kb=MENU;\n} else if (st.step === 'wait_title') {\n  r.action='gen_prompt';\n  r.type=st.type;\n  r.subType=st.sub||'';\n  r.title=text;\n  r.text='Sedang membuat prompt untuk: '+text+'\\nMohon tunggu...';\n  sd.chats[chatId]={step:'wait_content',type:st.type,sub:st.sub,title:text};\n} else if (st.step === 'wait_content') {\n  r.action='save';\n  r.type=st.type;\n  r.subType=st.sub||'';\n  r.title=st.title;\n  r.raw=text;\n  delete sd.chats[chatId];\n} else if (st.step === 'wait_thumb_title') {\n  r.action='gen_thumb';\n  r.ratio=st.ratio;\n  r.title=text;\n  delete sd.chats[chatId];\n} else if (st.step === 'wait_status_id') {\n  r.action='status'; r.cId=text.trim(); delete sd.chats[chatId];\n} else if (st.step === 'wait_submit_id') {\n  r.action='submit'; r.cId=text.trim(); delete sd.chats[chatId];\n} else {\n  r.text='Ketik /start untuk memulai, atau pilih menu:'; r.kb=MENU;\n}\n\nreturn [{json:r}];"
+        "jsCode": "const sd = $getWorkflowStaticData('global');\nif (!sd.chats) sd.chats = {};\nconst inp = $input.first().json;\nconst isCb = !!inp.callback_query;\nconst chatId = String(isCb ? inp.callback_query.message.chat.id : inp.message?.chat?.id);\nconst text = isCb ? '' : (inp.message?.text || '').trim();\nconst cb = isCb ? inp.callback_query.data : '';\nconst st = sd.chats[chatId] || {};\nconst r = { action:'reply', chatId, text:'', kb:null, title:'', type:'', subType:'', raw:'', cId:'', ratio:'', ages:'', thinkers:'', pov:'' };\nconst MENU = [[{text:'Buat Konten',callback_data:'m_create'},{text:'Cek Status',callback_data:'m_status'}],[{text:'Submit Review',callback_data:'m_submit'},{text:'Prompt Thumbnail',callback_data:'m_thumb'}],[{text:'Buka Web Adably',url:'https:\nconst TYPES = [[{text:'QNA',callback_data:'t_QNA'},{text:'Artikel',callback_data:'t_ARTICLE'}],[{text:'Pembelajaran',callback_data:'t_PEMBELAJARAN'},{text:'Kisah',callback_data:'t_KISAH'}],[{text:'Kembali',callback_data:'m_main'}]];\nconst KISAH_MENU = [[{text:'Sirah Nabawiyah',callback_data:'k_SIRAH'}],[{text:'Qashashul Anbiya',callback_data:'k_QASHASH'}],[{text:'Teladan Sahabat',callback_data:'k_TELADAN'}],[{text:'Cerita Fiksi',callback_data:'k_FIKSI'}],[{text:'Kembali',callback_data:'m_create'}]];\nconst POV_MENU = [[{text:'Perspektif Orang Tua',callback_data:'pov_ORTU'}],[{text:'Perspektif Anak',callback_data:'pov_ANAK'}],[{text:'Kembali',callback_data:'m_create'}]];\nconst RATIO_MENU = [[{text:'16:9 Website',callback_data:'r_16:9'}],[{text:'1:1 IG/FB',callback_data:'r_1:1'}],[{text:'4:5 IG Optimal',callback_data:'r_4:5'}],[{text:'Kembali',callback_data:'m_main'}]];\nfunction ageKb(selected) {\n  const ages = ['3-5','5-7','7-10','10-13','Semua Usia'];\n  const rows = [];\n  const row1 = [];\n  const row2 = [];\n  ages.forEach((a,i) => {\n    const sel = selected.includes(a);\n    const btn = {text:(sel?'✅ ':'')+a+(a!=='Semua Usia'?' thn':''), callback_data:'age_'+a};\n    if (i < 2) row1.push(btn);\n    else if (i < 4) row2.push(btn);\n    else rows.push([btn]);\n  });\n  rows.unshift(row2);\n  rows.unshift(row1);\n  if (selected.length > 0) rows.push([{text:'Lanjut ➡️',callback_data:'age_done'}]);\n  rows.push([{text:'Kembali',callback_data:'m_create'}]);\n  return rows;\n}\nfunction thinkerKb(selected) {\n  const T = [\n    {id:'aristotle',label:'Aristotle',cat:'Sistematis'},\n    {id:'descartes',label:'Descartes',cat:'Sistematis'},\n    {id:'musk',label:'Elon Musk',cat:'Sistematis'},\n    {id:'feynman',label:'Feynman',cat:'Analogi'},\n    {id:'sagan',label:'Carl Sagan',cat:'Analogi'},\n    {id:'suntzu',label:'Sun Tzu',cat:'Strategi'},\n    {id:'thiel',label:'Peter Thiel',cat:'Strategi'},\n    {id:'grove',label:'Andrew Grove',cat:'Strategi'},\n    {id:'anies',label:'Anies B.',cat:'Narasi'},\n    {id:'nadiem',label:'Nadiem M.',cat:'Narasi'},\n    {id:'gladwell',label:'Gladwell',cat:'Narasi'},\n  ];\n  const rows = [];\n  let lastCat = '';\n  let row = [];\n  T.forEach(t => {\n    if (t.cat !== lastCat) {\n      if (row.length) rows.push(row);\n      row = [];\n      lastCat = t.cat;\n    }\n    const sel = selected.includes(t.id);\n    row.push({text:(sel?'✅ ':'')+t.label, callback_data:'th_'+t.id});\n    if (row.length === 3) { rows.push(row); row = []; }\n  });\n  if (row.length) rows.push(row);\n  rows.push([{text:'Skip (tanpa thinker)',callback_data:'th_skip'},{text:'Lanjut ➡️',callback_data:'th_done'}]);\n  rows.push([{text:'Kembali',callback_data:'m_create'}]);\n  return rows;\n}\nif (isCb) {\n  if (cb.startsWith('age_') && st.step === 'select_age') {\n    if (cb === 'age_done') {\n      sd.chats[chatId] = {...st, step:'select_thinker', thinkers:[]};\n      r.text = 'Step 4/5: Pilih Thinker Persona\\n\\nPilih kerangka berpikir untuk prompt (bisa lebih dari 1):';\n      r.kb = thinkerKb([]);\n    } else {\n      const age = cb.replace('age_','');\n      let sel = [...(st.selectedAges||[])];\n      if (age === 'Semua Usia') { sel = sel.includes(age) ? [] : ['Semua Usia']; }\n      else { sel = sel.filter(a=>a!=='Semua Usia'); sel.includes(age) ? sel=sel.filter(a=>a!==age) : sel.push(age); }\n      sd.chats[chatId] = {...st, selectedAges:sel};\n      r.text = 'Step 3/5: Pilih Kelompok Usia\\n\\nDipilih: '+(sel.length?sel.join(', '):'(belum ada)')+'\\n\\nKlik usia untuk toggle, lalu klik Lanjut:';\n      r.kb = ageKb(sel);\n    }\n  }\n  else if (cb.startsWith('th_') && st.step === 'select_thinker') {\n    if (cb === 'th_done' || cb === 'th_skip') {\n      const thinkers = cb === 'th_skip' ? [] : (st.thinkers||[]);\n      sd.chats[chatId] = {...st, step:'wait_title', thinkers};\n      r.text = 'Step 5/5: Ketik Judul\\n\\nTipe: '+st.type+(st.sub?' ('+st.sub+')':'')+(st.pov?' | POV: '+st.pov:'')+'\\nUsia: '+(st.selectedAges||[]).join(', ')+'\\nThinker: '+(thinkers.length?thinkers.join(', '):'(tanpa thinker)')+'\\n\\nSilakan ketik judul konten:';\n    } else {\n      const tid = cb.replace('th_','');\n      let sel = [...(st.thinkers||[])];\n      sel.includes(tid) ? sel=sel.filter(x=>x!==tid) : sel.push(tid);\n      sd.chats[chatId] = {...st, thinkers:sel};\n      r.text = 'Step 4/5: Pilih Thinker Persona\\n\\nDipilih: '+(sel.length?sel.join(', '):'(belum ada)')+'\\n\\nKlik untuk toggle, lalu Lanjut:';\n      r.kb = thinkerKb(sel);\n    }\n  }\n  else if (cb.startsWith('pov_')) {\n    const pov = cb.replace('pov_','');\n    sd.chats[chatId] = {...st, step:'select_age', pov, selectedAges:[]};\n    r.text = 'Step 3/5: Pilih Kelompok Usia\\n\\nKlik usia yang diinginkan (bisa lebih dari 1):';\n    r.kb = ageKb([]);\n  }\n  else {\n    switch(cb) {\n      case 'm_main': delete sd.chats[chatId]; r.text='Menu Utama - Pilih menu:'; r.kb=MENU; break;\n      case 'm_create': r.text='Step 1/5: Pilih Tipe Konten'; r.kb=TYPES; break;\n      case 'm_status': sd.chats[chatId]={step:'wait_status_id'}; r.text='Ketik ID konten:'; break;\n      case 'm_submit': sd.chats[chatId]={step:'wait_submit_id'}; r.text='Ketik ID konten untuk review:'; break;\n      case 'm_thumb': r.text='Pilih rasio thumbnail:'; r.kb=RATIO_MENU; break;\n      case 'm_help': r.text='Panduan Adably Bot\\n\\n1. Buat Konten > pilih tipe\\n2. Pilih usia target\\n3. Pilih thinker persona\\n4. Ketik judul > bot kirim prompt\\n5. Copy prompt > paste ke Gemini\\n6. Kirim hasil Gemini ke bot\\n7. Bot simpan ke DRAFT\\n8. Klik Submit Review'; r.kb=[[{text:'Kembali',callback_data:'m_main'}]]; break;\n      case 't_QNA': case 't_PEMBELAJARAN':\n        { const tp=cb.replace('t_','');\n          sd.chats[chatId]={step:'select_age',type:tp,selectedAges:[]};\n          r.text='Step 2/5: Tipe dipilih: '+tp+'\\n\\nPilih kelompok usia (bisa lebih dari 1):';\n          r.kb=ageKb([]); break; }\n      case 't_ARTICLE':\n        sd.chats[chatId]={step:'select_pov',type:'ARTICLE'};\n        r.text='Step 2/5: Pilih Perspektif Artikel'; r.kb=POV_MENU; break;\n      case 't_KISAH': r.text='Step 2/5: Pilih sub-tipe Kisah:'; r.kb=KISAH_MENU; break;\n      case 'k_SIRAH': case 'k_QASHASH': case 'k_TELADAN': case 'k_FIKSI':\n        { const ks=cb.replace('k_','');\n          sd.chats[chatId]={step:'select_age',type:'KISAH',sub:ks,selectedAges:[]};\n          r.text='Step 2/5: Kisah: '+ks+'\\n\\nPilih kelompok usia:';\n          r.kb=ageKb([]); break; }\n      case 'r_16:9': case 'r_1:1': case 'r_4:5':\n        { const rt=cb.replace('r_','');\n          sd.chats[chatId]={step:'wait_thumb_title',ratio:rt};\n          r.text='Rasio: '+rt+'\\n\\nKetik judul/tema thumbnail:'; break; }\n      default:\n        if(cb.startsWith('submit_')){r.action='submit';r.cId=cb.replace('submit_','');}\n        else if(cb.startsWith('status_')){r.action='status';r.cId=cb.replace('status_','');}\n        else{r.text='Perintah tidak dikenali.';r.kb=MENU;}\n    }\n  }\n} else if (text === '/start' || text === '/menu') {\n  delete sd.chats[chatId];\n  r.text='Assalamualaikum!\\n\\nSaya Adably Content Bot.\\nAsisten pembuatan konten islami anak.\\n\\nPilih menu:'; r.kb=MENU;\n} else if (st.step === 'wait_title') {\n  r.action='gen_prompt';\n  r.type=st.type; r.subType=st.sub||''; r.title=text;\n  r.ages=(st.selectedAges||[]).join(',');\n  r.thinkers=(st.thinkers||[]).join(',');\n  r.pov=st.pov||'';\n  r.text='Sedang membuat prompt untuk: '+text+'\\nMohon tunggu...';\n  sd.chats[chatId]={step:'wait_content',type:st.type,sub:st.sub,title:text};\n} else if (st.step === 'wait_content') {\n  r.action='save'; r.type=st.type; r.subType=st.sub||''; r.title=st.title; r.raw=text;\n  delete sd.chats[chatId];\n} else if (st.step === 'wait_thumb_title') {\n  r.action='gen_thumb'; r.ratio=st.ratio; r.title=text;\n  delete sd.chats[chatId];\n} else if (st.step === 'wait_status_id') {\n  r.action='status'; r.cId=text.trim(); delete sd.chats[chatId];\n} else if (st.step === 'wait_submit_id') {\n  r.action='submit'; r.cId=text.trim(); delete sd.chats[chatId];\n} else {\n  r.text='Ketik /start untuk memulai, atau pilih menu:'; r.kb=MENU;\n}\nreturn [{json:r}];"
       },
-      "id": "logic", "name": "Main Logic", "type": "n8n-nodes-base.code",
-      "typeVersion": 2, "position": [440, 300]
+      "id": "logic",
+      "name": "Main Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
     },
     {
       "parameters": {
-        "rules": { "values": [
-          {"outputKey":"reply","conditions":{"conditions":[{"leftValue":"={{$json.action}}","rightValue":"reply","operator":{"type":"string","operation":"equals"}}]}},
-          {"outputKey":"gen_prompt","conditions":{"conditions":[{"leftValue":"={{$json.action}}","rightValue":"gen_prompt","operator":{"type":"string","operation":"equals"}}]}},
-          {"outputKey":"gen_thumb","conditions":{"conditions":[{"leftValue":"={{$json.action}}","rightValue":"gen_thumb","operator":{"type":"string","operation":"equals"}}]}},
-          {"outputKey":"save","conditions":{"conditions":[{"leftValue":"={{$json.action}}","rightValue":"save","operator":{"type":"string","operation":"equals"}}]}},
-          {"outputKey":"submit","conditions":{"conditions":[{"leftValue":"={{$json.action}}","rightValue":"submit","operator":{"type":"string","operation":"equals"}}]}},
-          {"outputKey":"status","conditions":{"conditions":[{"leftValue":"={{$json.action}}","rightValue":"status","operator":{"type":"string","operation":"equals"}}]}}
-        ]}
+        "rules": {
+          "values": [
+            {
+              "outputKey": "reply",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "reply",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "gen_prompt",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "gen_prompt",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "gen_thumb",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "gen_thumb",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "save",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "save",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "submit",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "submit",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "status",
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "status",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
       },
-      "id": "sw", "name": "Route Action", "type": "n8n-nodes-base.switch",
-      "typeVersion": 3, "position": [680, 300]
+      "id": "sw",
+      "name": "Route Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
-        "sendBody": true, "specifyBody": "json",
+        "sendBody": true,
+        "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text || 'Pilih menu:', reply_markup: $json.kb ? { inline_keyboard: $json.kb } : { inline_keyboard: [[{text:'Menu',callback_data:'m_main'}]] } }) }}"
       },
-      "id": "send1", "name": "Send Reply", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [920, 80]
+      "id": "send1",
+      "name": "Send Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        80
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
-        "sendBody": true, "specifyBody": "json",
+        "sendBody": true,
+        "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text || 'Memproses...' }) }}"
       },
-      "id": "sendWait", "name": "Send Wait Msg", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [920, 160]
+      "id": "sendWait",
+      "name": "Send Wait Msg",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        160
+      ]
     },
     {
       "parameters": {
-        "method": "POST", "url": "https://api.adably.id/api/n8n/generate-prompt",
-        "sendHeaders": true, "headerParameters": {"parameters":[{"name":"X-N8N-API-Key","value":"n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"},{"name":"Content-Type","value":"application/json"}]},
-        "sendBody": true, "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ type: $('Main Logic').first().json.type, title: $('Main Logic').first().json.title, subType: $('Main Logic').first().json.subType || undefined }) }}",
-        "options": { "response": { "response": { "neverError": true } } }
+        "method": "POST",
+        "url": "https://api.adably.id/api/n8n/generate-prompt",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-API-Key",
+              "value": "n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: $('Main Logic').first().json.type, title: $('Main Logic').first().json.title, subType: $('Main Logic').first().json.subType || undefined, ageGroups: ($('Main Logic').first().json.ages || '').split(',').filter(Boolean), selectedThinkers: ($('Main Logic').first().json.thinkers || '').split(',').filter(Boolean), pov: $('Main Logic').first().json.pov || undefined }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
-      "id": "apiPrompt", "name": "Get Prompt from API", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [1140, 160]
+      "id": "apiPrompt",
+      "name": "Get Prompt from API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1140,
+        160
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const prev = $('Main Logic').first().json;\nconst res = $input.first().json;\nlet prompt = '';\nif (res.prompt) {\n  prompt = res.prompt;\n} else if (res.message) {\n  prompt = 'Error dari API: ' + res.message;\n} else {\n  prompt = 'Error: Tidak bisa generate prompt. Pastikan backend sudah di-deploy.';\n}\nconst chatId = prev.chatId;\nconst msgs = [];\nconst header = 'PROMPT ' + (prev.type||'') + (prev.subType ? ' ('+prev.subType+')' : '') + '\\nJudul: ' + (prev.title||'') + '\\n\\n';\nconst footer = '\\n\\n---\\nCopy seluruh prompt di atas, paste ke Gemini/ChatGPT.\\nKirim hasilnya ke sini untuk disimpan.';\nconst full = header + prompt + footer;\nif (full.length <= 4096) {\n  msgs.push({ chatId, text: full, kb: [[{text:'Batalkan',callback_data:'m_main'}]] });\n} else {\n  const chunkSize = 4000;\n  for (let i = 0; i < full.length; i += chunkSize) {\n    const chunk = full.substring(i, i + chunkSize);\n    const isLast = (i + chunkSize) >= full.length;\n    msgs.push({ chatId, text: chunk, kb: isLast ? [[{text:'Batalkan',callback_data:'m_main'}]] : null });\n  }\n}\nreturn msgs.map(m => ({ json: m }));"
+        "jsCode": "const prev = $('Main Logic').first().json;\nconst res = $input.first().json;\nlet prompt = '';\nif (res.prompt) { prompt = res.prompt; }\nelse if (res.message) { prompt = 'Error dari API: ' + res.message; }\nelse { prompt = 'Error: Tidak bisa generate prompt. Pastikan backend sudah di-deploy.'; }\nconst chatId = prev.chatId;\nconst msgs = [];\nconst header = 'PROMPT ' + (prev.type||'') + (prev.subType ? ' ('+prev.subType+')' : '') + '\\nJudul: ' + (prev.title||'') + '\\n\\n';\nconst footer = '\\n\\n---\\nCopy seluruh prompt di atas, paste ke Gemini/ChatGPT.\\nKirim hasilnya ke sini untuk disimpan.';\nconst full = header + prompt + footer;\nif (full.length <= 4096) {\n  msgs.push({ chatId, text: full, kb: [[{text:'Batalkan',callback_data:'m_main'}]] });\n} else {\n  const chunkSize = 4000;\n  for (let i = 0; i < full.length; i += chunkSize) {\n    const chunk = full.substring(i, i + chunkSize);\n    const isLast = (i + chunkSize) >= full.length;\n    msgs.push({ chatId, text: chunk, kb: isLast ? [[{text:'Batalkan',callback_data:'m_main'}]] : null });\n  }\n}\nreturn msgs.map(m => ({ json: m }));"
       },
-      "id": "fmtPrompt", "name": "Format Prompt Reply", "type": "n8n-nodes-base.code",
-      "typeVersion": 2, "position": [1360, 160]
+      "id": "fmtPrompt",
+      "name": "Format Prompt Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        160
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
-        "sendBody": true, "specifyBody": "json",
+        "sendBody": true,
+        "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text || 'Error', reply_markup: $json.kb ? { inline_keyboard: $json.kb } : undefined }) }}"
       },
-      "id": "sendPrompt", "name": "Send Prompt Reply", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [1580, 160]
+      "id": "sendPrompt",
+      "name": "Send Prompt Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1580,
+        160
+      ]
     },
     {
       "parameters": {
-        "method": "POST", "url": "https://api.adably.id/api/n8n/generate-thumb-prompt",
-        "sendHeaders": true, "headerParameters": {"parameters":[{"name":"X-N8N-API-Key","value":"n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"},{"name":"Content-Type","value":"application/json"}]},
-        "sendBody": true, "specifyBody": "json",
+        "method": "POST",
+        "url": "https://api.adably.id/api/n8n/generate-thumb-prompt",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-API-Key",
+              "value": "n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ title: $json.title, ratio: $json.ratio }) }}",
-        "options": { "response": { "response": { "neverError": true } } }
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
-      "id": "apiThumb", "name": "Get Thumb Prompt", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [920, 300]
+      "id": "apiThumb",
+      "name": "Get Thumb Prompt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        300
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const prev = $('Main Logic').first().json;\nconst res = $input.first().json;\nconst prompt = res.prompt || 'Error: ' + (res.message || 'Gagal generate');\nconst text = 'PROMPT THUMBNAIL ' + (prev.ratio||'') + '\\nJudul: ' + (prev.title||'') + '\\n\\n' + prompt + '\\n\\n---\\nCopy lalu paste ke AI image generator.\\nUpload hasilnya manual di web Adably.';\nconst kb = [[{text:'Rasio Lain',callback_data:'m_thumb'},{text:'Menu',callback_data:'m_main'}]];\nreturn [{json:{chatId:prev.chatId,text:text.length>4096?text.substring(0,4090)+'...':text,kb}}];"
+        "jsCode": "const prev = $('Main Logic').first().json;\nconst res = $input.first().json;\nconst prompt = res.prompt || 'Error: ' + (res.message || 'Gagal generate');\nconst text = 'PROMPT THUMBNAIL ' + (prev.ratio||'') + ' - ' + (prev.title||'') + '\\n\\n' + prompt + '\\n\\n---\\nCopy lalu paste ke AI image generator.\\nUpload hasilnya manual di web Adably.';\nconst kb = [[{text:'Rasio Lain',callback_data:'m_thumb'},{text:'Menu',callback_data:'m_main'}]];\nreturn [{json:{chatId:prev.chatId,text:text.length>4096?text.substring(0,4090)+'...':text,kb}}];"
       },
-      "id": "fmtThumb", "name": "Format Thumb Reply", "type": "n8n-nodes-base.code",
-      "typeVersion": 2, "position": [1140, 300]
+      "id": "fmtThumb",
+      "name": "Format Thumb Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
-        "sendBody": true, "specifyBody": "json",
+        "sendBody": true,
+        "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text || 'Error', reply_markup: { inline_keyboard: $json.kb } }) }}"
       },
-      "id": "sendThumb", "name": "Send Thumb Reply", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [1360, 300]
+      "id": "sendThumb",
+      "name": "Send Thumb Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        300
+      ]
     },
     {
       "parameters": {
-        "method": "POST", "url": "https://api.adably.id/api/n8n/save-content",
-        "sendHeaders": true, "headerParameters": {"parameters":[{"name":"X-N8N-API-Key","value":"n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"},{"name":"Content-Type","value":"application/json"}]},
-        "sendBody": true, "specifyBody": "json",
+        "method": "POST",
+        "url": "https://api.adably.id/api/n8n/save-content",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-API-Key",
+              "value": "n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ title: $json.title, type: $json.type, subType: $json.subType || undefined, rawContent: $json.raw }) }}",
-        "options": { "response": { "response": { "neverError": true } } }
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
-      "id": "apiSave", "name": "Save to Adably", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [920, 440]
+      "id": "apiSave",
+      "name": "Save to Adably",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        440
+      ]
     },
     {
       "parameters": {
         "jsCode": "const prev = $('Main Logic').first().json;\nconst res = $input.first().json;\nconst ok = res.success === true;\nconst id = res.data?.id || '';\nconst kb = ok ? [[{text:'Submit Review',callback_data:'submit_'+id},{text:'Status',callback_data:'status_'+id}],[{text:'Buka Editor',url:'https://adably.id/admin/editor?id='+id},{text:'Menu',callback_data:'m_main'}]] : [[{text:'Menu',callback_data:'m_main'}]];\nconst text = ok ? 'Konten tersimpan!\\n\\nID: '+id+'\\nJudul: '+(res.data?.title||'')+'\\nStatus: '+(res.data?.status||'')+'\\nTipe: '+(res.data?.type||'') : 'Gagal menyimpan: '+(res.message||JSON.stringify(res).substring(0,200));\nreturn [{json:{chatId:prev.chatId,text,kb}}];"
       },
-      "id": "fmtSave", "name": "Format Save Reply", "type": "n8n-nodes-base.code",
-      "typeVersion": 2, "position": [1140, 440]
+      "id": "fmtSave",
+      "name": "Format Save Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        440
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
-        "sendBody": true, "specifyBody": "json",
+        "sendBody": true,
+        "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text || 'Error', reply_markup: { inline_keyboard: $json.kb } }) }}"
       },
-      "id": "send2", "name": "Send Save Reply", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [1360, 440]
+      "id": "send2",
+      "name": "Send Save Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        440
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "=https://api.adably.id/api/n8n/submit/{{ $json.cId }}",
-        "sendHeaders": true, "headerParameters": {"parameters":[{"name":"X-N8N-API-Key","value":"n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"}]},
-        "options": { "response": { "response": { "neverError": true } } }
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-API-Key",
+              "value": "n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
-      "id": "apiSubmit", "name": "Submit to Adably", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [920, 560]
+      "id": "apiSubmit",
+      "name": "Submit to Adably",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        560
+      ]
     },
     {
       "parameters": {
         "jsCode": "const prev = $('Main Logic').first().json;\nconst res = $input.first().json;\nconst text = res.success ? 'Berhasil! ' + (res.message||'') : 'Gagal submit: '+(res.message||'Error');\nconst kb = [[{text:'Cek Status',callback_data:'status_'+prev.cId},{text:'Menu',callback_data:'m_main'}]];\nreturn [{json:{chatId:prev.chatId,text,kb}}];"
       },
-      "id": "fmtSubmit", "name": "Format Submit Reply", "type": "n8n-nodes-base.code",
-      "typeVersion": 2, "position": [1140, 560]
+      "id": "fmtSubmit",
+      "name": "Format Submit Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        560
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
-        "sendBody": true, "specifyBody": "json",
+        "sendBody": true,
+        "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text || 'Error', reply_markup: { inline_keyboard: $json.kb } }) }}"
       },
-      "id": "send3", "name": "Send Submit Reply", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [1360, 560]
+      "id": "send3",
+      "name": "Send Submit Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        560
+      ]
     },
     {
       "parameters": {
         "method": "GET",
         "url": "=https://api.adably.id/api/n8n/status/{{ $json.cId }}",
-        "sendHeaders": true, "headerParameters": {"parameters":[{"name":"X-N8N-API-Key","value":"n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"}]},
-        "options": { "response": { "response": { "neverError": true } } }
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-API-Key",
+              "value": "n8n_65a23e7759d9ad390b495d3e721f066852807d6b858e26537987e1057f28d979"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
-      "id": "apiStatus", "name": "Get Status", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [920, 680]
+      "id": "apiStatus",
+      "name": "Get Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        680
+      ]
     },
     {
       "parameters": {
         "jsCode": "const prev = $('Main Logic').first().json;\nconst res = $input.first().json;\nconst d = res.data || {};\nconst text = res.success ? 'Status Konten\\n\\nID: '+(d.id||'-')+'\\nJudul: '+(d.title||'-')+'\\nTipe: '+(d.type||'-')+'\\nStatus: '+(d.status||'-')+'\\nUpdate: '+(d.updatedAt?.substring(0,10)||'-') : 'Error: '+(res.message||'Tidak ditemukan');\nconst kb = res.success ? [[{text:'Submit',callback_data:'submit_'+d.id},{text:'Editor',url:'https://adably.id/admin/editor?id='+d.id}],[{text:'Menu',callback_data:'m_main'}]] : [[{text:'Menu',callback_data:'m_main'}]];\nreturn [{json:{chatId:prev.chatId,text,kb}}];"
       },
-      "id": "fmtStatus", "name": "Format Status Reply", "type": "n8n-nodes-base.code",
-      "typeVersion": 2, "position": [1140, 680]
+      "id": "fmtStatus",
+      "name": "Format Status Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        680
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.telegram.org/bot8720871014:AAH7IhAlGkgUSX30f1t5mzX8bKpXo7W3U5A/sendMessage",
-        "sendBody": true, "specifyBody": "json",
+        "sendBody": true,
+        "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ chat_id: $json.chatId, text: $json.text || 'Error', reply_markup: { inline_keyboard: $json.kb } }) }}"
       },
-      "id": "send4", "name": "Send Status Reply", "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2, "position": [1360, 680]
+      "id": "send4",
+      "name": "Send Status Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        680
+      ]
     }
   ],
   "connections": {
-    "Telegram Trigger": {"main":[[{"node":"Main Logic","type":"main","index":0}]]},
-    "Main Logic": {"main":[[{"node":"Route Action","type":"main","index":0}]]},
-    "Route Action": {"main":[
-      [{"node":"Send Reply","type":"main","index":0}],
-      [{"node":"Send Wait Msg","type":"main","index":0}],
-      [{"node":"Get Thumb Prompt","type":"main","index":0}],
-      [{"node":"Save to Adably","type":"main","index":0}],
-      [{"node":"Submit to Adably","type":"main","index":0}],
-      [{"node":"Get Status","type":"main","index":0}]
-    ]},
-    "Send Wait Msg": {"main":[[{"node":"Get Prompt from API","type":"main","index":0}]]},
-    "Get Prompt from API": {"main":[[{"node":"Format Prompt Reply","type":"main","index":0}]]},
-    "Format Prompt Reply": {"main":[[{"node":"Send Prompt Reply","type":"main","index":0}]]},
-    "Get Thumb Prompt": {"main":[[{"node":"Format Thumb Reply","type":"main","index":0}]]},
-    "Format Thumb Reply": {"main":[[{"node":"Send Thumb Reply","type":"main","index":0}]]},
-    "Save to Adably": {"main":[[{"node":"Format Save Reply","type":"main","index":0}]]},
-    "Format Save Reply": {"main":[[{"node":"Send Save Reply","type":"main","index":0}]]},
-    "Submit to Adably": {"main":[[{"node":"Format Submit Reply","type":"main","index":0}]]},
-    "Format Submit Reply": {"main":[[{"node":"Send Submit Reply","type":"main","index":0}]]},
-    "Get Status": {"main":[[{"node":"Format Status Reply","type":"main","index":0}]]},
-    "Format Status Reply": {"main":[[{"node":"Send Status Reply","type":"main","index":0}]]}
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Main Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Main Logic": {
+      "main": [
+        [
+          {
+            "node": "Route Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Action": {
+      "main": [
+        [
+          {
+            "node": "Send Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Wait Msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Thumb Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save to Adably",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Submit to Adably",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Wait Msg": {
+      "main": [
+        [
+          {
+            "node": "Get Prompt from API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Prompt from API": {
+      "main": [
+        [
+          {
+            "node": "Format Prompt Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Prompt Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Prompt Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Thumb Prompt": {
+      "main": [
+        [
+          {
+            "node": "Format Thumb Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Thumb Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Thumb Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Adably": {
+      "main": [
+        [
+          {
+            "node": "Format Save Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Save Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Save Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit to Adably": {
+      "main": [
+        [
+          {
+            "node": "Format Submit Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Submit Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Submit Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Status": {
+      "main": [
+        [
+          {
+            "node": "Format Status Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Status Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Status Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": {"executionOrder":"v1","timezone":"Asia/Jakarta"},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Jakarta"
+  },
   "active": false
 }
