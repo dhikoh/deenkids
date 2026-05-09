@@ -186,8 +186,7 @@
   ],
   "connections": {
     "Telegram Trigger": {"main":[[{"node":"Main Logic","type":"main","index":0}]]},
-    "Main Logic": {"main":[[{"node":"Answer Callback","type":"main","index":0}]]},
-    "Answer Callback": {"main":[[{"node":"Route Action","type":"main","index":0}]]},
+    "Main Logic": {"main":[[{"node":"Answer Callback","type":"main","index":0},{"node":"Route Action","type":"main","index":0}]]},
     "Route Action": {"main":[
       [{"node":"Send Reply","type":"main","index":0}],
       [{"node":"Get Prompt from API","type":"main","index":0}],
