@@ -172,7 +172,7 @@ export class N8nService {
 
     while ((match = lineMarkerRegex.exec(raw)) !== null) {
       const type = match[1].toLowerCase();
-      if (['quick_answer', 'paragraph', 'dalil', 'analogy', 'tip', 'hikmah', 'doa', 'opening', 'closing'].includes(type)) {
+      if (['quick_answer', 'paragraph', 'dalil', 'analogy', 'tip', 'hikmah', 'doa', 'dialog', 'heading', 'opening', 'closing'].includes(type)) {
         markers.push({ type, index: match.index + match[0].length });
       }
     }
@@ -232,6 +232,21 @@ export class N8nService {
           sourceUrl: urlMatch?.[1]?.trim() || '',
         };
       }
+
+      case 'dialog': {
+        const lines = section.split('\n').filter(l => l.trim());
+        const entries: { role: string; text: string }[] = [];
+        for (const line of lines) {
+          const dialogMatch = line.match(/^-?\s*\[([^\]]+)\]\s*[""\u201c]?([^""\u201d]+)[""\u201d]?/i);
+          if (dialogMatch) {
+            entries.push({ role: dialogMatch[1].trim(), text: dialogMatch[2].trim() });
+          }
+        }
+        return entries.length > 0 ? { type: 'dialog', entries } : null;
+      }
+
+      case 'heading':
+        return { type: 'heading', text: this.cleanSectionText(section) };
 
       case 'opening':
       case 'closing':

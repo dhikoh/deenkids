@@ -5,6 +5,7 @@ import {
 import { ApiTags, ApiOperation, ApiHeader } from '@nestjs/swagger';
 import { N8nApiKeyGuard } from '../common/guards/n8n-api-key.guard';
 import { N8nService, SaveContentPayload } from './n8n.service';
+import { N8nPromptService, GeneratePromptDto, GenerateThumbPromptDto } from './n8n-prompt.service';
 import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('N8N Automation')
@@ -15,7 +16,10 @@ import { SkipThrottle } from '@nestjs/throttler';
 export class N8nController {
   private readonly logger = new Logger(N8nController.name);
 
-  constructor(private readonly n8nService: N8nService) {}
+  constructor(
+    private readonly n8nService: N8nService,
+    private readonly promptService: N8nPromptService,
+  ) {}
 
   /**
    * Save content from parsed Gemini output.
@@ -60,5 +64,41 @@ export class N8nController {
   @ApiOperation({ summary: 'Check content status' })
   async getStatus(@Param('id') id: string) {
     return this.n8nService.getStatus(id);
+  }
+
+  /**
+   * Generate content prompt (same quality as web prompt generator).
+   */
+  @Post('generate-prompt')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Generate content prompt for Gemini' })
+  async generatePrompt(@Body() body: GeneratePromptDto) {
+    if (!body.title?.trim()) {
+      throw new BadRequestException('title wajib diisi');
+    }
+    if (!body.type) {
+      throw new BadRequestException('type wajib diisi (QNA/ARTICLE/PEMBELAJARAN/KISAH)');
+    }
+    this.logger.log(`n8n generate-prompt: "${body.title}" (${body.type})`);
+    const prompt = this.promptService.generatePrompt(body);
+    return { success: true, prompt };
+  }
+
+  /**
+   * Generate thumbnail image prompt.
+   */
+  @Post('generate-thumb-prompt')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Generate thumbnail prompt for AI image generator' })
+  async generateThumbPrompt(@Body() body: GenerateThumbPromptDto) {
+    if (!body.title?.trim()) {
+      throw new BadRequestException('title wajib diisi');
+    }
+    if (!body.ratio) {
+      throw new BadRequestException('ratio wajib diisi (16:9/1:1/4:5)');
+    }
+    this.logger.log(`n8n generate-thumb-prompt: "${body.title}" (${body.ratio})`);
+    const prompt = this.promptService.generateThumbnailPrompt(body);
+    return { success: true, prompt };
   }
 }
