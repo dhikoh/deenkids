@@ -116,4 +116,19 @@ export class SuperadminController {
   async updateHomepageConfig(@Body() body: { pembelajaran?: boolean; qna?: boolean; kisah?: boolean; article?: boolean }) {
     return this.superadminService.updateHomepageConfig(body);
   }
+
+  // ── n8n API Key ──
+  @Get('settings/n8n-key')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Get n8n API key status (masked)' })
+  async getN8nApiKey() {
+    return this.superadminService.getN8nApiKey();
+  }
+
+  @Post('settings/n8n-key/rotate')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Generate or rotate n8n API key' })
+  async rotateN8nApiKey() {
+    return this.superadminService.rotateN8nApiKey();
+  }
 }

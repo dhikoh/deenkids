@@ -1,0 +1,12 @@
+{
+  "name": "Adably Content Bot",
+  "nodes": [],
+  "connections": {},
+  "active": false,
+  "settings": {
+    "timezone": "Asia/Jakarta"
+  },
+  "meta": {
+    "description": "Telegram bot workflow untuk Adably content automation. Import file ini ke n8n setelah setup selesai. Workflow akan dikonfigurasi setelah Telegram Bot Token dan n8n API Key tersedia."
+  }
+}

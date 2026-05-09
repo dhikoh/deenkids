@@ -237,8 +237,8 @@ export class EditorService {
         thumbnailUrl: dto.thumbnailUrl !== undefined ? (dto.thumbnailUrl ? sanitizeText(dto.thumbnailUrl) : null) : undefined,
         socialThumbnailUrl: dto.socialThumbnailUrl !== undefined ? (dto.socialThumbnailUrl ? sanitizeText(dto.socialThumbnailUrl) : null) : undefined,
         // NOTE: 'type' is immutable after creation — never updated here to prevent orphan detail records
-        ageGroups: dto.ageGroups || [],
-        nodeId: dto.nodeId || null,
+        ageGroups: dto.ageGroups !== undefined ? dto.ageGroups : existing.ageGroups,
+        nodeId: dto.nodeId !== undefined ? (dto.nodeId || null) : existing.nodeId,
         enableAudio: existing.type === 'KISAH' ? (dto.enableAudio !== false) : (dto.enableAudio ?? existing.enableAudio),
         audioTitle: dto.audioTitle !== undefined ? dto.audioTitle : existing.audioTitle,
         audioDescription: dto.audioDescription !== undefined ? dto.audioDescription : existing.audioDescription,

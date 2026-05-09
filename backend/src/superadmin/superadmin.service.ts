@@ -276,4 +276,36 @@ export class SuperadminService {
     this.logger.log('Homepage visibility config updated');
     return { message: 'Pengaturan visibilitas beranda berhasil disimpan' };
   }
+
+  // ══════════════════════════════════════
+  // n8n API Key Management
+  // ══════════════════════════════════════
+
+  async getN8nApiKey(): Promise<{ hasKey: boolean; maskedKey: string | null }> {
+    const setting = await this.prisma.setting.findUnique({ where: { key: 'n8n_api_key' } });
+    if (!setting || !setting.value) return { hasKey: false, maskedKey: null };
+    // Mask: show first 8 and last 4 chars
+    const v = setting.value;
+    const masked = v.length > 12
+      ? `${v.substring(0, 8)}${'•'.repeat(v.length - 12)}${v.substring(v.length - 4)}`
+      : '••••••••';
+    return { hasKey: true, maskedKey: masked };
+  }
+
+  async rotateN8nApiKey(): Promise<{ apiKey: string; message: string }> {
+    const { randomBytes } = await import('crypto');
+    const newKey = `n8n_${randomBytes(32).toString('hex')}`;
+
+    await this.prisma.setting.upsert({
+      where: { key: 'n8n_api_key' },
+      update: { value: newKey },
+      create: { key: 'n8n_api_key', value: newKey, group: 'n8n' },
+    });
+
+    this.logger.log('n8n API key rotated');
+    return {
+      apiKey: newKey,
+      message: 'API key baru berhasil dibuat. Simpan key ini — tidak akan ditampilkan lagi.',
+    };
+  }
 }

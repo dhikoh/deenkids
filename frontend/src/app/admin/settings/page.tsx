@@ -5,10 +5,11 @@ import {
   fetchAiToggle, updateAiToggle, fetchRewardSettings, updateRewardSettings,
   fetchLeaderboard, fetchApiSettings, updateApiSettings,
   fetchHomepageConfigAdmin, updateHomepageConfig,
+  fetchN8nApiKey, rotateN8nApiKey,
 } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { Sparkles, Save, Trophy, Coins, Key, Eye, EyeOff, ChevronDown } from "lucide-react";
+import { Sparkles, Save, Trophy, Coins, Key, Eye, EyeOff, ChevronDown, Bot, RefreshCw, Copy } from "lucide-react";
 
 type Tab = "general" | "api";
 
@@ -65,6 +66,12 @@ export default function SettingsPage() {
   const [homepageConfig, setHomepageConfig] = useState({ pembelajaran: true, qna: true, kisah: true, article: true });
   const [isSavingHomepage, setIsSavingHomepage] = useState(false);
 
+  // ── n8n API Key ──
+  const [n8nHasKey, setN8nHasKey] = useState(false);
+  const [n8nMaskedKey, setN8nMaskedKey] = useState<string | null>(null);
+  const [n8nNewKey, setN8nNewKey] = useState<string | null>(null);
+  const [n8nRotating, setN8nRotating] = useState(false);
+
   useEffect(() => { loadSettings(); }, []);
 
   const loadSettings = async () => {
@@ -108,6 +115,13 @@ export default function SettingsPage() {
         const hpConfig = await fetchHomepageConfigAdmin(token);
         setHomepageConfig(hpConfig);
       } catch { /* non-fatal — keep defaults */ }
+
+      // Load n8n API key status
+      try {
+        const n8nData = await fetchN8nApiKey(token);
+        setN8nHasKey(n8nData.hasKey);
+        setN8nMaskedKey(n8nData.maskedKey);
+      } catch { /* non-fatal */ }
     } catch {
       toast.error("Gagal memuat pengaturan");
     } finally {
@@ -473,6 +487,75 @@ export default function SettingsPage() {
           >
             <Save size={18} /> {isSavingApi ? "Menyimpan..." : "Simpan Semua Pengaturan API"}
           </button>
+
+          {/* n8n Automation Key */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+              <Bot className="text-violet-500" size={20} /> Automasi n8n
+            </h2>
+            <p className="text-sm text-slate-500 mb-6">API key untuk integrasi bot Telegram via n8n. Key ini digunakan pada header <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono">X-N8N-API-Key</code>.</p>
+
+            {/* Key Status */}
+            <div className="mb-4">
+              <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
+                <Key size={14} /> API Key
+                {n8nHasKey && <span className="text-xs font-normal text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">✓ Aktif</span>}
+              </label>
+              {n8nMaskedKey ? (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 font-mono text-sm text-slate-600">
+                  {n8nMaskedKey}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 italic">Belum ada API key. Generate untuk memulai.</p>
+              )}
+            </div>
+
+            {/* Newly generated key — show once */}
+            {n8nNewKey && (
+              <div className="mb-4 bg-violet-50 border border-violet-200 rounded-xl p-4">
+                <p className="text-xs font-bold text-violet-700 mb-2">⚠️ Simpan key ini! Tidak akan ditampilkan lagi setelah halaman ditutup.</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-white border border-violet-200 rounded-lg p-2 text-sm font-mono text-slate-800 break-all">{n8nNewKey}</code>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(n8nNewKey); toast.success('API key disalin!'); }}
+                    className="p-2 rounded-lg bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors shrink-0"
+                  >
+                    <Copy size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={async () => {
+                setN8nRotating(true);
+                try {
+                  const token = Cookies.get('_at'); if (!token) return;
+                  const res = await rotateN8nApiKey(token);
+                  setN8nNewKey(res.apiKey);
+                  setN8nHasKey(true);
+                  setN8nMaskedKey(null); // Will refresh on next load
+                  toast.success(res.message);
+                } catch (err: any) { toast.error(err.message || 'Gagal generate key'); }
+                finally { setN8nRotating(false); }
+              }}
+              disabled={n8nRotating}
+              className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-colors disabled:opacity-70"
+            >
+              <RefreshCw size={16} className={n8nRotating ? 'animate-spin' : ''} />
+              {n8nHasKey ? 'Rotate Key Baru' : 'Generate API Key'}
+            </button>
+
+            {/* Usage Guide */}
+            <div className="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-100">
+              <p className="text-xs font-bold text-slate-500 uppercase mb-2">Cara Pakai di n8n</p>
+              <ol className="text-xs text-slate-500 space-y-1 list-decimal list-inside">
+                <li>Buka n8n workflow → HTTP Request node</li>
+                <li>Set header: <code className="bg-white px-1 rounded font-mono">X-N8N-API-Key: [key anda]</code></li>
+                <li>Endpoint tersedia: <code className="bg-white px-1 rounded font-mono">POST /api/n8n/save-content</code>, <code className="bg-white px-1 rounded font-mono">POST /api/n8n/submit/:id</code>, <code className="bg-white px-1 rounded font-mono">GET /api/n8n/status/:id</code></li>
+              </ol>
+            </div>
+          </div>
         </div>
       )}
     </div>

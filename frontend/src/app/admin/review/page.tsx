@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchReviewQueue, processReview, fetchContentForEdit } from "@/lib/api";
+import { fetchReviewQueue, processReview, fetchContentForEdit, updateContent, API_BASE_URL } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { ClipboardCheck, Check, X, Edit2, AlertCircle, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { ClipboardCheck, Check, X, Edit2, AlertCircle, Eye, ChevronDown, ChevronUp, Image, Crop, ExternalLink } from "lucide-react";
+import ImageCropperModal from "@/components/ImageCropperModal";
 
 export default function ReviewPage() {
   const [queue, setQueue] = useState<any[]>([]);
@@ -18,6 +19,63 @@ export default function ReviewPage() {
   const [loadingPreview, setLoadingPreview] = useState<string | null>(null);
   const [pointAdjustment, setPointAdjustment] = useState(0);
   const [adjustmentReason, setAdjustmentReason] = useState("");
+
+  // ── Thumbnail crop state ──
+  const [cropTarget, setCropTarget] = useState<{ contentId: string; type: 'web' | 'social' } | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [thumbnailUploading, setThumbnailUploading] = useState<string | null>(null);
+
+  const handleThumbnailCropStart = (contentId: string, type: 'web' | 'social') => {
+    // Open file picker, then show cropper
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.size > 15 * 1024 * 1024) { toast.error('Ukuran maksimal 15MB'); return; }
+      setCropTarget({ contentId, type });
+      setCropSrc(URL.createObjectURL(file));
+    };
+    input.click();
+  };
+
+  const handleCropComplete = async (blob: Blob) => {
+    if (!cropTarget) return;
+    const { contentId, type } = cropTarget;
+    // Revoke object URL to prevent memory leak
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+    setCropTarget(null);
+    setThumbnailUploading(contentId);
+    try {
+      const token = Cookies.get('_at');
+      if (!token) return;
+      // Step 1: Upload cropped image
+      const formData = new FormData();
+      formData.append('file', blob, `thumb-${type}-${Date.now()}.jpg`);
+      const uploadRes = await fetch(`${API_BASE_URL}/editor/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!uploadRes.ok) throw new Error('Upload gagal');
+      const { url } = await uploadRes.json();
+      // Step 2: Update content with new thumbnail URL
+      const updatePayload: any = type === 'web'
+        ? { thumbnailUrl: url }
+        : { socialThumbnailUrl: url };
+      await updateContent(contentId, updatePayload, token);
+      // Step 3: Refresh preview data
+      const res = await fetchContentForEdit(token, contentId);
+      setPreviewData(prev => ({ ...prev, [contentId]: res.data }));
+      toast.success(`Thumbnail ${type === 'web' ? 'web' : 'sosmed'} berhasil diperbarui!`);
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengupload thumbnail');
+    } finally {
+      setThumbnailUploading(null);
+    }
+  };
 
   useEffect(() => {
     loadQueue();
@@ -91,8 +149,57 @@ export default function ReviewPage() {
 
   const renderPreview = (data: any) => {
     if (!data) return null;
+    const isUploading = thumbnailUploading === data.id;
     return (
       <div className="border-t border-slate-200 bg-slate-50/70 p-5 space-y-4">
+        {/* Thumbnail Preview + Crop */}
+        <div>
+          <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">🖼️ Thumbnail</h4>
+          <div className="flex flex-wrap gap-4">
+            {/* Web Thumbnail (16:9) */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold text-slate-400 uppercase">Web (16:9)</p>
+              {data.thumbnailUrl ? (
+                <div className="relative w-40 h-[90px] rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+                  <img src={data.thumbnailUrl} alt="Web thumbnail" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-40 h-[90px] rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300">
+                  <Image size={20} />
+                </div>
+              )}
+              <button
+                onClick={() => handleThumbnailCropStart(data.id, 'web')}
+                disabled={isUploading}
+                className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+              >
+                <Crop size={12} /> {data.thumbnailUrl ? 'Ganti & Crop' : 'Upload & Crop'}
+              </button>
+            </div>
+            {/* Social Thumbnail (1:1) */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold text-slate-400 uppercase">Sosmed (1:1)</p>
+              {data.socialThumbnailUrl ? (
+                <div className="relative w-[90px] h-[90px] rounded-lg overflow-hidden border border-pink-200 shadow-sm">
+                  <img src={data.socialThumbnailUrl} alt="Social thumbnail" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-[90px] h-[90px] rounded-lg border-2 border-dashed border-pink-200 flex items-center justify-center text-pink-300">
+                  <Image size={20} />
+                </div>
+              )}
+              <button
+                onClick={() => handleThumbnailCropStart(data.id, 'social')}
+                disabled={isUploading}
+                className="flex items-center gap-1 text-[11px] font-bold text-pink-600 hover:text-pink-700 disabled:opacity-50"
+              >
+                <Crop size={12} /> {data.socialThumbnailUrl ? 'Ganti & Crop' : 'Upload & Crop'}
+              </button>
+            </div>
+            {isUploading && <p className="text-xs text-slate-400 animate-pulse self-center">Mengupload...</p>}
+          </div>
+        </div>
+
         {/* Description */}
         {data.description && (
           <div>
@@ -341,6 +448,14 @@ export default function ReviewPage() {
                   >
                     <X size={16} /> Tolak
                   </button>
+                  <a
+                    href={`/admin/editor?id=${item.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg text-sm font-bold transition-colors ml-auto"
+                  >
+                    <ExternalLink size={16} /> Buka di Editor
+                  </a>
                 </div>
               )}
             </div>
@@ -366,6 +481,17 @@ export default function ReviewPage() {
           </div>
         )}
       </div>
+
+      {/* Image Cropper Modal */}
+      {cropSrc && cropTarget && (
+        <ImageCropperModal
+          imageSrc={cropSrc}
+          aspect={cropTarget.type === 'web' ? 16 / 9 : 1}
+          title={cropTarget.type === 'web' ? 'Crop Thumbnail Web (16:9)' : 'Crop Thumbnail Sosmed (1:1)'}
+          onCancel={() => { if (cropSrc) URL.revokeObjectURL(cropSrc); setCropSrc(null); setCropTarget(null); }}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 }

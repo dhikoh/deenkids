@@ -1,0 +1,85 @@
+# ═══════════════════════════════════════════════════════════
+# Adably — Docker Compose (Production)
+# Includes: Backend, Frontend, n8n Automation
+# ═══════════════════════════════════════════════════════════
+#
+# Prerequisites (set in .env or environment):
+#   DATABASE_URL, JWT_SECRET, MINIO_*, NEXT_PUBLIC_API_URL
+#   N8N_BASIC_AUTH_USER, N8N_BASIC_AUTH_PASSWORD
+#
+# Usage:
+#   docker compose up -d
+#   docker compose logs -f n8n
+# ═══════════════════════════════════════════════════════════
+
+services:
+  # ── NestJS Backend API ──
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: adably-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-4000}:4000"
+    env_file:
+      - ./backend/.env
+    networks:
+      - adably-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/content/tags"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+
+  # ── Next.js Frontend ──
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: adably-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    env_file:
+      - ./frontend/.env
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - adably-net
+
+  # ── n8n Automation Engine ──
+  # Dashboard: http://localhost:5678
+  # Docs: https://docs.n8n.io/hosting/docker/
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: adably-n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      # Basic Auth for n8n dashboard
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-changeme}
+      # Timezone
+      - GENERIC_TIMEZONE=Asia/Jakarta
+      - TZ=Asia/Jakarta
+      # Webhook URL (for Telegram bot callbacks)
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://localhost:5678}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - adably-net
+
+networks:
+  adably-net:
+    driver: bridge
+
+volumes:
+  n8n_data:
+    driver: local
