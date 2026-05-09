@@ -377,10 +377,23 @@ export class N8nService {
 
   extractMetaFromRaw(raw: string): { openingText?: string; closingText?: string } {
     const result: { openingText?: string; closingText?: string } = {};
+
+    // Strategy 1: marker (opening) / (closing)
     const openingMatch = raw.match(/\(opening\)\s*━*\s*\n([\s\S]*?)(?=\n.*?\((?:quick_answer|paragraph|dalil|analogy|tip|hikmah|doa|closing)\)|$)/i);
     if (openingMatch) result.openingText = openingMatch[1].trim();
     const closingMatch = raw.match(/\(closing\)\s*━*\s*\n([\s\S]*?)$/i);
     if (closingMatch) result.closingText = closingMatch[1].trim();
+
+    // Strategy 2: fallback header pattern ━━━ PEMBUKAAN ━━━ / ━━━ PENUTUPAN ━━━
+    if (!result.openingText) {
+      const headerOpen = raw.match(/━+[^━\n]*(?:PEMBUKAAN|MUKADIMAH)[^━\n]*━+\s*\n([\s\S]*?)(?=\n━+[^━\n]*(?:BLOK|KONTEN|JAWABAN|DIALOG)[^━\n]*━+|$)/i);
+      if (headerOpen) result.openingText = headerOpen[1].trim();
+    }
+    if (!result.closingText) {
+      const headerClose = raw.match(/━+[^━\n]*PENUTUPAN[^━\n]*━+\s*\n([\s\S]*?)$/i);
+      if (headerClose) result.closingText = headerClose[1].trim();
+    }
+
     return result;
   }
 
