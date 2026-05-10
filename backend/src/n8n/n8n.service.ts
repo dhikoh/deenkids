@@ -464,7 +464,7 @@ export class N8nService {
 
   async exportContentAsTxt(
     contentId: string,
-    format: 'txt' | 'doc' = 'txt',
+    format: 'txt' | 'rtf' = 'txt',
   ): Promise<{ filename: string; content: string; mimeType: string }> {
     // Fetch contentItem with tags
     const content = await this.prisma.contentItem.findUnique({
@@ -485,12 +485,12 @@ export class N8nService {
 
     const slug = content.slug || content.id;
 
-    if (format === 'doc') {
-      const fileContent = this.formatContentAsHtmlDoc(content, detail);
+    if (format === 'rtf') {
+      const fileContent = this.formatContentAsRtf(content, detail);
       return {
-        filename: `hasil_${slug.substring(0, 40)}.doc`,
+        filename: `hasil_${slug.substring(0, 40)}.rtf`,
         content: fileContent,
-        mimeType: 'application/msword',
+        mimeType: 'application/rtf',
       };
     }
 
@@ -545,6 +545,138 @@ export class N8nService {
       content: lines.join('\n'),
       mimeType: 'text/plain',
     };
+  }
+
+  // ── RTF helper: escape special RTF characters ──────────────
+  private rtfEsc(s: string): string {
+    return (s || '')
+      .replace(/\\/g, '\\\\')
+      .replace(/{/g, '\\{')
+      .replace(/}/g, '\\}')
+      .replace(/\n/g, '\\line ');
+  }
+
+  private rtfUnicode(s: string): string {
+    // Convert non-ASCII characters to RTF unicode escape sequences
+    return this.rtfEsc(s).replace(/[^\x00-\x7F]/g, (ch) => {
+      const code = ch.charCodeAt(0);
+      return `\\u${code}?`;
+    });
+  }
+
+  private formatContentAsRtf(content: any, detail: any): string {
+    const u = (s: string) => this.rtfUnicode(s);
+    const tags = content.tags?.map((t: any) => t.tag.name).join(', ') || '-';
+    const ages = (content.ageGroups || []).join(', ');
+
+    const lines: string[] = [];
+
+    // RTF header
+    lines.push('{\\rtf1\\ansi\\deff0');
+    lines.push('{\\fonttbl{\\f0\\froman\\fcharset0 Times New Roman;}{\\f1\\fswiss\\fcharset0 Arial;}}');
+    lines.push('{\\colortbl;\\red26\\green60\\blue94;\\red136\\green136\\blue136;\\red68\\green68\\blue68;}');
+    lines.push('\\widowctrl\\hyphauto\\ftnbj');
+    lines.push('\\margl1440\\margr1440\\margt1440\\margb1440');
+
+    // Title
+    lines.push(`\\pard\\sb200\\sa200{\\f1\\fs36\\b\\cf1 ${u(content.title)}}\\par`);
+
+    // Meta table
+    lines.push(`{\\f1\\fs20\\cf2 Tipe: ${u(content.type)} | Status: ${u(content.status)} | Usia: ${u(ages)} | Tag: ${u(tags)}}\\par`);
+    if (content.description) {
+      lines.push(`{\\f1\\fs20\\cf2 Deskripsi: ${u(content.description)}}\\par`);
+    }
+    lines.push('\\pard\\sb100\\sa100\\brdrb\\brdrs\\brdrw10\\brsp20 \\par');
+
+    // Opening
+    if (content.openingText) {
+      lines.push(`\\pard\\sb200\\sa100{\\f1\\fs22\\b Pembukaan}\\par`);
+      lines.push(`\\pard\\sb100\\sa100{\\f0\\fs22 ${u(content.openingText)}}\\par`);
+    }
+
+    // Blocks
+    const renderBlock = (block: ParsedBlock): string => {
+      const parts: string[] = [];
+      switch (block.type) {
+        case 'heading':
+          parts.push(`\\pard\\sb200\\sa100{\\f1\\fs26\\b\\cf1 ${u(block.text || '')}}\\par`);
+          break;
+        case 'paragraph':
+          parts.push(`\\pard\\sb100\\sa100{\\f0\\fs22 ${u(block.text || '')}}\\par`);
+          break;
+        case 'quick_answer':
+          parts.push(`\\pard\\sb200\\sa100{\\f1\\fs22\\b Jawaban Instan}\\par`);
+          parts.push(`\\pard\\sb100\\sa100{\\f0\\fs22 ${u(block.text || '')}}\\par`);
+          break;
+        case 'tip':
+          parts.push(`\\pard\\sb200\\sa100{\\f1\\fs22\\b Tips Orang Tua}\\par`);
+          parts.push(`\\pard\\sb100\\sa100{\\f0\\fs22 ${u(block.text || '')}}\\par`);
+          break;
+        case 'hikmah':
+          parts.push(`\\pard\\sb200\\sa100{\\f1\\fs22\\b Hikmah}\\par`);
+          parts.push(`\\pard\\sb100\\sa100{\\f0\\fs22 ${u(block.text || '')}}\\par`);
+          break;
+        case 'analogy':
+          parts.push(`\\pard\\sb200\\sa100{\\f1\\fs22\\b Analogi: ${u(block.title || '')}}\\par`);
+          parts.push(`\\pard\\sb100\\sa100{\\f0\\fs22 ${u(block.text || '')}}\\par`);
+          break;
+        case 'dalil': {
+          const entries = (block.entries || []) as any[];
+          parts.push(`\\pard\\sb200\\sa100{\\f1\\fs22\\b Dalil / Landasan}\\par`);
+          entries.forEach((e: any, i: number) => {
+            parts.push(`\\pard\\sb100\\sa60{\\f1\\fs20\\b Dalil ${i + 1}:}\\par`);
+            if (e.arabic) parts.push(`\\pard\\sb60\\sa60\\qr{\\f0\\fs24 ${u(e.arabic)}}\\par`);
+            if (e.translation) parts.push(`\\pard\\sb60\\sa60{\\f0\\fs20\\i ${u(e.translation)}}\\par`);
+            if (e.source) parts.push(`\\pard\\sb40\\sa40{\\f0\\fs20 Sumber: ${u(e.source)}}\\par`);
+            if (e.sourceUrl) parts.push(`\\pard\\sb40\\sa40{\\f0\\fs20 URL: ${u(e.sourceUrl)}}\\par`);
+          });
+          break;
+        }
+        case 'doa':
+          parts.push(`\\pard\\sb200\\sa100{\\f1\\fs22\\b Doa: ${u(block.title || '')}}\\par`);
+          if (block.arabic) parts.push(`\\pard\\sb100\\sa60\\qr{\\f0\\fs24 ${u(block.arabic)}}\\par`);
+          if (block.translation) parts.push(`\\pard\\sb60\\sa60{\\f0\\fs20\\i ${u(block.translation)}}\\par`);
+          if (block.source) parts.push(`\\pard\\sb40\\sa40{\\f0\\fs20 Sumber: ${u(block.source)}}\\par`);
+          if (block.sourceUrl) parts.push(`\\pard\\sb40\\sa40{\\f0\\fs20 URL: ${u(block.sourceUrl)}}\\par`);
+          break;
+        case 'dialog': {
+          const entries = (block.entries || []) as any[];
+          parts.push(`\\pard\\sb200\\sa100{\\f1\\fs22\\b Dialog}\\par`);
+          entries.forEach((e: any) => {
+            parts.push(`\\pard\\sb60\\sa60{\\f0\\fs22 {\\b [${u(e.role)}]} \"${u(e.text)}\"}\\par`);
+          });
+          break;
+        }
+        default:
+          if (block.text) parts.push(`\\pard\\sb100\\sa100{\\f0\\fs22 ${u(block.text)}}\\par`);
+      }
+      return parts.join('\n');
+    };
+
+    if (content.type === ContentType.QNA && detail) {
+      if (detail.answerQuick) {
+        lines.push(`\\pard\\sb200\\sa100{\\f1\\fs22\\b Jawaban Instan}\\par`);
+        lines.push(`\\pard\\sb100\\sa100{\\f0\\fs22 ${u(detail.answerQuick)}}\\par`);
+      }
+      const blocks: ParsedBlock[] = (detail.blocks as ParsedBlock[]) || [];
+      blocks.forEach(b => lines.push(renderBlock(b)));
+    } else if (detail) {
+      const blocks: ParsedBlock[] = (detail.blocks as ParsedBlock[]) || [];
+      blocks.forEach(b => lines.push(renderBlock(b)));
+    }
+
+    // Closing
+    if (content.closingText) {
+      lines.push(`\\pard\\sb200\\sa100{\\f1\\fs22\\b Penutupan}\\par`);
+      lines.push(`\\pard\\sb100\\sa100{\\f0\\fs22 ${u(content.closingText)}}\\par`);
+    }
+
+    // Footer
+    lines.push('\\pard\\sb200\\sa100\\brdrb\\brdrs\\brdrw10\\brsp20 \\par');
+    lines.push(`\\pard\\sb100\\sa100{\\f1\\fs18\\cf2 Buka di dashboard: https://adably.id/admin}\\par`);
+    lines.push('}'); // close RTF document
+
+    return lines.join('\n');
   }
 
   private formatContentAsHtmlDoc(content: any, detail: any): string {

@@ -68,11 +68,12 @@ export class N8nController {
   }
 
   /**
-   * Export saved content as .txt or .doc file for Telegram delivery.
-   * Query param: ?format=txt (default) | ?format=doc
+   * Export saved content as .txt or .rtf file for Telegram delivery.
+   * Query param: ?format=txt (default) | ?format=rtf
+   * RTF is universally supported: Google Docs, Word, WPS, LibreOffice, Android.
    */
   @Get('export-txt/:id')
-  @ApiOperation({ summary: 'Export content as .txt or .doc file for Telegram' })
+  @ApiOperation({ summary: 'Export content as .txt or .rtf file for Telegram' })
   async exportAsTxt(
     @Param('id') id: string,
     @Res() res: Response,
@@ -80,7 +81,7 @@ export class N8nController {
   ) {
     // Read format from query string manually (avoid importing Query to keep imports minimal)
     const formatParam = (res.req as any)?.query?.format;
-    const format: 'txt' | 'doc' = formatParam === 'doc' ? 'doc' : 'txt';
+    const format: 'txt' | 'rtf' = formatParam === 'rtf' ? 'rtf' : 'txt';
 
     const { filename, content, mimeType } = await this.n8nService.exportContentAsTxt(id, format);
     const safeFilename = encodeURIComponent(filename);
