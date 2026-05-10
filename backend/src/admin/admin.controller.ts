@@ -101,4 +101,27 @@ export class AdminController {
   async getAllContents(@Query('status') status?: string, @Query('page') page?: string, @Query('search') search?: string, @Query('age') age?: string) {
     return this.adminService.getAllContents(status, page ? parseInt(page) : 1, search, age);
   }
+
+  // ── DRAFT Cleanup ──
+  @Get('drafts')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'List DRAFT contents for cleanup — superadmin only' })
+  async getDraftList(
+    @Query('olderThan') olderThan?: string,
+    @Query('type') type?: string,
+    @Query('page') page?: string,
+  ) {
+    return this.adminService.getDraftList({
+      olderThanDays: olderThan ? parseInt(olderThan) : undefined,
+      type,
+      page: page ? parseInt(page) : 1,
+    });
+  }
+
+  @Delete('drafts/bulk')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Bulk soft-delete DRAFT items by IDs — superadmin only' })
+  async bulkDeleteDrafts(@Body() body: { ids: string[] }) {
+    return this.adminService.bulkDeleteDrafts(body.ids || []);
+  }
 }

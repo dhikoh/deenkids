@@ -89,4 +89,74 @@ export class AdminService {
 
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
+
+  // ── DRAFT Cleanup ──
+  async getDraftList(filters: { olderThanDays?: number; type?: string; page?: number }) {
+    const { olderThanDays, type, page = 1 } = filters;
+    const limit = 30;
+    const skip = (page - 1) * limit;
+    const where: any = { status: 'DRAFT', deletedAt: null };
+
+    if (type) where.type = type;
+    if (olderThanDays && olderThanDays > 0) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - olderThanDays);
+      where.createdAt = { lte: cutoff };
+    }
+
+    const [data, total, totalDraft] = await Promise.all([
+      this.prisma.contentItem.findMany({
+        where,
+        orderBy: { createdAt: 'asc' }, // oldest first
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          author: { select: { name: true } },
+        },
+      }),
+      this.prisma.contentItem.count({ where }),
+      this.prisma.contentItem.count({ where: { status: 'DRAFT', deletedAt: null } }),
+    ]);
+
+    // Calculate age in days for each item
+    const now = new Date();
+    const enriched = data.map(item => ({
+      ...item,
+      ageDays: Math.floor((now.getTime() - item.createdAt.getTime()) / (1000 * 60 * 60 * 24)),
+    }));
+
+    return {
+      data: enriched,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit), totalDraft },
+    };
+  }
+
+  async bulkDeleteDrafts(ids: string[]): Promise<{ deleted: number; failed: string[] }> {
+    if (!ids?.length) return { deleted: 0, failed: [] };
+
+    // Only allow deleting DRAFT items
+    const validItems = await this.prisma.contentItem.findMany({
+      where: { id: { in: ids }, status: 'DRAFT', deletedAt: null },
+      select: { id: true, type: true },
+    });
+    const validIds = validItems.map(i => i.id);
+    const failed = ids.filter(id => !validIds.includes(id));
+
+    if (validIds.length === 0) return { deleted: 0, failed };
+
+    // Soft-delete: set deletedAt
+    await this.prisma.contentItem.updateMany({
+      where: { id: { in: validIds } },
+      data: { deletedAt: new Date() },
+    });
+
+    this.logger.log(`Bulk deleted ${validIds.length} DRAFT items: [${validIds.join(', ')}]`);
+    return { deleted: validIds.length, failed };
+  }
 }

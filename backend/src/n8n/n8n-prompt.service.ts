@@ -29,7 +29,11 @@ export class N8nPromptService {
 
   generatePrompt(dto: GeneratePromptDto): string {
     const { type, title, subType, ageGroups, selectedThinkers, pov } = dto;
-    if (type === 'KISAH') return this.generateKisahPrompt(subType || 'SIRAH', title, selectedThinkers || []);
+    if (type === 'KISAH') {
+      // Map 'FIKSI' (bot enum) → 'CERITA_FIKSI' (frontend enum) untuk konsistensi internal
+      const kisahSubType = subType === 'FIKSI' ? 'CERITA_FIKSI' : (subType || 'SIRAH');
+      return this.generateKisahPrompt(kisahSubType, title, selectedThinkers || []);
+    }
     return this.generateContentPrompt(type, title, ageGroups || ['3-5', '5-7', '7-10'], selectedThinkers || [], pov || '');
   }
 
@@ -331,12 +335,28 @@ Ikuti aturan berikut dengan TEPAT atau konten tidak akan tersimpan dengan benar.
    (quick_answer) → jawaban instan [KHUSUS QNA]
    (paragraph)    → isi konten / narasi
    (dialog)       → simulasi percakapan
-   (dalil)        → dalil Al-Quran atau Hadits
+   (dalil)        → dalil Al-Quran atau Hadits (WAJIB: sertakan Arab, Terjemahan, Sumber, Sumber URL)
    (analogy)      → analogi kontekstual
    (tip)          → tips orang tua
    (hikmah)       → hikmah / pelajaran
-   (doa)          → doa
+   (doa)          → doa (WAJIB: sertakan Arab, Terjemahan, Sumber, Sumber URL)
    (closing)      → teks penutupan
+
+4. Format WAJIB untuk blok (dalil) — ikuti PERSIS:
+   (dalil)
+   Dalil 1:
+   Arab: [teks arab]
+   Terjemahan: [terjemahan bahasa Indonesia]
+   Sumber: [QS. Surah:Ayat atau HR. Kitab No.X]
+   Sumber URL: [https://quran.com/surah/ayat ATAU https://www.hadits.id/hadits/kitab/nomor — KOSONGKAN jika tidak 100% yakin]
+
+5. Format WAJIB untuk blok (doa) — ikuti PERSIS:
+   (doa)
+   Judul: [nama doa singkat]
+   Arab: [teks arab doa]
+   Terjemahan: [terjemahan bahasa Indonesia]
+   Sumber: [QS. ... atau HR. Bukhari/Muslim No. ...]
+   Sumber URL: [https://quran.com/... atau https://www.hadits.id/... — KOSONGKAN jika tidak 100% yakin]
 
 Contoh output yang BENAR:
 ---
@@ -353,10 +373,23 @@ Sholat adalah kewajiban setiap muslim yang sudah baligh...
 
 (dalil)
 Dalil 1:
-Arab: إِنَّ الصَّلَاةَ كَانَتْ...
-Terjemahan: Sesungguhnya shalat...
+Arab: إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا
+Terjemahan: Sesungguhnya shalat itu adalah kewajiban yang ditentukan waktunya atas orang-orang yang beriman.
 Sumber: QS. An-Nisa: 103
 Sumber URL: https://quran.com/4/103
+
+Dalil 2:
+Arab: (jika ada)
+Terjemahan: ...
+Sumber: HR. Bukhari No. 8
+Sumber URL: https://www.hadits.id/hadits/bukhari/8
+
+(doa)
+Judul: Doa Memohon Keistiqomahan
+Arab: رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا
+Terjemahan: Ya Tuhan kami, janganlah Engkau jadikan hati kami condong kepada kesesatan setelah Engkau beri petunjuk kepada kami.
+Sumber: QS. Ali Imran: 8
+Sumber URL: https://quran.com/3/8
 
 (closing)
 Wallahu a'lam bishawab. Wassalamualaikum warahmatullahi wabarakatuh.
@@ -457,7 +490,7 @@ Buat pembaca PEDULI pada tokoh sebelum konflik datang.
 ━ FASE 3 — KONFLIK / UJIAN (2–3 paragraf)
 [HEADING] [nama babak — misal: "Ujian yang Berat"]
 [PARAGRAPH] Ini jantung cerita. Tunjukkan perjuangan, keraguan, dan tekanan.
-${subType !== 'FIKSI' ? 'Sisipkan dialog bersumber dari riwayat dalam narasi jika ada.' : 'Sisipkan dialog antar tokoh yang membuat cerita hidup.'}
+${subType !== 'CERITA_FIKSI' ? 'Sisipkan dialog bersumber dari riwayat dalam narasi jika ada.' : 'Sisipkan dialog antar tokoh yang membuat cerita hidup.'}
 Akhiri babak ini dengan kalimat yang membuat pembaca INGIN tahu kelanjutannya.
 
 ━ FASE 4 — KLIMAKS (1–2 paragraf)
@@ -476,7 +509,7 @@ ATURAN TRANSISI WAJIB:
 
 `;
 
-    if (subType !== 'FIKSI') {
+    if (subType !== 'CERITA_FIKSI') {
       prompt += `━━━ 📖 BLOK 2: DALIL / LANDASAN (dalil) ━━━
 Cantumkan 1–2 ayat Al-Quran atau Hadits Shahih yang paling relevan dengan tema kisah.
 Format per dalil:
@@ -514,7 +547,7 @@ Format:
 
 `;
 
-    const tipBlockNr = subType !== 'FIKSI' ? '4' : '2';
+    const tipBlockNr = subType !== 'CERITA_FIKSI' ? '4' : '2';
     prompt += `━━━ ℹ️ BLOK ${tipBlockNr}: CATATAN / TIPS (tip) ━━━
 Tips WAJIB merupakan REFLEKSI NATURAL dari momen spesifik yang terjadi dalam kisah di atas.
 Setiap tips harus bisa dijawab: "Di bagian mana kisah ini poin ini muncul?"
@@ -529,7 +562,7 @@ Format per poin:
 
 `;
 
-    if ((subType === 'SIRAH' || subType === 'QASHASH' || subType === 'TELADAN')) {
+    if (subType === 'SIRAH' || subType === 'QASHASH' || subType === 'TELADAN') {
       prompt += `━━━ 📚 REFERENSI SUMBER (dalil — tipe referensi) ━━━
 Cantumkan sumber kitab utama rujukan kisah ini.
 Format:
@@ -551,7 +584,7 @@ Format:
 `;
 
     // Doa block — separate for fiksi vs non-fiksi
-    if (subType !== 'FIKSI') {
+    if (subType !== 'CERITA_FIKSI') {
       prompt += `━━━ 🤲 BLOK DOA (doa) ━━━
 Doa yang relevan dengan tema kisah ini.
 
@@ -633,12 +666,28 @@ Ikuti aturan berikut dengan TEPAT atau konten tidak akan tersimpan dengan benar.
    (opening)   → teks pembukaan / mukadimah
    (paragraph) → isi kisah / narasi utama
    (heading)   → judul babak / fase cerita (gunakan untuk FASE 3, 4)
-   (dalil)     → dalil Al-Quran atau Hadits
+   (dalil)     → dalil Al-Quran atau Hadits (WAJIB: Arab, Terjemahan, Sumber, Sumber URL)
    (analogy)   → analogi organik dari kisah
    (tip)       → catatan / tips untuk orang tua
    (hikmah)    → hikmah / pelajaran
-   (doa)       → doa
+   (doa)       → doa (WAJIB: Arab, Terjemahan, Sumber, Sumber URL)
    (closing)   → teks penutupan
+
+4. Format WAJIB untuk blok (dalil):
+   (dalil)
+   Dalil 1:
+   Arab: [teks arab]
+   Terjemahan: [terjemahan bahasa Indonesia]
+   Sumber: [QS. Surah:Ayat atau HR. Kitab No.X]
+   Sumber URL: [https://quran.com/surah/ayat ATAU https://www.hadits.id/hadits/kitab/nomor — KOSONGKAN jika tidak 100% yakin]
+
+5. Format WAJIB untuk blok (doa):
+   (doa)
+   Judul: [nama doa singkat]
+   Arab: [teks arab doa]
+   Terjemahan: [terjemahan bahasa Indonesia]
+   Sumber: [QS. ... atau HR. Bukhari/Muslim No. ...]
+   Sumber URL: [https://quran.com/... atau https://www.hadits.id/... — KOSONGKAN jika tidak 100% yakin]
 
 Contoh output yang BENAR:
 ---
@@ -658,6 +707,20 @@ Ujian yang Berat
 
 (paragraph)
 Nabi Ibrahim berdiri tegak di hadapan api yang menyala-nyala...
+
+(dalil)
+Dalil 1:
+Arab: قُلْنَا يَا نَارُ كُونِي بَرْدًا وَسَلَامًا عَلَىٰ إِبْرَاهِيمَ
+Terjemahan: Kami berfirman, Wahai api! Jadilah kamu dingin dan penyelamat bagi Ibrahim.
+Sumber: QS. Al-Anbiya: 69
+Sumber URL: https://quran.com/21/69
+
+(doa)
+Judul: Doa Memohon Perlindungan
+Arab: حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ
+Terjemahan: Cukuplah Allah bagi kami dan Dia adalah sebaik-baik pelindung.
+Sumber: QS. Ali Imran: 173
+Sumber URL: https://quran.com/3/173
 
 (closing)
 Wallahu a'lam bishawab. Wassalamualaikum warahmatullahi wabarakatuh.

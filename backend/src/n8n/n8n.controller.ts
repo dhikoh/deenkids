@@ -68,15 +68,23 @@ export class N8nController {
   }
 
   /**
-   * Export saved content as a .txt file for Telegram delivery.
-   * n8n downloads this file and sends it via sendDocument to the user.
+   * Export saved content as .txt or .doc file for Telegram delivery.
+   * Query param: ?format=txt (default) | ?format=doc
    */
   @Get('export-txt/:id')
-  @ApiOperation({ summary: 'Export content as .txt file for Telegram' })
-  async exportAsTxt(@Param('id') id: string, @Res() res: Response) {
-    const { filename, content } = await this.n8nService.exportContentAsTxt(id);
+  @ApiOperation({ summary: 'Export content as .txt or .doc file for Telegram' })
+  async exportAsTxt(
+    @Param('id') id: string,
+    @Res() res: Response,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ) {
+    // Read format from query string manually (avoid importing Query to keep imports minimal)
+    const formatParam = (res.req as any)?.query?.format;
+    const format: 'txt' | 'doc' = formatParam === 'doc' ? 'doc' : 'txt';
+
+    const { filename, content, mimeType } = await this.n8nService.exportContentAsTxt(id, format);
     const safeFilename = encodeURIComponent(filename);
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Type', `${mimeType}; charset=utf-8`);
     res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
     res.setHeader('X-Content-Length', Buffer.byteLength(content, 'utf-8').toString());
     res.send(content);

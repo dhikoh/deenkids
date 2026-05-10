@@ -462,7 +462,10 @@ export class N8nService {
   // Export Content as .txt File
   // ═══════════════════════════════════════════════
 
-  async exportContentAsTxt(contentId: string): Promise<{ filename: string; content: string }> {
+  async exportContentAsTxt(
+    contentId: string,
+    format: 'txt' | 'doc' = 'txt',
+  ): Promise<{ filename: string; content: string; mimeType: string }> {
     // Fetch contentItem with tags
     const content = await this.prisma.contentItem.findUnique({
       where: { id: contentId },
@@ -480,12 +483,23 @@ export class N8nService {
       detail = await this.prisma.articleDetail.findUnique({ where: { contentId } });
     }
 
+    const slug = content.slug || content.id;
+
+    if (format === 'doc') {
+      const fileContent = this.formatContentAsHtmlDoc(content, detail);
+      return {
+        filename: `hasil_${slug.substring(0, 40)}.doc`,
+        content: fileContent,
+        mimeType: 'application/msword',
+      };
+    }
+
+    // ── TXT format ──────────────────────────────────────
     const lines: string[] = [];
     const sep = '════════════════════════════════════════';
 
-    // ── Header ──────────────────────────────────────────
     lines.push(sep);
-    lines.push('✅ ADABLY — KONTEN DRAFT');
+    lines.push('ADABLY - KONTEN DRAFT');
     lines.push(sep);
     lines.push(`ID      : ${content.id}`);
     lines.push(`Judul   : ${content.title}`);
@@ -497,32 +511,27 @@ export class N8nService {
     lines.push(sep);
     lines.push('');
 
-    // ── Opening ─────────────────────────────────────────
     if (content.openingText) {
-      lines.push('── PEMBUKAAN ──────────────────────────');
+      lines.push('-- PEMBUKAAN --');
       lines.push(content.openingText);
       lines.push('');
     }
 
-    // ── Blocks ──────────────────────────────────────────
     if (content.type === ContentType.QNA && detail) {
-      // QNA: answerQuick + blocks from qnaDetail
       if (detail.answerQuick) {
-        lines.push('════ BLOK: JAWABAN INSTAN ════');
+        lines.push('==== BLOK: JAWABAN INSTAN ====');
         lines.push(detail.answerQuick);
         lines.push('');
       }
       const blocks: ParsedBlock[] = (detail.blocks as ParsedBlock[]) || [];
       this.formatBlocksToTxt(blocks, lines);
     } else if (detail) {
-      // ARTICLE / PEMBELAJARAN / KISAH: blocks from articleDetail
       const blocks: ParsedBlock[] = (detail.blocks as ParsedBlock[]) || [];
       this.formatBlocksToTxt(blocks, lines);
     }
 
-    // ── Closing ─────────────────────────────────────────
     if (content.closingText) {
-      lines.push('── PENUTUPAN ──────────────────────────');
+      lines.push('-- PENUTUPAN --');
       lines.push(content.closingText);
       lines.push('');
     }
@@ -531,11 +540,99 @@ export class N8nService {
     lines.push(`Buka di dashboard: https://adably.id/admin`);
     lines.push(sep);
 
-    const fileContent = lines.join('\n');
-    const slug = content.slug || content.id;
-    const filename = `hasil_${slug.substring(0, 40)}.txt`;
+    return {
+      filename: `hasil_${slug.substring(0, 40)}.txt`,
+      content: lines.join('\n'),
+      mimeType: 'text/plain',
+    };
+  }
 
-    return { filename, content: fileContent };
+  private formatContentAsHtmlDoc(content: any, detail: any): string {
+    const tags = content.tags?.map((t: any) => t.tag.name).join(', ') || '-';
+    const ages = (content.ageGroups || []).join(', ');
+
+    const esc = (s: string) =>
+      (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    const renderBlock = (block: ParsedBlock): string => {
+      switch (block.type) {
+        case 'paragraph':
+          return `<p style="margin:10px 0;line-height:1.8;">${esc(block.text || '')}</p>`;
+        case 'heading':
+          return `<h3 style="margin:16px 0 6px;color:#1a3c5e;">${esc(block.text || '')}</h3>`;
+        case 'quick_answer':
+          return `<div style="background:#e8f5e9;padding:12px;border-left:4px solid #4caf50;margin:10px 0;"><b>Jawaban Instan</b><p>${esc(block.text || '')}</p></div>`;
+        case 'tip':
+          return `<div style="background:#fff8e1;padding:12px;border-left:4px solid #ff9800;margin:10px 0;"><b>Tips Orang Tua</b><p>${esc(block.text || '')}</p></div>`;
+        case 'hikmah':
+          return `<div style="background:#f3e5f5;padding:12px;border-left:4px solid #9c27b0;margin:10px 0;"><b>Hikmah</b><p>${esc(block.text || '')}</p></div>`;
+        case 'analogy':
+          return `<div style="background:#e3f2fd;padding:12px;border-left:4px solid #2196f3;margin:10px 0;"><b>Analogi: ${esc(block.title || '')}</b><p>${esc(block.text || '')}</p></div>`;
+        case 'dalil': {
+          const entries = (block.entries || []) as any[];
+          return `<div style="background:#fafafa;border:1px solid #ddd;padding:12px;margin:10px 0;">
+<b>Dalil / Landasan</b>
+${entries.map((e, i) => `<div style="margin-top:8px;"><b>Dalil ${i + 1}:</b><br>
+${e.arabic ? `<span style="font-size:1.3em;direction:rtl;display:block;text-align:right;">${esc(e.arabic)}</span>` : ''}
+${e.translation ? `<i>${esc(e.translation)}</i><br>` : ''}
+${e.source ? `Sumber: ${esc(e.source)}<br>` : ''}
+${e.sourceUrl ? `URL: <a href="${esc(e.sourceUrl)}">${esc(e.sourceUrl)}</a>` : ''}
+</div>`).join('')}</div>`;
+        }
+        case 'doa':
+          return `<div style="background:#fce4ec;padding:12px;border-left:4px solid #e91e63;margin:10px 0;">
+<b>Doa: ${esc(block.title || '')}</b>
+${block.arabic ? `<div style="font-size:1.3em;direction:rtl;text-align:right;margin:8px 0;">${esc(block.arabic)}</div>` : ''}
+${block.translation ? `<i>${esc(block.translation)}</i><br>` : ''}
+${block.source ? `Sumber: ${esc(block.source)}<br>` : ''}
+${block.sourceUrl ? `URL: <a href="${esc(block.sourceUrl)}">${esc(block.sourceUrl)}</a>` : ''}
+</div>`;
+        case 'dialog': {
+          const entries = (block.entries || []) as any[];
+          return `<div style="background:#f5f5f5;padding:12px;margin:10px 0;"><b>Dialog</b>
+${entries.map(e => `<div><b>[${esc(e.role)}]</b> "${esc(e.text)}"</div>`).join('')}</div>`;
+        }
+        default:
+          return block.text ? `<p>${esc(block.text)}</p>` : '';
+      }
+    };
+
+    let bodyHtml = '';
+    if (content.openingText) {
+      bodyHtml += `<div style="background:#e8eaf6;padding:12px;margin:10px 0;border-left:4px solid #3f51b5;"><b>Pembukaan</b><p>${esc(content.openingText)}</p></div>`;
+    }
+
+    if (content.type === ContentType.QNA && detail) {
+      if (detail.answerQuick) {
+        bodyHtml += `<div style="background:#e8f5e9;padding:12px;border-left:4px solid #4caf50;margin:10px 0;"><b>Jawaban Instan</b><p>${esc(detail.answerQuick)}</p></div>`;
+      }
+      const blocks: ParsedBlock[] = (detail.blocks as ParsedBlock[]) || [];
+      bodyHtml += blocks.map(renderBlock).join('');
+    } else if (detail) {
+      const blocks: ParsedBlock[] = (detail.blocks as ParsedBlock[]) || [];
+      bodyHtml += blocks.map(renderBlock).join('');
+    }
+
+    if (content.closingText) {
+      bodyHtml += `<div style="background:#e8eaf6;padding:12px;margin:10px 0;border-left:4px solid #3f51b5;"><b>Penutupan</b><p>${esc(content.closingText)}</p></div>`;
+    }
+
+    return `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>${esc(content.title)}</title>
+<style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#222;}</style>
+</head><body>
+<h1 style="color:#1a3c5e;">${esc(content.title)}</h1>
+<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+<tr><td style="padding:4px 8px;"><b>Tipe</b></td><td>${esc(content.type)}</td></tr>
+<tr><td style="padding:4px 8px;"><b>Status</b></td><td>${esc(content.status)}</td></tr>
+<tr><td style="padding:4px 8px;"><b>Usia</b></td><td>${esc(ages)}</td></tr>
+<tr><td style="padding:4px 8px;"><b>Tag</b></td><td>${esc(tags)}</td></tr>
+${content.description ? `<tr><td style="padding:4px 8px;"><b>Deskripsi</b></td><td>${esc(content.description)}</td></tr>` : ''}
+</table>
+${bodyHtml}
+<hr><p style="color:#888;font-size:0.85em;">Buka di dashboard: <a href="https://adably.id/admin">adably.id/admin</a></p>
+</body></html>`;
   }
 
   private formatBlocksToTxt(blocks: ParsedBlock[], lines: string[]): void {
