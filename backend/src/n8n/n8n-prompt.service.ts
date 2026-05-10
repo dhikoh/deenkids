@@ -18,6 +18,8 @@ export interface GeneratePromptDto {
 export interface GenerateThumbPromptDto {
   title: string;
   ratio: '16:9' | '1:1' | '4:5';
+  style?: string;
+  scenePreset?: 'KELUARGA' | 'NABI_SAHABAT' | 'KELOMPOK_ANAK' | 'TUNGGAL' | 'TANPA_MAKHLUK';
 }
 
 @Injectable()
@@ -42,24 +44,63 @@ export class N8nPromptService {
   // ═══════════════════════════════════════════════
 
   generateThumbnailPrompt(dto: GenerateThumbPromptDto): string {
-    const { title, ratio } = dto;
+    const { title, ratio, style, scenePreset } = dto;
     const sizeMap: Record<string, string> = { '16:9': '1280×720', '1:1': '1080×1080', '4:5': '1080×1350' };
     const arLabel = ratio === '16:9' ? 'Widescreen 16:9' : ratio === '1:1' ? 'Square 1:1' : 'Portrait 4:5';
-    return `Tolong buatkan gambar (image generation) untuk thumbnail konten edukasi anak Islami.
+    const visualStyle = style || 'Animasi 3D (Pixar/Disney)';
+    const scene = scenePreset || 'KELUARGA';
+
+    // Build character spec based on scene preset (mirrors frontend buildCharacterSpec)
+    const faceless = 'WAJIB FACELESS — TIDAK ADA fitur wajah (mata/hidung/mulut) — wajah harus kosong/blank';
+    const facelessEn = 'STRICTLY FACELESS — NO facial features (no eyes, no nose, no mouth) — completely blank faces';
+
+    let charSpecId: string;
+    let charSpecEn: string;
+
+    switch (scene) {
+      case 'TANPA_MAKHLUK':
+        charSpecId = 'TANPA makhluk bernyawa. Fokus pada: arsitektur islami (masjid/menara), pemandangan alam (awan/bintang/bulan), benda islami (Al-Quran/tasbih/lentera), atau motif geometris islami.';
+        charSpecEn = 'No living beings. Focus on Islamic architecture, natural scenery, Islamic objects (Quran, prayer beads, lantern), or geometric Islamic art patterns.';
+        break;
+      case 'NABI_SAHABAT':
+        charSpecId = `Representasikan Nabi sebagai SILUET BERCAHAYA saja — dikelilingi nur/cahaya emas lembut. DILARANG KERAS: fitur wajah, detail tubuh. Hanya siluet jubah putih bersinar. Cahaya nur HARUS mendominasi.`;
+        charSpecEn = `Represent the Prophet as a LUMINOUS SILHOUETTE ONLY surrounded by soft golden radiant aura (nur). STRICTLY FORBIDDEN: facial features, body details. Only glowing white-clothed outline.`;
+        break;
+      case 'KELOMPOK_ANAK':
+        charSpecId = `2-3 anak muslim (laki-laki berpeci dan perempuan berhijab), semua ${faceless}.`;
+        charSpecEn = `2-3 Muslim children (boys with kufi, girls with hijab), all ${facelessEn}.`;
+        break;
+      case 'TUNGGAL':
+        charSpecId = `Seorang anak muslim ${faceless}, mengenakan pakaian islami.`;
+        charSpecEn = `A single Muslim child, ${facelessEn}, wearing Islamic clothing.`;
+        break;
+      case 'KELUARGA':
+      default:
+        charSpecId = `Keluarga muslim — ayah berjenggot (koko/jubah), ibu berhijab syar'i panjang. Semua ${faceless}.`;
+        charSpecEn = `Muslim family — father with beard (Islamic clothing), mother with long hijab. All ${facelessEn}.`;
+        break;
+    }
+
+    let prompt = `Tolong buatkan gambar (image generation) untuk thumbnail konten edukasi anak Islami.
 
 Konteks Judul: "${title}"
 
 Spesifikasi Wajib:
-- Gaya Visual: Animasi 3D (Pixar/Disney)
+- Gaya Visual: ${visualStyle}
 - Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat (warm lighting)
 - Aspek Rasio: ${arLabel} (Sangat Penting!)
 - Resolusi Target: ${sizeMap[ratio]}
-- Karakter: Keluarga muslim — ayah berjenggot (koko/jubah), ibu berhijab syar'i panjang. Semua WAJIB FACELESS — TIDAK ADA fitur wajah (mata/hidung/mulut) — wajah harus kosong/blank.
+- ${charSpecId}
 - ATURAN KETAT: TIDAK BOLEH ADA TEKS, HURUF, ATAU TULISAN APAPUN. Sediakan Negative Space untuk penambahan teks manual.
-- WATERMARK: Tambahkan teks kecil "adably.id" di sudut kanan bawah gambar dengan font tipis semi-transparan (opacity 40-60%).
+- WATERMARK: Tambahkan teks kecil "adably.id" di sudut kanan bawah gambar dengan font tipis semi-transparan (opacity 40-60%).`;
 
-(English reference for AI engine):
-"Islamic kids education thumbnail: ${title}. Style: 3D Pixar/Disney animation. Muslim family characters — STRICTLY FACELESS (no eyes, no nose, no mouth — completely blank faces). Warm lighting, vibrant child-friendly colors. Resolution: ${sizeMap[ratio]}. NO TEXT, NO LETTERS, negative space for manual text. Small semi-transparent 'adably.id' watermark at bottom-right corner. --ar ${ratio}"`;
+    if (ratio !== '16:9') {
+      prompt += `\n\n⚠️ PENTING — ASPEK RASIO ${arLabel}:\nKomposisi gambar HARUS sesuai ${ratio}. ${ratio === '1:1' ? 'Gambar harus persegi sempurna — tidak boleh landscape.' : 'Gambar harus portrait/tegak — tidak boleh landscape.'}\nPastikan elemen visual terpusat dan seimbang untuk format ${ratio}.`;
+    }
+
+    prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${visualStyle}. ${charSpecEn}. Warm lighting, vibrant child-friendly colors. Resolution: ${sizeMap[ratio]}. NO TEXT, NO LETTERS, negative space for manual text. Small semi-transparent 'adably.id' watermark at bottom-right corner. --ar ${ratio}"`;
+
+    return prompt;
   }
 
   // ═══════════════════════════════════════════════
