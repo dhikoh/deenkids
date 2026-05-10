@@ -82,6 +82,10 @@ const VARIANT_STYLES = {
 function renderParagraph(block: any, i: number, variant: BlockVariant) {
   return (
     <div key={i} className={VARIANT_STYLES.paragraphContainer[variant]}>
+      {/* Heading merged from (heading) marker — visual only, NOT read by TTS */}
+      {block.heading && (
+        <h3 className={VARIANT_STYLES.heading[variant]}>{block.heading}</h3>
+      )}
       <p className={VARIANT_STYLES.paragraph[variant]}>{block.text}</p>
       {block.referenceUrl && (
         <a href={block.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline hover:text-emerald-800 mt-2 inline-block">

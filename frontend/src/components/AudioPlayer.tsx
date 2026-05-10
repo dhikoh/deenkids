@@ -25,9 +25,7 @@ function extractReadableText(blocks: any[], contentType?: string): string[] {
       segments.push(block.text);
     }
 
-    if (type === "heading" && block.text) {
-      segments.push(block.text);
-    }
+    // heading is now a property on paragraph blocks — not read by TTS
 
     if (type === "dialog") {
       const lines = block.lines || [{ role: block.role, text: block.text }];

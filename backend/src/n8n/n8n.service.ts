@@ -272,12 +272,28 @@ export class N8nService {
       if (block) blocks.push(block);
     }
 
+    // Post-process: merge heading blocks into the following paragraph
+    const merged: ParsedBlock[] = [];
+    for (let i = 0; i < blocks.length; i++) {
+      if (blocks[i].type === 'heading' && blocks[i].text) {
+        // Look for next paragraph block to merge into
+        if (i + 1 < blocks.length && blocks[i + 1].type === 'paragraph') {
+          blocks[i + 1].heading = blocks[i].text;
+          // Skip the heading block — it's now merged into the next paragraph
+          continue;
+        }
+        // If no paragraph follows, keep heading as-is (edge case)
+      }
+      merged.push(blocks[i]);
+    }
+    const finalBlocks = merged;
+
     // Fallback: if no blocks found, treat entire raw as one paragraph
-    if (blocks.length === 0 && raw.trim()) {
-      blocks.push({ type: 'paragraph', text: this.stripMarkdown(raw).trim() });
+    if (finalBlocks.length === 0 && raw.trim()) {
+      finalBlocks.push({ type: 'paragraph', text: this.stripMarkdown(raw).trim() });
     }
 
-    return blocks;
+    return finalBlocks;
   }
 
   /**
@@ -390,23 +406,50 @@ export class N8nService {
   // Extract opening/closing from raw text
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
+  // ═══════════════════════════════════════════════
+  // Extract opening/closing from raw text (line-based, consistent with parseRawContent)
+  // ═══════════════════════════════════════════════
+
   extractMetaFromRaw(raw: string): { openingText?: string; closingText?: string } {
     const result: { openingText?: string; closingText?: string } = {};
+    const lines = raw.split('\n');
 
-    // Strategy 1: marker (opening) / (closing)
-    const openingMatch = raw.match(/\(opening\)\s*â”*\s*\n([\s\S]*?)(?=\n.*?\((?:quick_answer|paragraph|dalil|analogy|tip|hikmah|doa|closing)\)|$)/i);
-    if (openingMatch) result.openingText = openingMatch[1].trim();
-    const closingMatch = raw.match(/\(closing\)\s*â”*\s*\n([\s\S]*?)$/i);
-    if (closingMatch) result.closingText = closingMatch[1].trim();
+    // Find marker lines for opening and closing
+    let openingLineIdx = -1;
+    let closingLineIdx = -1;
 
-    // Strategy 2: fallback header pattern â”â”â” PEMBUKAAN â”â”â” / â”â”â” PENUTUPAN â”â”â”
-    if (!result.openingText) {
-      const headerOpen = raw.match(/â”+[^â”\n]*(?:PEMBUKAAN|MUKADIMAH)[^â”\n]*â”+\s*\n([\s\S]*?)(?=\nâ”+[^â”\n]*(?:BLOK|KONTEN|JAWABAN|DIALOG)[^â”\n]*â”+|$)/i);
-      if (headerOpen) result.openingText = headerOpen[1].trim();
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      // Match lines like "(opening)", "  (closing)  ", or separator-wrapped markers
+      const m = trimmed.match(/^[^a-zA-Z0-9]*\((opening|closing)\)[^a-zA-Z0-9]*$/i);
+      if (m) {
+        const type = m[1].toLowerCase();
+        if (type === 'opening') openingLineIdx = i;
+        if (type === 'closing') closingLineIdx = i;
+      }
     }
-    if (!result.closingText) {
-      const headerClose = raw.match(/â”+[^â”\n]*PENUTUPAN[^â”\n]*â”+\s*\n([\s\S]*?)$/i);
-      if (headerClose) result.closingText = headerClose[1].trim();
+
+    // Extract opening text: from line after (opening) to next marker or closingLineIdx
+    if (openingLineIdx >= 0) {
+      const contentStart = openingLineIdx + 1;
+      // Find next marker after opening
+      let contentEnd = lines.length;
+      for (let i = contentStart; i < lines.length; i++) {
+        const t = lines[i].trim();
+        const mk = t.match(/^[^a-zA-Z0-9]*\((\w+)\)[^a-zA-Z0-9]*$/i);
+        if (mk && ['paragraph','quick_answer','dalil','analogy','tip','hikmah','doa','dialog','heading','closing'].includes(mk[1].toLowerCase())) {
+          contentEnd = i;
+          break;
+        }
+      }
+      const text = lines.slice(contentStart, contentEnd).join('\n').trim();
+      if (text) result.openingText = text;
+    }
+
+    // Extract closing text: from line after (closing) to end
+    if (closingLineIdx >= 0) {
+      const text = lines.slice(closingLineIdx + 1).join('\n').trim();
+      if (text) result.closingText = text;
     }
 
     return result;
@@ -665,6 +708,7 @@ export class N8nService {
           parts.push(`\\pard\\sb200\\sa100{\\f1\\fs26\\b\\cf1 ${u(block.text || '')}}\\par`);
           break;
         case 'paragraph':
+          if (block.heading) parts.push(`\\pard\\sb200\\sa100{\\f1\\fs24\\b ${u(block.heading)}}\\par`);
           parts.push(`\\pard\\sb100\\sa100{\\f0\\fs22 ${u(block.text || '')}}\\par`);
           break;
         case 'quick_answer':
@@ -852,6 +896,7 @@ ${bodyHtml}
         case 'tip':
         case 'hikmah':
         case 'quick_answer':
+          if (block.heading) lines.push(`[Sub-judul: ${block.heading}]`);
           lines.push(block.text || '');
           break;
 

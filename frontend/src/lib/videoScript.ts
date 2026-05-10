@@ -110,7 +110,8 @@ function extractContentBlocks(content: any): string[] {
   if (content.articleDetail?.blocks?.length) {
     for (const b of content.articleDetail.blocks) {
       if (b.type === 'paragraph' && b.text) blocks.push(b.text);
-      if (b.type === 'heading' && b.text) blocks.push(`[HEADING] ${b.text}`);
+      // heading is now merged into paragraph blocks — check paragraph.heading instead
+      // Standalone heading blocks are kept for backward compatibility but skipped in script
       if (b.type === 'dalil') {
         const entries = b.entries || [b];
         blocks.push(`DALIL:\n${entries.map((d: any) => `${d.arabic || ''}\n${d.translation || ''}\n— ${d.source || ''}`).join('\n\n')}`);

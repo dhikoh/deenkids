@@ -50,7 +50,7 @@ export default async function KisahDetailPage({
     ...(content.openingAudio !== false && content.openingText ? [{ type: 'paragraph', text: content.openingText, enableAudio: true }] : []),
     ...(content.audioTitle !== false && content.title ? [{ type: 'paragraph', text: content.title, enableAudio: true }] : []),
     ...(content.audioDescription !== false && content.description ? [{ type: 'paragraph', text: content.description, enableAudio: true }] : []),
-    ...blocks.filter((b: any) => (b.type === 'paragraph' || b.type === 'heading') && b.enableAudio !== false),
+    ...blocks.filter((b: any) => (b.type === 'paragraph') && b.enableAudio !== false),
     ...(content.closingAudio !== false && content.closingText ? [{ type: 'paragraph', text: content.closingText, enableAudio: true }] : []),
   ];
 
