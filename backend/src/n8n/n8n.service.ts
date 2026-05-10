@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../common/storage/storage.service';
 import { ContentType, ContentStatus } from '@prisma/client';
 import slugify from 'slugify';
 
@@ -36,7 +37,10 @@ export interface SaveContentPayload {
 export class N8nService {
   private readonly logger = new Logger(N8nService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
 
   // ═══════════════════════════════════════════════
   // Save Content — creates DRAFT from parsed payload
@@ -545,6 +549,54 @@ export class N8nService {
       content: lines.join('\n'),
       mimeType: 'text/plain',
     };
+  }
+
+  // ═══════════════════════════════════════════════
+  // Upload Thumbnail from Bot (Telegram → MinIO → DB)
+  // ═══════════════════════════════════════════════
+
+  async uploadThumbnailFromBot(
+    contentId: string,
+    type: 'web' | 'sosmed',
+    fileBuffer: Buffer,
+    mimeType: string,
+    fileName: string,
+  ): Promise<{ url: string; field: string; title: string }> {
+    // Validate content exists
+    const content = await this.prisma.contentItem.findUnique({
+      where: { id: contentId },
+      select: { id: true, title: true, thumbnailUrl: true, socialThumbnailUrl: true },
+    });
+    if (!content) throw new NotFoundException('Konten tidak ditemukan');
+
+    const field = type === 'web' ? 'thumbnailUrl' : 'socialThumbnailUrl';
+    const oldUrl = type === 'web' ? content.thumbnailUrl : content.socialThumbnailUrl;
+
+    // Delete old thumbnail from MinIO if exists
+    if (oldUrl) {
+      await this.storageService.deleteFile(oldUrl).catch(err =>
+        this.logger.warn(`⚠️  Failed to cleanup old ${field}: ${err.message}`),
+      );
+      this.logger.log(`🗑️  Old ${field} deleted: ${oldUrl}`);
+    }
+
+    // Upload new file to MinIO
+    const folder = type === 'web' ? 'thumbnail' : 'social-thumbnail';
+    const url = await this.storageService.uploadFile(
+      fileBuffer,
+      mimeType,
+      fileName,
+      folder,
+    );
+
+    // Update DB
+    await this.prisma.contentItem.update({
+      where: { id: contentId },
+      data: { [field]: url },
+    });
+
+    this.logger.log(`✅ Thumbnail uploaded: ${field} = ${url} (content: ${contentId})`);
+    return { url, field, title: content.title };
   }
 
   // ── RTF helper: escape special RTF characters ──────────────

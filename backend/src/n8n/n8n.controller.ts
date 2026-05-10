@@ -1,7 +1,9 @@
 import {
   Controller, Post, Get, Param, Body, UseGuards, HttpCode,
-  Logger, BadRequestException, Res,
+  Logger, BadRequestException, Res, UseInterceptors, UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { ApiTags, ApiOperation, ApiHeader } from '@nestjs/swagger';
 import { Response } from 'express';
 import { N8nApiKeyGuard } from '../common/guards/n8n-api-key.guard';
@@ -125,5 +127,44 @@ export class N8nController {
     this.logger.log(`n8n generate-thumb-prompt: "${body.title}" (${body.ratio})`);
     const prompt = this.promptService.generateThumbnailPrompt(body);
     return { success: true, prompt };
+  }
+
+  /**
+   * Upload thumbnail image from Telegram bot.
+   * Accepts multipart file upload with contentId and type (web/sosmed).
+   * Automatically deletes old thumbnail from MinIO before uploading new one.
+   */
+  @Post('upload-thumbnail')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Upload thumbnail from Telegram bot to MinIO + update DB' })
+  @UseInterceptors(FileInterceptor('file', {
+    storage: memoryStorage(),
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB max
+    fileFilter: (_req, file, cb) => {
+      if (!file.mimetype.match(/^image\/(jpeg|png|webp|jpg)/)) {
+        return cb(new BadRequestException('Hanya file gambar JPG/PNG/WebP yang diperbolehkan'), false);
+      }
+      cb(null, true);
+    },
+  }))
+  async uploadThumbnail(
+    @UploadedFile() file: any,
+    @Body() body: { contentId: string; type: 'web' | 'sosmed' },
+  ) {
+    if (!file) throw new BadRequestException('File gambar tidak ditemukan');
+    if (!body.contentId?.trim()) throw new BadRequestException('contentId wajib diisi');
+    if (!['web', 'sosmed'].includes(body.type)) {
+      throw new BadRequestException('type harus "web" atau "sosmed"');
+    }
+
+    this.logger.log(`n8n upload-thumbnail: ${body.contentId} (${body.type}) — ${file.originalname} (${(file.size / 1024).toFixed(0)}KB)`);
+    const result = await this.n8nService.uploadThumbnailFromBot(
+      body.contentId.trim(),
+      body.type,
+      file.buffer,
+      file.mimetype,
+      file.originalname,
+    );
+    return { success: true, ...result, message: `Thumbnail ${body.type} berhasil diupload` };
   }
 }
