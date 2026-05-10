@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Wand2, Copy, Check, PenLine, Clock, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import Cookies from "js-cookie";
+import { fetchEditorNodes } from "@/lib/api";
 
 type ContentType = "QNA" | "PEMBELAJARAN" | "ARTIKEL" | "KISAH" | "IMAGE_PROMPT";
 type KisahSubType = "SIRAH" | "QASHASH" | "TELADAN" | "CERITA_FIKSI";
@@ -990,11 +992,24 @@ function generateImagePrompt(
   return prompt;
 }
 
+
+// Map node title → KisahSubType for prompt generation
+function nodeToSubType(title: string): KisahSubType {
+  const t = title.toLowerCase();
+  if (t.includes('sirah') || t.includes('nabawiyah') || t.includes('nabi muhammad')) return 'SIRAH';
+  if (t.includes('qashash') || t.includes('anbiya') || t.includes('para nabi')) return 'QASHASH';
+  if (t.includes('teladan') || t.includes('sahabat') || t.includes('ulama')) return 'TELADAN';
+  if (t.includes('fiksi') || t.includes('cerita') || t.includes('modern')) return 'CERITA_FIKSI';
+  return 'SIRAH'; // fallback
+}
+
 export default function PromptGeneratorPage() {
   const [mode, setMode] = useState<"CONTENT" | "IMAGE">("CONTENT");
   const [type, setType] = useState<ContentType>("QNA");
   const [title, setTitle] = useState("");
   const [kisahSubType, setKisahSubType] = useState<KisahSubType>("SIRAH");
+  const [kisahNodes, setKisahNodes] = useState<any[]>([]);
+  const [selectedKisahNodeId, setSelectedKisahNodeId] = useState("");
   const [ages, setAges] = useState<string[]>(["5-7"]);
   const [options, setOptions] = useState({
     dalil: true,
@@ -1004,6 +1019,32 @@ export default function PromptGeneratorPage() {
     perbedaanPendapat: false,
     referensi: true,
   });
+
+
+  // Fetch KISAH structure nodes dynamically
+  useEffect(() => {
+    const token = Cookies.get("_at");
+    if (token) {
+      fetchEditorNodes(token, "KISAH").then(r => {
+        const flat = (nodes: any[], prefix = ""): any[] => {
+          let result: any[] = [];
+          for (const n of nodes) {
+            const label = prefix ? `${prefix} > ${n.title}` : n.title;
+            result.push({ id: n.id, label, title: n.title });
+            if (n.children?.length) result = result.concat(flat(n.children, label));
+          }
+          return result;
+        };
+        const flatNodes = flat(r.data || r || []);
+        setKisahNodes(flatNodes);
+        // Auto-select first node and set subType
+        if (flatNodes.length > 0) {
+          setSelectedKisahNodeId(flatNodes[0].id);
+          setKisahSubType(nodeToSubType(flatNodes[0].title));
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   const [imageStyle, setImageStyle] = useState<string>("Animasi 3D (Pixar/Disney)");
   const [scenePreset, setScenePreset] = useState<ScenePreset>("KELUARGA");
@@ -1144,24 +1185,23 @@ export default function PromptGeneratorPage() {
             </div>
               </div>
 
-              {/* KISAH Sub-Type Selector — only shown when KISAH is selected */}
+              {/* Sub-Kategori Kisah — dari "Kelola Struktur Kisah" */}
               {type === "KISAH" && (
                 <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 shadow-sm">
-                  <label className="block text-sm font-bold text-amber-800 mb-3">1b. Pilih Sub-Tipe Kisah</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {[
-                      { value: "SIRAH" as KisahSubType, label: "Sirah Nabawiyah", icon: "👑", desc: "Khusus Nabi Muhammad ﻿" },
-                      { value: "QASHASH" as KisahSubType, label: "Qashashul Anbiya'", icon: "📜", desc: "Kisah para nabi dari Al-Quran" },
-                      { value: "TELADAN" as KisahSubType, label: "Teladan Sahabat & Ulama", icon: "⭐", desc: "Kisah sahabat & ulama terdahulu" },
-                      { value: "CERITA_FIKSI" as KisahSubType, label: "Cerita Fiksi Islami", icon: "🌙", desc: "Cerita fiksi islami modern" },
-                    ].map(st => (
-                      <button key={st.value} onClick={() => setKisahSubType(st.value)} className={`p-4 rounded-xl text-left border-2 transition-all ${kisahSubType === st.value ? "border-amber-500 bg-amber-100 shadow-sm" : "border-amber-200 hover:border-amber-300 bg-white"}`}>
-                        <span className="text-2xl">{st.icon}</span>
-                        <p className="font-bold text-sm text-slate-800 mt-1">{st.label}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{st.desc}</p>
-                      </button>
-                    ))}
-                  </div>
+                  <label className="block text-sm font-bold text-amber-800 mb-3">1b. Pilih Sub-Kategori Kisah</label>
+                  {kisahNodes.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {kisahNodes.map(node => (
+                        <button key={node.id} onClick={() => { setSelectedKisahNodeId(node.id); setKisahSubType(nodeToSubType(node.title)); }} className={`p-4 rounded-xl text-left border-2 transition-all ${selectedKisahNodeId === node.id ? "border-amber-500 bg-amber-100 shadow-sm" : "border-amber-200 hover:border-amber-300 bg-white"}`}>
+                          <span className="text-2xl">{nodeToSubType(node.title) === "SIRAH" ? "👑" : nodeToSubType(node.title) === "QASHASH" ? "📜" : nodeToSubType(node.title) === "TELADAN" ? "⭐" : "🌙"}</span>
+                          <p className="font-bold text-sm text-slate-800 mt-1">{node.title}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Tipe: {nodeToSubType(node.title)}</p>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-amber-700">Belum ada sub-kategori. Tambahkan di <span className="font-bold">Kelola Struktur Kisah</span>.</p>
+                  )}
                 </div>
               )}
 

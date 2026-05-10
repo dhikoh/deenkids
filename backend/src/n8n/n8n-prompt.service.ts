@@ -1,3 +1,4 @@
+import { PrismaService } from '../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 
 /**
@@ -10,6 +11,7 @@ export interface GeneratePromptDto {
   type: 'QNA' | 'ARTICLE' | 'PEMBELAJARAN' | 'KISAH';
   title: string;
   subType?: 'SIRAH' | 'QASHASH' | 'TELADAN' | 'FIKSI';
+  nodeId?: string;
   ageGroups?: string[];
   selectedThinkers?: string[];
   pov?: string; // 'ORTU' | 'ANAK' — only for ARTICLE type
@@ -24,13 +26,19 @@ export interface GenerateThumbPromptDto {
 
 @Injectable()
 export class N8nPromptService {
+  constructor(private prisma: PrismaService) {}
 
   // ═══════════════════════════════════════════════
   // Content Prompt Generator
   // ═══════════════════════════════════════════════
 
-  generatePrompt(dto: GeneratePromptDto): string {
-    const { type, title, subType, ageGroups, selectedThinkers, pov } = dto;
+  async generatePrompt(dto: GeneratePromptDto): Promise<string> {
+    const { type, title, ageGroups, selectedThinkers, pov, nodeId } = dto;
+    // Resolve nodeId → subType (priority: explicit subType > nodeId resolution)
+    let subType = dto.subType;
+    if (!subType && nodeId) {
+      subType = await this.resolveNodeToSubType(nodeId) as any;
+    }
     if (type === 'KISAH') {
       // Map 'FIKSI' (bot enum) → 'CERITA_FIKSI' (frontend enum) untuk konsistensi internal
       const kisahSubType = subType === 'FIKSI' ? 'CERITA_FIKSI' : (subType || 'SIRAH');
@@ -811,4 +819,25 @@ Gunakan STRUKTUR BERPIKIR dari tokoh-tokoh berikut — bukan gaya bahasa atau ke
 
     return section;
   }
+
+  /**
+   * Resolve nodeId → subType for prompt generation
+   * Maps node title to known prompt styles (SIRAH, QASHASH, TELADAN, CERITA_FIKSI)
+   */
+  async resolveNodeToSubType(nodeId?: string): Promise<string> {
+    if (!nodeId) return 'SIRAH'; // default
+    try {
+      const node = await this.prisma.contentNode.findUnique({ where: { id: nodeId } });
+      if (!node) return 'SIRAH';
+      const title = node.title.toLowerCase();
+      if (title.includes('sirah') || title.includes('nabawiyah') || title.includes('nabi muhammad')) return 'SIRAH';
+      if (title.includes('qashash') || title.includes('anbiya') || title.includes('para nabi')) return 'QASHASH';
+      if (title.includes('teladan') || title.includes('sahabat') || title.includes('ulama')) return 'TELADAN';
+      if (title.includes('fiksi') || title.includes('cerita') || title.includes('modern')) return 'CERITA_FIKSI';
+      return 'SIRAH'; // fallback
+    } catch {
+      return 'SIRAH';
+    }
+  }
+
 }

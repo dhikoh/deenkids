@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, FileText, Wand2, CheckCircle, AlertCircle, ArrowRight, Copy, Sparkles, BookOpen, MessageSquare, GraduationCap, Eye, EyeOff } from "lucide-react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, fetchEditorNodes } from "@/lib/api";
 
 type ContentType = "QNA" | "ARTICLE" | "PEMBELAJARAN" | "KISAH";
-type KisahSubType = "SIRAH" | "QASHASH" | "TELADAN" | "FIKSI";
 
 const CONTENT_TYPES: { value: ContentType; label: string; icon: React.ReactNode; desc: string; color: string }[] = [
   { value: "KISAH", label: "Kisah", icon: <BookOpen size={20} />, desc: "Cerita & narasi islami", color: "emerald" },
@@ -17,12 +16,6 @@ const CONTENT_TYPES: { value: ContentType; label: string; icon: React.ReactNode;
   { value: "PEMBELAJARAN", label: "Pembelajaran", icon: <GraduationCap size={20} />, desc: "Materi edukatif", color: "amber" },
 ];
 
-const KISAH_SUBTYPES: { value: KisahSubType; label: string; emoji: string }[] = [
-  { value: "SIRAH", label: "Sirah Nabawiyah", emoji: "🕌" },
-  { value: "QASHASH", label: "Qashashul Anbiya", emoji: "📜" },
-  { value: "TELADAN", label: "Teladan Sahabat", emoji: "⭐" },
-  { value: "FIKSI", label: "Cerita Fiksi Islami", emoji: "🎭" },
-];
 
 const EXAMPLE_FORMAT = `Judul: Judul Konten Anda
 Deskripsi: Deskripsi singkat konten
@@ -65,9 +58,29 @@ export default function ImportContentPage() {
 
   const [rawContent, setRawContent] = useState("");
   const [type, setType] = useState<ContentType>("KISAH");
-  const [subType, setSubType] = useState<KisahSubType>("SIRAH");
+  const [kisahNodeId, setKisahNodeId] = useState("");
+  const [kisahNodes, setKisahNodes] = useState<any[]>([]);
   const [pov, setPov] = useState<"ORTU" | "ANAK">("ORTU");
   const [loading, setLoading] = useState(false);
+
+  // Fetch KISAH structure nodes dynamically (no hardcoded subTypes)
+  useEffect(() => {
+    const token = Cookies.get("_at");
+    if (token) {
+      fetchEditorNodes(token, "KISAH").then(r => {
+        const flat = (nodes: any[], prefix = ""): any[] => {
+          let result: any[] = [];
+          for (const n of nodes) {
+            const label = prefix ? `${prefix} > ${n.title}` : n.title;
+            result.push({ id: n.id, label, title: n.title });
+            if (n.children?.length) result = result.concat(flat(n.children, label));
+          }
+          return result;
+        };
+        setKisahNodes(flat(r.data || r || []));
+      }).catch(() => {});
+    }
+  }, []);
   const [showPreview, setShowPreview] = useState(false);
   const [showFormat, setShowFormat] = useState(false);
 
@@ -126,7 +139,7 @@ export default function ImportContentPage() {
         type,
         title: previewData?.title || "Konten Baru",
       };
-      if (type === "KISAH") body.subType = subType;
+      if (type === "KISAH" && kisahNodeId) body.nodeId = kisahNodeId;
       if (type === "ARTICLE") body.pov = pov;
 
       const res = await fetch(`${API_BASE_URL}/admin/import-ai`, {
@@ -244,22 +257,18 @@ export default function ImportContentPage() {
           })}
         </div>
 
-        {/* Sub-type for Kisah */}
+        {/* Sub-kategori Kisah — dari "Kelola Struktur Kisah" */}
         {type === "KISAH" && (
-          <div className="flex flex-wrap gap-2 mt-2 pl-8">
-            {KISAH_SUBTYPES.map(ks => (
-              <button
-                key={ks.value}
-                onClick={() => setSubType(ks.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  subType === ks.value
-                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                    : "bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100"
-                }`}
-              >
-                {ks.emoji} {ks.label}
-              </button>
-            ))}
+          <div className="mt-2 pl-8">
+            <select
+              value={kisahNodeId}
+              onChange={(e) => setKisahNodeId(e.target.value)}
+              className="w-full max-w-md border border-emerald-200 rounded-xl p-2.5 text-sm font-medium text-slate-800 bg-white focus:border-emerald-500 focus:ring-emerald-500"
+            >
+              <option value="">— Pilih Sub-Kategori Kisah —</option>
+              {kisahNodes.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
+            </select>
+            <p className="text-xs text-emerald-600 mt-1">📋 Sub-kategori dikelola di &quot;Kelola Struktur Kisah&quot;</p>
           </div>
         )}
 

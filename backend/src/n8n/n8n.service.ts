@@ -20,6 +20,7 @@ export interface SaveContentPayload {
   description?: string;
   type: 'QNA' | 'ARTICLE' | 'PEMBELAJARAN' | 'KISAH';
   subType?: string;
+  nodeId?: string;
   ageGroups?: string[];
   tags?: string[];
   openingText?: string;
@@ -97,6 +98,7 @@ export class N8nService {
         audioDescription: true,
         openingAudio: true,
         closingAudio: true,
+        nodeId: payload.nodeId || null,
       },
     });
 

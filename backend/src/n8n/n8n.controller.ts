@@ -107,7 +107,7 @@ export class N8nController {
       throw new BadRequestException('type wajib diisi (QNA/ARTICLE/PEMBELAJARAN/KISAH)');
     }
     this.logger.log(`n8n generate-prompt: "${body.title}" (${body.type})`);
-    const prompt = this.promptService.generatePrompt(body);
+    const prompt = await this.promptService.generatePrompt(body);
     return { success: true, prompt };
   }
 

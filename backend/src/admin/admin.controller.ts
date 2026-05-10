@@ -141,7 +141,7 @@ export class AdminController {
   @HttpCode(201)
   @Roles('SUPERADMIN')
   @ApiOperation({ summary: 'Import AI-generated content — parse markers and save as DRAFT' })
-  async importAiContent(@Body() body: { rawContent: string; type?: string; subType?: string; pov?: string; title?: string }) {
+  async importAiContent(@Body() body: { rawContent: string; type?: string; subType?: string; pov?: string; title?: string; nodeId?: string }) {
     if (!body.rawContent?.trim()) {
       throw new BadRequestException('rawContent wajib diisi');
     }
@@ -160,6 +160,7 @@ export class AdminController {
       rawContent: body.rawContent.trim(),
       type: type as any,
       subType: body.subType || undefined,
+      nodeId: body.nodeId || undefined,
       pov: body.pov || undefined,
       openingText: meta.openingText,
       closingText: meta.closingText,
