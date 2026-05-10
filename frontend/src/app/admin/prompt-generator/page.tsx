@@ -427,6 +427,81 @@ Tulis penutup yang menyentuh dan menginspirasi.
 - Rangkum pelajaran utama dalam 1-2 kalimat.
 - Akhiri dengan "Wallahu a'lam bishawab" dan "Wassalamualaikum warahmatullahi wabarakatuh"\n`;
 
+  // === FORMAT OUTPUT INSTRUCTIONS (wajib untuk parser Import Konten AI) ===
+  prompt += `\n\n════════════════════════════════════════
+⚠️  INSTRUKSI FORMAT OUTPUT — WAJIB DIIKUTI
+════════════════════════════════════════
+Output kamu akan dibaca oleh SISTEM OTOMATIS dan disimpan sebagai file .txt.
+Ikuti aturan berikut dengan TEPAT atau konten tidak akan tersimpan dengan benar.
+
+1. JANGAN gunakan markdown: **, __, ##, ---, ~~
+2. Tulis metadata di BARIS PALING ATAS:
+   Judul: [judul kisah]
+   Deskripsi: [2-3 kalimat menggugah rasa ingin tahu]
+   Usia: 3-10
+   Tag: [tag1, tag2, tag3, tag4, tag5]
+
+3. Setiap blok konten WAJIB diawali marker di baris TERSENDIRI:
+   (opening)   → teks pembukaan / mukadimah
+   (paragraph) → isi kisah / narasi utama
+   (heading)   → judul babak / fase cerita (gunakan untuk FASE 3, 4)
+   (dalil)     → dalil Al-Quran atau Hadits (WAJIB: Arab, Terjemahan, Sumber, Sumber URL)
+   (analogy)   → analogi organik dari kisah
+   (tip)       → catatan / tips untuk orang tua
+   (hikmah)    → hikmah / pelajaran
+   (doa)       → doa (WAJIB: Arab, Terjemahan, Sumber, Sumber URL)
+   (closing)   → teks penutupan
+
+4. Format WAJIB untuk blok (dalil):
+   (dalil)
+   Dalil 1:
+   Arab: [teks arab]
+   Terjemahan: [terjemahan bahasa Indonesia]
+   Sumber: [QS. Surah:Ayat atau HR. Kitab No.X]
+   Sumber URL: [https://quran.com/surah/ayat — KOSONGKAN jika tidak 100% yakin]
+
+5. Format WAJIB untuk blok (doa):
+   (doa)
+   Judul: [nama doa singkat]
+   Arab: [teks arab doa]
+   Terjemahan: [terjemahan bahasa Indonesia]
+   Sumber: [QS. ... atau HR. Bukhari/Muslim No. ...]
+   Sumber URL: [https://quran.com/... — KOSONGKAN jika tidak 100% yakin]
+
+Contoh output yang BENAR:
+---
+Judul: Kisah Nabi Ibrahim dan Api
+Deskripsi: Kisah keberanian Nabi Ibrahim yang tidak terbakar api.
+Usia: 3-10
+Tag: nabi ibrahim, sabar, tawakal, api, mukjizat
+
+(opening)
+Assalamualaikum warahmatullahi wabarakatuh, teman-teman!
+
+(paragraph)
+Langit masih gelap ketika sebuah keputusan mengubah segalanya...
+
+(heading)
+Ujian yang Berat
+
+(paragraph)
+Nabi Ibrahim berdiri tegak di hadapan api yang menyala-nyala...
+
+(analogy)
+Judul: Api yang Tidak Membakar
+Penjelasan: Bayangkan api unggun yang biasanya panas...
+
+(tip)
+Poin 1: Ajak anak berdiskusi tentang keberanian...
+
+(hikmah)
+Hikmah: Dari kisah ini kita belajar bahwa...
+
+(closing)
+Wallahu a'lam bishawab. Wassalamualaikum warahmatullahi wabarakatuh.
+---
+════════════════════════════════════════`;
+
   return prompt;
 }
 
@@ -740,6 +815,83 @@ Tulis salam pembuka yang hangat dan relevan dengan topik.
 Tulis penutup yang menginspirasi.
 - Rangkum pelajaran utama dalam 1-2 kalimat.
 - Akhiri dengan "Wallahu a'lam bishawab" dan "Wassalamualaikum warahmatullahi wabarakatuh"\n`;
+
+  // === FORMAT OUTPUT INSTRUCTIONS (wajib untuk parser Import Konten AI) ===
+  prompt += `\n\n════════════════════════════════════════
+⚠️  INSTRUKSI FORMAT OUTPUT — WAJIB DIIKUTI
+════════════════════════════════════════
+Output kamu akan dibaca oleh SISTEM OTOMATIS dan disimpan sebagai file .txt.
+Ikuti aturan berikut dengan TEPAT atau konten tidak akan tersimpan dengan benar.
+
+1. JANGAN gunakan markdown: **, __, ##, ---, ~~
+2. Tulis metadata di BARIS PALING ATAS (sebelum blok apapun):
+   Judul: [judul konten]
+   Deskripsi: [1-2 kalimat ringkasan]
+   Usia: [contoh: 5-7, 7-10]
+   Tag: [tag1, tag2, tag3, tag4]
+
+3. Setiap blok konten WAJIB diawali marker di baris TERSENDIRI (persis seperti ini):
+   (opening)      → teks pembukaan / mukadimah
+   (quick_answer) → jawaban instan [KHUSUS QNA]
+   (paragraph)    → isi konten / narasi
+   (dialog)       → simulasi percakapan
+   (dalil)        → dalil Al-Quran atau Hadits (WAJIB: sertakan Arab, Terjemahan, Sumber, Sumber URL)
+   (analogy)      → analogi kontekstual
+   (tip)          → tips orang tua
+   (hikmah)       → hikmah / pelajaran
+   (doa)          → doa (WAJIB: sertakan Arab, Terjemahan, Sumber, Sumber URL)
+   (closing)      → teks penutupan
+
+4. Format WAJIB untuk blok (dalil) — ikuti PERSIS:
+   (dalil)
+   Dalil 1:
+   Arab: [teks arab]
+   Terjemahan: [terjemahan bahasa Indonesia]
+   Sumber: [QS. Surah:Ayat atau HR. Kitab No.X]
+   Sumber URL: [https://quran.com/surah/ayat — KOSONGKAN jika tidak 100% yakin]
+
+5. Format WAJIB untuk blok (doa) — ikuti PERSIS:
+   (doa)
+   Judul: [nama doa singkat]
+   Arab: [teks arab doa]
+   Terjemahan: [terjemahan bahasa Indonesia]
+   Sumber: [QS. ... atau HR. Bukhari/Muslim No. ...]
+   Sumber URL: [https://quran.com/... — KOSONGKAN jika tidak 100% yakin]
+
+Contoh output yang BENAR:
+---
+Judul: Mengapa Kita Harus Sholat?
+Deskripsi: Penjelasan kewajiban sholat untuk anak muslim.
+Usia: 5-7, 7-10
+Tag: sholat, ibadah, anak, wajib
+
+(opening)
+Assalamualaikum warahmatullahi wabarakatuh, teman-teman!
+
+(quick_answer)
+Sholat adalah kewajiban setiap muslim yang sudah baligh...
+
+(paragraph)
+Tahukah kamu, sholat itu seperti waktu spesial kita berbicara dengan Allah...
+
+(dalil)
+Dalil 1:
+Arab: إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا
+Terjemahan: Sesungguhnya shalat itu adalah kewajiban yang ditentukan waktunya.
+Sumber: QS. An-Nisa: 103
+Sumber URL: https://quran.com/4/103
+
+(doa)
+Judul: Doa Memohon Keistiqomahan
+Arab: رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا
+Terjemahan: Ya Tuhan kami, janganlah Engkau jadikan hati kami condong kepada kesesatan.
+Sumber: QS. Ali Imran: 8
+Sumber URL: https://quran.com/3/8
+
+(closing)
+Wallahu a'lam bishawab. Wassalamualaikum warahmatullahi wabarakatuh.
+---
+════════════════════════════════════════`;
 
   return prompt;
 }

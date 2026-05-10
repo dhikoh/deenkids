@@ -213,83 +213,87 @@ export class N8nService {
     const blocks: ParsedBlock[] = [];
     if (!raw.trim()) return blocks;
 
-    // Strategy 1: Find markers using (type) pattern â€” e.g. "(paragraph)", "(dalil)"
-    const markers: { type: string; index: number }[] = [];
-    const lineMarkerRegex = /^.*\((\w+)\).*$/gm;
-    let match: RegExpExecArray | null;
+    // Strip markdown formatting from the entire raw text first
+    let cleaned = this.stripMarkdown(raw);
 
-    while ((match = lineMarkerRegex.exec(raw)) !== null) {
-      const type = match[1].toLowerCase();
-      if (N8nService.VALID_TYPES.includes(type)) {
-        markers.push({ type, index: match.index + match[0].length });
+    // Split into lines for precise marker detection
+    const lines = cleaned.split('\n');
+
+    // Strategy 1: Find lines that are marker patterns like "(paragraph)", "(dalil)"
+    // A marker line is one where the primary content is (type)
+    const markerPositions: { type: string; lineIndex: number }[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      // Match lines like "(paragraph)", "  (dalil)  ", "(opening)"
+      const m = trimmed.match(/^[^a-zA-Z0-9]*\((\w+)\)[^a-zA-Z0-9]*$/);
+      if (m) {
+        const type = m[1].toLowerCase();
+        if (N8nService.VALID_TYPES.includes(type)) {
+          markerPositions.push({ type, lineIndex: i });
+        }
       }
     }
 
-    // Strategy 2: If few markers found, try fallback header pattern â”â”â” KEYWORD â”â”â”
-    if (markers.filter(m => m.type !== 'opening' && m.type !== 'closing').length < 2) {
-      const headerRegex = /^[â”â”€â•]{2,}[^â”â”€â•\n]*$/gm;
-      let headerMatch: RegExpExecArray | null;
-      while ((headerMatch = headerRegex.exec(raw)) !== null) {
-        const line = headerMatch[0];
-        // Try to match known keywords in this header line
-        for (const [keyword, blockType] of Object.entries(N8nService.HEADER_TYPE_MAP)) {
-          if (line.toUpperCase().includes(keyword)) {
-            // Check if this marker already exists (from strategy 1)
-            const alreadyFound = markers.some(m => Math.abs(m.index - (headerMatch!.index + line.length)) < 50 && m.type === blockType);
-            if (!alreadyFound) {
-              markers.push({ type: blockType, index: headerMatch.index + line.length });
+    // Strategy 2: Fallback — detect header patterns (when AI ignores marker format)
+    if (markerPositions.filter(m => m.type !== 'opening' && m.type !== 'closing').length < 2) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // Match separator-heavy lines
+        const sepCount = (line.match(/[\u2501\u2550\u2500\u254C]/g) || []).length;
+        if (sepCount >= 2) {
+          const upper = line.toUpperCase();
+          for (const [keyword, blockType] of Object.entries(N8nService.HEADER_TYPE_MAP)) {
+            if (upper.includes(keyword)) {
+              const alreadyFound = markerPositions.some(m => m.lineIndex === i);
+              if (!alreadyFound) {
+                markerPositions.push({ type: blockType, lineIndex: i });
+              }
+              break;
             }
-            break; // First keyword match wins
           }
         }
       }
-      // Sort markers by position after adding fallback markers
-      markers.sort((a, b) => a.index - b.index);
+      markerPositions.sort((a, b) => a.lineIndex - b.lineIndex);
     }
 
-    // Extract content between markers
-    for (let i = 0; i < markers.length; i++) {
-      const start = markers[i].index;
-      const end = i + 1 < markers.length
-        ? raw.lastIndexOf('\n', markers[i + 1].index - markers[i + 1].type.length - 10)
-        : raw.length;
-      const section = raw.substring(start, end > start ? end : raw.length).trim();
+    // Extract section content between markers
+    for (let i = 0; i < markerPositions.length; i++) {
+      const contentStart = markerPositions[i].lineIndex + 1;
+      const contentEnd = i + 1 < markerPositions.length
+        ? markerPositions[i + 1].lineIndex
+        : lines.length;
+
+      const sectionLines = lines.slice(contentStart, contentEnd);
+      const section = sectionLines.join('\n').trim();
       if (!section) continue;
 
-      const block = this.parseSectionToBlock(markers[i].type, section);
+      const block = this.parseSectionToBlock(markerPositions[i].type, section);
       if (block) blocks.push(block);
     }
 
-    // Post-process: detect headings within paragraph blocks (short bold lines)
-    const finalBlocks: ParsedBlock[] = [];
-    for (const block of blocks) {
-      if (block.type === 'paragraph' && block.text) {
-        const lines = block.text.split('\n');
-        let currentParagraph = '';
-        for (const line of lines) {
-          const trimmed = line.trim();
-          // Heuristic: short line (â‰¤60 chars), no period at end, not empty â†’ heading
-          if (trimmed.length > 0 && trimmed.length <= 60 && !trimmed.endsWith('.') && !trimmed.endsWith('!') && !trimmed.endsWith('?') && !trimmed.startsWith('-') && !trimmed.startsWith('â€¢') && /^[A-Z\u00C0-\u024F]/.test(trimmed) && currentParagraph.length > 100) {
-            // Flush current paragraph
-            if (currentParagraph.trim()) finalBlocks.push({ type: 'paragraph', text: currentParagraph.trim() });
-            finalBlocks.push({ type: 'heading', text: trimmed });
-            currentParagraph = '';
-          } else {
-            currentParagraph += (currentParagraph ? '\n' : '') + line;
-          }
-        }
-        if (currentParagraph.trim()) finalBlocks.push({ type: 'paragraph', text: currentParagraph.trim() });
-      } else {
-        finalBlocks.push(block);
-      }
-    }
-
     // Fallback: if no blocks found, treat entire raw as one paragraph
-    if (finalBlocks.length === 0 && raw.trim()) {
-      finalBlocks.push({ type: 'paragraph', text: raw.trim() });
+    if (blocks.length === 0 && raw.trim()) {
+      blocks.push({ type: 'paragraph', text: this.stripMarkdown(raw).trim() });
     }
 
-    return finalBlocks;
+    return blocks;
+  }
+
+  /**
+   * Strip markdown formatting: **, __, ##, *, ---, ~~
+   * Preserves the text content itself.
+   */
+  private stripMarkdown(text: string): string {
+    return text
+      .replace(/^#{1,6}\s+/gm, '')         // ## headings
+      .replace(/\*\*([^*]+)\*\*/g, '$1')    // **bold**
+      .replace(/__([^_]+)__/g, '$1')        // __bold__
+      .replace(/(?<![\w*])\*([^*\n]+)\*(?![\w*])/g, '$1')  // *italic*
+      .replace(/~~([^~]+)~~/g, '$1')        // ~~strike~~
+      .replace(/^---+\s*$/gm, '')           // --- rules
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$2')  // [text](url) → url
+      .trim();
   }
 
   private parseSectionToBlock(type: string, section: string): ParsedBlock | null {
@@ -301,8 +305,8 @@ export class N8nService {
         return { type, text: this.cleanSectionText(section) };
 
       case 'analogy': {
-        const titleMatch = section.match(/(?:Judul|Title)\s*:\s*[""\u201c]?([^""\u201d\n]+)/i);
-        const textContent = section.replace(/(?:Judul|Title)\s*:\s*[""\u201c]?[^""\u201d\n]+[""\u201d]?\s*/i, '').trim();
+        const titleMatch = section.match(/(?:Judul|Title)\s*:\s*["\u201c]?([^"\u201d\n]+)/i);
+        const textContent = section.replace(/(?:Judul|Title)\s*:\s*["\u201c]?[^"\u201d\n]+["\u201d]?\s*/i, '').trim();
         return { type: 'analogy', title: titleMatch?.[1]?.trim() || '', text: this.cleanSectionText(textContent) };
       }
 
@@ -312,11 +316,11 @@ export class N8nService {
       }
 
       case 'doa': {
-        const titleMatch = section.match(/(?:Judul|Title)\s*:\s*[""\u201c]?([^""\u201d\n]+)/i);
+        const titleMatch = section.match(/(?:Judul|Title)\s*:\s*["\u201c]?([^"\u201d\n]+)/i);
         const arabicMatch = section.match(/(?:Arab|Arabic)\s*:\s*(.+)/i);
-        const translationMatch = section.match(/(?:Terjemah(?:an)?|Translation)\s*:\s*[""\u201c]?([^""\u201d\n]+)/i);
+        const translationMatch = section.match(/(?:Terjemah(?:an)?|Translation)\s*:\s*["\u201c]?([^"\u201d\n]+)/i);
         const sourceMatch = section.match(/Sumber\s*:\s*(.+)/i);
-        const urlMatch = section.match(/Sumber\s*URL\s*:\s*(https?:\/\/[^\s]+)/i);
+        const urlMatch = section.match(/Sumber\s*URL\s*:\s*(https?:\/\/[^\s\)\]]+)/i);
         return {
           type: 'doa',
           title: titleMatch?.[1]?.trim() || '',
@@ -328,10 +332,10 @@ export class N8nService {
       }
 
       case 'dialog': {
-        const lines = section.split('\n').filter(l => l.trim());
+        const dLines = section.split('\n').filter(l => l.trim());
         const entries: { role: string; text: string }[] = [];
-        for (const line of lines) {
-          const dialogMatch = line.match(/^-?\s*\[([^\]]+)\]\s*[""\u201c]?([^""\u201d]+)[""\u201d]?/i);
+        for (const line of dLines) {
+          const dialogMatch = line.match(/^-?\s*\[([^\]]+)\]\s*["\u201c]?([^"\u201d]+)["\u201d]?/i);
           if (dialogMatch) {
             entries.push({ role: dialogMatch[1].trim(), text: dialogMatch[2].trim() });
           }
@@ -356,9 +360,9 @@ export class N8nService {
     const dalilParts = section.split(/(?:Dalil\s*\d+\s*:)/i).filter(p => p.trim());
     for (const part of dalilParts) {
       const arabicMatch = part.match(/(?:Arab|Arabic)\s*:\s*(.+)/i);
-      const translationMatch = part.match(/(?:Terjemah(?:an)?|Translation)\s*:\s*[""\u201c]?([^""\u201d\n]+)/i);
+      const translationMatch = part.match(/(?:Terjemah(?:an)?|Translation)\s*:\s*["\u201c]?([^"\u201d\n]+)/i);
       const sourceMatch = part.match(/Sumber\s*:\s*(.+)/i);
-      const urlMatch = part.match(/Sumber\s*URL\s*:\s*(https?:\/\/[^\s]+)/i);
+      const urlMatch = part.match(/Sumber\s*URL\s*:\s*(https?:\/\/[^\s\)\]]+)/i);
       if (arabicMatch || translationMatch) {
         entries.push({
           arabic: arabicMatch?.[1]?.trim() || '',
@@ -372,7 +376,14 @@ export class N8nService {
   }
 
   private cleanSectionText(text: string): string {
-    return text.replace(/^[â”â•â”€\-\s*]+/gm, '').replace(/[â”â•â”€]+$/gm, '').trim();
+    return text
+      .replace(/^[\u2501\u2550\u2500\-\s*]+/gm, '')
+      .replace(/[\u2501\u2550\u2500]+$/gm, '')
+      .replace(/^Poin\s*\d+\s*:\s*/gm, '\ud83d\udca1 ')
+      .replace(/^Hikmah\s*:\s*/gm, '')
+      .replace(/^Penjelasan\s*:\s*/gm, '')
+      .replace(/^\u2022\s*/gm, '')
+      .trim();
   }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
