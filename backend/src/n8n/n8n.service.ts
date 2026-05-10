@@ -888,5 +888,171 @@ ${bodyHtml}
       lines.push('');
     }
   }
+
+  // ═══════════════════════════════════════════════
+  // Upload Content File — detect format, strip, parse, save
+  // ═══════════════════════════════════════════════
+
+  /**
+   * Detect file format from magic bytes and strip to plain text.
+   * Handles: HTML (.doc disguised), RTF, OLE2 (.doc), DOCX (ZIP), plain text.
+   */
+  stripFileToPlainText(buffer: Buffer): string {
+    const header = buffer.slice(0, 20).toString('hex');
+    const headerStr = buffer.slice(0, 100).toString('utf-8');
+
+    // ═══ DOCX (ZIP archive) ═══
+    if (header.startsWith('504b0304')) {
+      this.logger.log('File format detected: DOCX (ZIP)');
+      const raw = buffer.toString('utf-8');
+      // Extract <w:t> XML text nodes
+      const wtMatches = raw.match(/<w:t[^>]*>([^<]+)<\/w:t>/g);
+      if (wtMatches && wtMatches.length > 0) {
+        return wtMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ');
+      }
+      // Fallback: strip all XML tags
+      return raw.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    }
+
+    // ═══ DOC (OLE2 Compound Document) ═══
+    if (header.startsWith('d0cf11e0')) {
+      this.logger.log('File format detected: DOC (OLE2)');
+      let result = '';
+      let current = '';
+      for (let i = 0; i < buffer.length; i++) {
+        const b = buffer[i];
+        if ((b >= 0x20 && b <= 0x7e) || b === 0x0a || b === 0x0d || b === 0x09) {
+          current += String.fromCharCode(b);
+        } else {
+          if (current.trim().length > 3) {
+            result += current + '\n';
+          }
+          current = '';
+        }
+      }
+      if (current.trim().length > 3) result += current;
+      return result.replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    // ═══ RTF ═══
+    if (headerStr.startsWith('{\\rtf') || headerStr.includes('{\\rtf1')) {
+      this.logger.log('File format detected: RTF');
+      let raw = buffer.toString('utf-8');
+      raw = raw
+        .replace(/\\par\b/g, '\n')
+        .replace(/\\line\b/g, '\n')
+        .replace(/\\tab\b/g, '\t')
+        .replace(/\\u(\d+)\s?/g, (_, c) => String.fromCharCode(parseInt(c)))
+        .replace(/\\u-(\d+)\s?/g, (_, c) => String.fromCharCode(65536 - parseInt(c)))
+        .replace(/\\\\'([0-9a-fA-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/\\[a-z]+\d*\s?/gi, '')
+        .replace(/[{}]/g, '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n');
+      return raw.trim();
+    }
+
+    // ═══ HTML (fake .doc or actual HTML) ═══
+    if (headerStr.includes('<html') || headerStr.includes('<!DOCTYPE') || headerStr.includes('<HTML')) {
+      this.logger.log('File format detected: HTML');
+      let raw = buffer.toString('utf-8');
+      raw = raw
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<\/h[1-6]>/gi, '\n\n')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)))
+        .replace(/\n{3,}/g, '\n\n');
+      return raw.trim();
+    }
+
+    // ═══ Plain Text ═══
+    this.logger.log('File format detected: Plain Text');
+    let raw = buffer.toString('utf-8');
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1); // Strip BOM
+    return raw.trim();
+  }
+
+  /**
+   * Upload content file from Telegram bot.
+   * Receives file binary, detects format, strips to plain text, parses blocks, saves to DB.
+   */
+  async uploadContentFile(
+    fileBuffer: Buffer,
+    fileName: string,
+    type: string,
+    subType?: string,
+    pov?: string,
+  ) {
+    // Step 1: Strip file to plain text
+    const plainText = this.stripFileToPlainText(fileBuffer);
+    this.logger.log(`Stripped file "${fileName}" → ${plainText.length} chars of plain text`);
+
+    if (!plainText || plainText.length < 10) {
+      return { success: false, message: 'File kosong atau tidak dapat dibaca' };
+    }
+
+    // Step 2: Extract metadata from plain text
+    const titleMatch = plainText.match(/^Judul\s*:\s*(.+)$/im);
+    const descMatch = plainText.match(/^Deskripsi\s*:\s*(.+)$/im);
+    const ageMatch = plainText.match(/^Usia\s*:\s*(.+)$/im);
+    const tagMatch = plainText.match(/^Tag\s*:\s*(.+)$/im);
+
+    const title = titleMatch?.[1]?.trim() || fileName.replace(/\.\w+$/, '') || 'Konten Baru';
+    const description = descMatch?.[1]?.trim() || '';
+
+    // Parse age groups
+    let ageGroups: string[] = [];
+    if (ageMatch) {
+      const ageStr = ageMatch[1].trim();
+      const ageRanges = ['3-5', '5-7', '7-10', '10-13'];
+      if (ageStr.toLowerCase().includes('semua')) {
+        ageGroups = ageRanges;
+      } else {
+        const nums = ageStr.match(/\d+/g);
+        if (nums && nums.length >= 2) {
+          const lo = Math.min(...nums.map(Number));
+          const hi = Math.max(...nums.map(Number));
+          ageGroups = ageRanges.filter(range => {
+            const [rlo, rhi] = range.split('-').map(Number);
+            return rhi > lo && rlo < hi;
+          });
+        }
+      }
+      if (ageGroups.length === 0) ageGroups = ['3-5', '5-7', '7-10'];
+    }
+
+    // Parse tags
+    let tags: string[] = [];
+    if (tagMatch) tags = tagMatch[1].split(',').map(t => t.trim()).filter(Boolean);
+
+    // Extract opening/closing
+    const meta = this.extractMetaFromRaw(plainText);
+
+    // Step 3: Build payload and save
+    const payload: SaveContentPayload = {
+      title,
+      description,
+      type: (type || 'KISAH') as any,
+      subType: subType || undefined,
+      ageGroups,
+      tags,
+      rawContent: plainText,
+      openingText: meta.openingText,
+      closingText: meta.closingText,
+      pov: pov || undefined,
+    };
+
+    this.logger.log(`Parsed file: title="${title}", type=${type}, tags=[${tags.join(',')}], ageGroups=[${ageGroups.join(',')}]`);
+    return this.saveContent(payload);
+  }
 }
 
