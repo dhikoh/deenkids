@@ -9,5 +9,6 @@ import { StorageModule } from '../common/storage/storage.module';
   imports: [PrismaModule, StorageModule],
   controllers: [N8nController],
   providers: [N8nService, N8nPromptService],
+  exports: [N8nService],
 })
 export class N8nModule {}

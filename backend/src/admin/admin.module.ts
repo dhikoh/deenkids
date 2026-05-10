@@ -8,9 +8,10 @@ import { ProfileController } from './profile.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RewardModule } from '../reward/reward.module';
 import { NotificationModule } from '../notification/notification.module';
+import { N8nModule } from '../n8n/n8n.module';
 
 @Module({
-  imports: [PrismaModule, RewardModule, NotificationModule],
+  imports: [PrismaModule, RewardModule, NotificationModule, N8nModule],
   controllers: [AdminController, UserManagementController, ProfileController],
   providers: [AdminService, ReviewService, StructureService],
 })

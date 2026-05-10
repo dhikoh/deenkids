@@ -1,11 +1,11 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../common/storage/storage.service';
 import { ContentType, ContentStatus } from '@prisma/client';
 import slugify from 'slugify';
 
 /**
- * Parsed block from Gemini output — maps to Adably block JSON format.
+ * Parsed block from Gemini output â€” maps to Adably block JSON format.
  */
 interface ParsedBlock {
   type: string;
@@ -25,7 +25,7 @@ export interface SaveContentPayload {
   openingText?: string;
   closingText?: string;
   pov?: string;
-  /** Raw Gemini output — the service will parse blocks from this */
+  /** Raw Gemini output â€” the service will parse blocks from this */
   rawContent?: string;
   /** Pre-parsed blocks (if n8n already parsed them) */
   blocks?: ParsedBlock[];
@@ -42,9 +42,9 @@ export class N8nService {
     private readonly storageService: StorageService,
   ) {}
 
-  // ═══════════════════════════════════════════════
-  // Save Content — creates DRAFT from parsed payload
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // Save Content â€” creates DRAFT from parsed payload
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   async saveContent(payload: SaveContentPayload) {
     // Find a SUPERADMIN user to attribute the content to
@@ -149,9 +149,9 @@ export class N8nService {
     };
   }
 
-  // ═══════════════════════════════════════════════
-  // Submit — change status from DRAFT to REVIEW
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // Submit â€” change status from DRAFT to REVIEW
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   async submitContent(contentId: string) {
     const content = await this.prisma.contentItem.findUnique({
@@ -171,9 +171,9 @@ export class N8nService {
     return { success: true, message: `Konten "${content.title}" diajukan untuk review` };
   }
 
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Get Status
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   async getStatus(contentId: string) {
     const content = await this.prisma.contentItem.findUnique({
@@ -188,11 +188,11 @@ export class N8nService {
     return { success: true, data: content };
   }
 
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Parse Raw Gemini Output into Blocks
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-  // Header keyword → block type mapping (for fallback when Gemini drops markers)
+  // Header keyword â†’ block type mapping (for fallback when Gemini drops markers)
   private static readonly HEADER_TYPE_MAP: Record<string, string> = {
     'ISI KONTEN': 'paragraph', 'KONTEN': 'paragraph',
     'ANALOGI': 'analogy', 'ANALOGI ORGANIK': 'analogy', 'ANALOGI KONTEKSTUAL': 'analogy',
@@ -213,7 +213,7 @@ export class N8nService {
     const blocks: ParsedBlock[] = [];
     if (!raw.trim()) return blocks;
 
-    // Strategy 1: Find markers using (type) pattern — e.g. "(paragraph)", "(dalil)"
+    // Strategy 1: Find markers using (type) pattern â€” e.g. "(paragraph)", "(dalil)"
     const markers: { type: string; index: number }[] = [];
     const lineMarkerRegex = /^.*\((\w+)\).*$/gm;
     let match: RegExpExecArray | null;
@@ -225,9 +225,9 @@ export class N8nService {
       }
     }
 
-    // Strategy 2: If few markers found, try fallback header pattern ━━━ KEYWORD ━━━
+    // Strategy 2: If few markers found, try fallback header pattern â”â”â” KEYWORD â”â”â”
     if (markers.filter(m => m.type !== 'opening' && m.type !== 'closing').length < 2) {
-      const headerRegex = /^[━─═]{2,}[^━─═\n]*$/gm;
+      const headerRegex = /^[â”â”€â•]{2,}[^â”â”€â•\n]*$/gm;
       let headerMatch: RegExpExecArray | null;
       while ((headerMatch = headerRegex.exec(raw)) !== null) {
         const line = headerMatch[0];
@@ -268,8 +268,8 @@ export class N8nService {
         let currentParagraph = '';
         for (const line of lines) {
           const trimmed = line.trim();
-          // Heuristic: short line (≤60 chars), no period at end, not empty → heading
-          if (trimmed.length > 0 && trimmed.length <= 60 && !trimmed.endsWith('.') && !trimmed.endsWith('!') && !trimmed.endsWith('?') && !trimmed.startsWith('-') && !trimmed.startsWith('•') && /^[A-Z\u00C0-\u024F]/.test(trimmed) && currentParagraph.length > 100) {
+          // Heuristic: short line (â‰¤60 chars), no period at end, not empty â†’ heading
+          if (trimmed.length > 0 && trimmed.length <= 60 && !trimmed.endsWith('.') && !trimmed.endsWith('!') && !trimmed.endsWith('?') && !trimmed.startsWith('-') && !trimmed.startsWith('â€¢') && /^[A-Z\u00C0-\u024F]/.test(trimmed) && currentParagraph.length > 100) {
             // Flush current paragraph
             if (currentParagraph.trim()) finalBlocks.push({ type: 'paragraph', text: currentParagraph.trim() });
             finalBlocks.push({ type: 'heading', text: trimmed });
@@ -372,38 +372,38 @@ export class N8nService {
   }
 
   private cleanSectionText(text: string): string {
-    return text.replace(/^[━═─\-\s*]+/gm, '').replace(/[━═─]+$/gm, '').trim();
+    return text.replace(/^[â”â•â”€\-\s*]+/gm, '').replace(/[â”â•â”€]+$/gm, '').trim();
   }
 
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Extract opening/closing from raw text
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   extractMetaFromRaw(raw: string): { openingText?: string; closingText?: string } {
     const result: { openingText?: string; closingText?: string } = {};
 
     // Strategy 1: marker (opening) / (closing)
-    const openingMatch = raw.match(/\(opening\)\s*━*\s*\n([\s\S]*?)(?=\n.*?\((?:quick_answer|paragraph|dalil|analogy|tip|hikmah|doa|closing)\)|$)/i);
+    const openingMatch = raw.match(/\(opening\)\s*â”*\s*\n([\s\S]*?)(?=\n.*?\((?:quick_answer|paragraph|dalil|analogy|tip|hikmah|doa|closing)\)|$)/i);
     if (openingMatch) result.openingText = openingMatch[1].trim();
-    const closingMatch = raw.match(/\(closing\)\s*━*\s*\n([\s\S]*?)$/i);
+    const closingMatch = raw.match(/\(closing\)\s*â”*\s*\n([\s\S]*?)$/i);
     if (closingMatch) result.closingText = closingMatch[1].trim();
 
-    // Strategy 2: fallback header pattern ━━━ PEMBUKAAN ━━━ / ━━━ PENUTUPAN ━━━
+    // Strategy 2: fallback header pattern â”â”â” PEMBUKAAN â”â”â” / â”â”â” PENUTUPAN â”â”â”
     if (!result.openingText) {
-      const headerOpen = raw.match(/━+[^━\n]*(?:PEMBUKAAN|MUKADIMAH)[^━\n]*━+\s*\n([\s\S]*?)(?=\n━+[^━\n]*(?:BLOK|KONTEN|JAWABAN|DIALOG)[^━\n]*━+|$)/i);
+      const headerOpen = raw.match(/â”+[^â”\n]*(?:PEMBUKAAN|MUKADIMAH)[^â”\n]*â”+\s*\n([\s\S]*?)(?=\nâ”+[^â”\n]*(?:BLOK|KONTEN|JAWABAN|DIALOG)[^â”\n]*â”+|$)/i);
       if (headerOpen) result.openingText = headerOpen[1].trim();
     }
     if (!result.closingText) {
-      const headerClose = raw.match(/━+[^━\n]*PENUTUPAN[^━\n]*━+\s*\n([\s\S]*?)$/i);
+      const headerClose = raw.match(/â”+[^â”\n]*PENUTUPAN[^â”\n]*â”+\s*\n([\s\S]*?)$/i);
       if (headerClose) result.closingText = headerClose[1].trim();
     }
 
     return result;
   }
 
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Extract metadata (description, tags, ageGroups) from Gemini output
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   private extractGeminiMetadata(raw: string): { description: string; tags: string[]; ageGroups: string[] } {
     const result = { description: '', tags: [] as string[], ageGroups: [] as string[] };
@@ -418,23 +418,23 @@ export class N8nService {
     const tagMatch = raw.match(/Tag\s*:\s*(.+)/i);
     if (tagMatch) {
       result.tags = tagMatch[1]
-        .split(/[,،]/)
+        .split(/[,ØŒ]/)
         .map(t => t.replace(/^[\["'""]+|[\]"'""]+$/g, '').trim())
         .filter(t => t.length > 0 && t.length < 50);
     }
 
-    // Extract age groups: "Kelompok Usia: 3-5, 5-7 tahun" or "Usia: 3–10 tahun"
+    // Extract age groups: "Kelompok Usia: 3-5, 5-7 tahun" or "Usia: 3â€“10 tahun"
     const ageMatch = raw.match(/(?:Kelompok\s*)?Usia\s*:\s*(.+)/i);
     if (ageMatch) {
       const ageText = ageMatch[1];
       const validAges = ['3-5', '5-7', '7-10', '10-13'];
       for (const age of validAges) {
-        if (ageText.includes(age) || ageText.includes(age.replace('-', '–'))) {
+        if (ageText.includes(age) || ageText.includes(age.replace('-', 'â€“'))) {
           result.ageGroups.push(age);
         }
       }
-      // Handle range like "3–10" → includes 3-5, 5-7, 7-10
-      const rangeMatch = ageText.match(/(\d+)[–\-](\d+)/);
+      // Handle range like "3â€“10" â†’ includes 3-5, 5-7, 7-10
+      const rangeMatch = ageText.match(/(\d+)[â€“\-](\d+)/);
       if (rangeMatch && result.ageGroups.length === 0) {
         const lo = parseInt(rangeMatch[1]);
         const hi = parseInt(rangeMatch[2]);
@@ -448,9 +448,9 @@ export class N8nService {
     return result;
   }
 
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Helpers
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   private mapContentType(type: string): ContentType {
     const map: Record<string, ContentType> = {
@@ -462,9 +462,9 @@ export class N8nService {
     return map[type.toUpperCase()] || ContentType.QNA;
   }
 
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // Export Content as .txt File
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   async exportContentAsTxt(
     contentId: string,
@@ -498,9 +498,9 @@ export class N8nService {
       };
     }
 
-    // ── TXT format ──────────────────────────────────────
+    // â”€â”€ TXT format â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const lines: string[] = [];
-    const sep = '════════════════════════════════════════';
+    const sep = 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•';
 
     lines.push(sep);
     lines.push('ADABLY - KONTEN DRAFT');
@@ -551,9 +551,9 @@ export class N8nService {
     };
   }
 
-  // ═══════════════════════════════════════════════
-  // Upload Thumbnail from Bot (Telegram → MinIO → DB)
-  // ═══════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // Upload Thumbnail from Bot (Telegram â†’ MinIO â†’ DB)
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   async uploadThumbnailFromBot(
     contentId: string,
@@ -575,9 +575,9 @@ export class N8nService {
     // Delete old thumbnail from MinIO if exists
     if (oldUrl) {
       await this.storageService.deleteFile(oldUrl).catch(err =>
-        this.logger.warn(`⚠️  Failed to cleanup old ${field}: ${err.message}`),
+        this.logger.warn(`âš ï¸  Failed to cleanup old ${field}: ${err.message}`),
       );
-      this.logger.log(`🗑️  Old ${field} deleted: ${oldUrl}`);
+      this.logger.log(`ðŸ—‘ï¸  Old ${field} deleted: ${oldUrl}`);
     }
 
     // Upload new file to MinIO
@@ -595,11 +595,11 @@ export class N8nService {
       data: { [field]: url },
     });
 
-    this.logger.log(`✅ Thumbnail uploaded: ${field} = ${url} (content: ${contentId})`);
+    this.logger.log(`âœ… Thumbnail uploaded: ${field} = ${url} (content: ${contentId})`);
     return { url, field, title: content.title };
   }
 
-  // ── RTF helper: escape special RTF characters ──────────────
+  // â”€â”€ RTF helper: escape special RTF characters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   private rtfEsc(s: string): string {
     return (s || '')
       .replace(/\\/g, '\\\\')
@@ -834,7 +834,7 @@ ${bodyHtml}
 
     for (const block of blocks) {
       const label = BLOCK_LABEL[block.type] || block.type.toUpperCase();
-      lines.push(`════ BLOK: ${label} ════`);
+      lines.push(`â•â•â•â• BLOK: ${label} â•â•â•â•`);
 
       switch (block.type) {
         case 'paragraph':
@@ -889,170 +889,11 @@ ${bodyHtml}
     }
   }
 
-  // ═══════════════════════════════════════════════
-  // Upload Content File — detect format, strip, parse, save
-  // ═══════════════════════════════════════════════
-
-  /**
-   * Detect file format from magic bytes and strip to plain text.
-   * Handles: HTML (.doc disguised), RTF, OLE2 (.doc), DOCX (ZIP), plain text.
-   */
-  stripFileToPlainText(buffer: Buffer): string {
-    const header = buffer.slice(0, 20).toString('hex');
-    const headerStr = buffer.slice(0, 100).toString('utf-8');
-
-    // ═══ DOCX (ZIP archive) ═══
-    if (header.startsWith('504b0304')) {
-      this.logger.log('File format detected: DOCX (ZIP)');
-      const raw = buffer.toString('utf-8');
-      // Extract <w:t> XML text nodes
-      const wtMatches = raw.match(/<w:t[^>]*>([^<]+)<\/w:t>/g);
-      if (wtMatches && wtMatches.length > 0) {
-        return wtMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ');
-      }
-      // Fallback: strip all XML tags
-      return raw.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim();
-    }
-
-    // ═══ DOC (OLE2 Compound Document) ═══
-    if (header.startsWith('d0cf11e0')) {
-      this.logger.log('File format detected: DOC (OLE2)');
-      let result = '';
-      let current = '';
-      for (let i = 0; i < buffer.length; i++) {
-        const b = buffer[i];
-        if ((b >= 0x20 && b <= 0x7e) || b === 0x0a || b === 0x0d || b === 0x09) {
-          current += String.fromCharCode(b);
-        } else {
-          if (current.trim().length > 3) {
-            result += current + '\n';
-          }
-          current = '';
-        }
-      }
-      if (current.trim().length > 3) result += current;
-      return result.replace(/\n{3,}/g, '\n\n').trim();
-    }
-
-    // ═══ RTF ═══
-    if (headerStr.startsWith('{\\rtf') || headerStr.includes('{\\rtf1')) {
-      this.logger.log('File format detected: RTF');
-      let raw = buffer.toString('utf-8');
-      raw = raw
-        .replace(/\\par\b/g, '\n')
-        .replace(/\\line\b/g, '\n')
-        .replace(/\\tab\b/g, '\t')
-        .replace(/\\u(\d+)\s?/g, (_, c) => String.fromCharCode(parseInt(c)))
-        .replace(/\\u-(\d+)\s?/g, (_, c) => String.fromCharCode(65536 - parseInt(c)))
-        .replace(/\\\\'([0-9a-fA-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-        .replace(/\\[a-z]+\d*\s?/gi, '')
-        .replace(/[{}]/g, '')
-        .replace(/\r\n/g, '\n')
-        .replace(/\n{3,}/g, '\n\n');
-      return raw.trim();
-    }
-
-    // ═══ HTML (fake .doc or actual HTML) ═══
-    if (headerStr.includes('<html') || headerStr.includes('<!DOCTYPE') || headerStr.includes('<HTML')) {
-      this.logger.log('File format detected: HTML');
-      let raw = buffer.toString('utf-8');
-      raw = raw
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/p>/gi, '\n\n')
-        .replace(/<\/div>/gi, '\n')
-        .replace(/<\/h[1-6]>/gi, '\n\n')
-        .replace(/<style[\s\S]*?<\/style>/gi, '')
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/<[^>]+>/g, '')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)))
-        .replace(/\n{3,}/g, '\n\n');
-      return raw.trim();
-    }
-
-    // ═══ Plain Text ═══
-    this.logger.log('File format detected: Plain Text');
-    let raw = buffer.toString('utf-8');
-    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1); // Strip BOM
-    return raw.trim();
-  }
-
-  /**
-   * Upload content file from Telegram bot.
-   * Receives file binary, detects format, strips to plain text, parses blocks, saves to DB.
-   */
-  async uploadContentFile(
-    fileBuffer: Buffer,
-    fileName: string,
-    type: string,
-    subType?: string,
-    pov?: string,
-  ) {
-    // Step 1: Strip file to plain text
-    const plainText = this.stripFileToPlainText(fileBuffer);
-    this.logger.log(`Stripped file "${fileName}" → ${plainText.length} chars of plain text`);
-
-    if (!plainText || plainText.length < 10) {
-      return { success: false, message: 'File kosong atau tidak dapat dibaca' };
-    }
-
-    // Step 2: Extract metadata from plain text
-    const titleMatch = plainText.match(/^Judul\s*:\s*(.+)$/im);
-    const descMatch = plainText.match(/^Deskripsi\s*:\s*(.+)$/im);
-    const ageMatch = plainText.match(/^Usia\s*:\s*(.+)$/im);
-    const tagMatch = plainText.match(/^Tag\s*:\s*(.+)$/im);
-
-    const title = titleMatch?.[1]?.trim() || fileName.replace(/\.\w+$/, '') || 'Konten Baru';
-    const description = descMatch?.[1]?.trim() || '';
-
-    // Parse age groups
-    let ageGroups: string[] = [];
-    if (ageMatch) {
-      const ageStr = ageMatch[1].trim();
-      const ageRanges = ['3-5', '5-7', '7-10', '10-13'];
-      if (ageStr.toLowerCase().includes('semua')) {
-        ageGroups = ageRanges;
-      } else {
-        const nums = ageStr.match(/\d+/g);
-        if (nums && nums.length >= 2) {
-          const lo = Math.min(...nums.map(Number));
-          const hi = Math.max(...nums.map(Number));
-          ageGroups = ageRanges.filter(range => {
-            const [rlo, rhi] = range.split('-').map(Number);
-            return rhi > lo && rlo < hi;
-          });
-        }
-      }
-      if (ageGroups.length === 0) ageGroups = ['3-5', '5-7', '7-10'];
-    }
-
-    // Parse tags
-    let tags: string[] = [];
-    if (tagMatch) tags = tagMatch[1].split(',').map(t => t.trim()).filter(Boolean);
-
-    // Extract opening/closing
-    const meta = this.extractMetaFromRaw(plainText);
-
-    // Step 3: Build payload and save
-    const payload: SaveContentPayload = {
-      title,
-      description,
-      type: (type || 'KISAH') as any,
-      subType: subType || undefined,
-      ageGroups,
-      tags,
-      rawContent: plainText,
-      openingText: meta.openingText,
-      closingText: meta.closingText,
-      pov: pov || undefined,
-    };
-
-    this.logger.log(`Parsed file: title="${title}", type=${type}, tags=[${tags.join(',')}], ageGroups=[${ageGroups.join(',')}]`);
-    return this.saveContent(payload);
-  }
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // Upload Content File â€” REMOVED
+  // File parsing via Telegram bot has been replaced by
+  // web Import Konten AI (POST /admin/import-ai) which
+  // accepts plain text directly â€” no file format issues.
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 }
 

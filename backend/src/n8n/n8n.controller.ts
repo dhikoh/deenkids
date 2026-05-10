@@ -167,33 +167,4 @@ export class N8nController {
     );
     return { success: true, ...result, message: `Thumbnail ${body.type} berhasil diupload` };
   }
-
-  /**
-   * Upload content file from Telegram bot.
-   * Receives the actual file binary, detects format (HTML/RTF/DOC/DOCX/TXT),
-   * strips to plain text, parses content blocks, and saves as DRAFT.
-   * This replaces the broken n8n Code node parsing that had sandbox escaping issues.
-   */
-  @Post('upload-content-file')
-  @HttpCode(201)
-  @ApiOperation({ summary: 'Upload content file from Telegram bot — format detection + parse + save' })
-  @UseInterceptors(FileInterceptor('file', {
-    storage: memoryStorage(),
-    limits: { fileSize: 30 * 1024 * 1024 }, // 30MB max
-  }))
-  async uploadContentFile(
-    @UploadedFile() file: any,
-    @Body() body: { type?: string; subType?: string; pov?: string },
-  ) {
-    if (!file) throw new BadRequestException('File tidak ditemukan');
-
-    this.logger.log(`n8n upload-content-file: "${file.originalname}" (${(file.size / 1024).toFixed(0)}KB)`);
-    return this.n8nService.uploadContentFile(
-      file.buffer,
-      file.originalname,
-      body.type || 'KISAH',
-      body.subType,
-      body.pov,
-    );
-  }
 }

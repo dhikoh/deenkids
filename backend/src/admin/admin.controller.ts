@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query, Req, HttpCode, BadRequestException, Logger } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { ReviewService } from './review.service';
 import { StructureService } from './structure.service';
+import { N8nService, SaveContentPayload } from '../n8n/n8n.service';
 import { RolesGuard, JwtAuthGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -12,10 +13,13 @@ import { ReviewAction } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin')
 export class AdminController {
+  private readonly logger = new Logger(AdminController.name);
+
   constructor(
     private readonly adminService: AdminService,
     private readonly reviewService: ReviewService,
     private readonly structureService: StructureService,
+    private readonly n8nService: N8nService,
   ) {}
 
   // ── Dashboard Stats ──
@@ -123,5 +127,44 @@ export class AdminController {
   @ApiOperation({ summary: 'Bulk soft-delete DRAFT items by IDs — superadmin only' })
   async bulkDeleteDrafts(@Body() body: { ids: string[] }) {
     return this.adminService.bulkDeleteDrafts(body.ids || []);
+  }
+
+  // ── Import AI Content ──
+
+  /**
+   * Import content from AI output (Gemini/ChatGPT).
+   * Accepts raw text with markers like (paragraph), (dalil), (doa), etc.
+   * Parses blocks, extracts metadata, and saves as DRAFT.
+   * Uses JWT auth — SUPERADMIN only.
+   */
+  @Post('import-ai')
+  @HttpCode(201)
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Import AI-generated content — parse markers and save as DRAFT' })
+  async importAiContent(@Body() body: { rawContent: string; type?: string; subType?: string; pov?: string; title?: string }) {
+    if (!body.rawContent?.trim()) {
+      throw new BadRequestException('rawContent wajib diisi');
+    }
+    if (body.rawContent.trim().length < 50) {
+      throw new BadRequestException('Konten terlalu pendek (minimum 50 karakter)');
+    }
+
+    const type = body.type || 'KISAH';
+    this.logger.log(`Admin import-ai: type=${type}, ${body.rawContent.length} chars`);
+
+    // Extract metadata from raw content
+    const meta = this.n8nService.extractMetaFromRaw(body.rawContent);
+
+    const payload: SaveContentPayload = {
+      title: body.title || '',
+      rawContent: body.rawContent.trim(),
+      type: type as any,
+      subType: body.subType || undefined,
+      pov: body.pov || undefined,
+      openingText: meta.openingText,
+      closingText: meta.closingText,
+    };
+
+    return this.n8nService.saveContent(payload);
   }
 }
