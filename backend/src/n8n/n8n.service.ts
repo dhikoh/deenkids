@@ -457,4 +457,155 @@ export class N8nService {
     };
     return map[type.toUpperCase()] || ContentType.QNA;
   }
+
+  // ═══════════════════════════════════════════════
+  // Export Content as .txt File
+  // ═══════════════════════════════════════════════
+
+  async exportContentAsTxt(contentId: string): Promise<{ filename: string; content: string }> {
+    // Fetch contentItem with tags
+    const content = await this.prisma.contentItem.findUnique({
+      where: { id: contentId },
+      include: {
+        tags: { include: { tag: true } },
+      },
+    });
+    if (!content) throw new NotFoundException('Konten tidak ditemukan');
+
+    // Fetch detail based on type
+    let detail: any = null;
+    if (content.type === ContentType.QNA) {
+      detail = await this.prisma.qnaDetail.findUnique({ where: { contentId } });
+    } else {
+      detail = await this.prisma.articleDetail.findUnique({ where: { contentId } });
+    }
+
+    const lines: string[] = [];
+    const sep = '════════════════════════════════════════';
+
+    // ── Header ──────────────────────────────────────────
+    lines.push(sep);
+    lines.push('✅ ADABLY — KONTEN DRAFT');
+    lines.push(sep);
+    lines.push(`ID      : ${content.id}`);
+    lines.push(`Judul   : ${content.title}`);
+    lines.push(`Tipe    : ${content.type}`);
+    lines.push(`Status  : ${content.status}`);
+    lines.push(`Usia    : ${(content.ageGroups || []).join(', ')}`);
+    lines.push(`Tag     : ${content.tags.map((t: any) => t.tag.name).join(', ') || '-'}`);
+    if (content.description) lines.push(`Deskripsi: ${content.description}`);
+    lines.push(sep);
+    lines.push('');
+
+    // ── Opening ─────────────────────────────────────────
+    if (content.openingText) {
+      lines.push('── PEMBUKAAN ──────────────────────────');
+      lines.push(content.openingText);
+      lines.push('');
+    }
+
+    // ── Blocks ──────────────────────────────────────────
+    if (content.type === ContentType.QNA && detail) {
+      // QNA: answerQuick + blocks from qnaDetail
+      if (detail.answerQuick) {
+        lines.push('════ BLOK: JAWABAN INSTAN ════');
+        lines.push(detail.answerQuick);
+        lines.push('');
+      }
+      const blocks: ParsedBlock[] = (detail.blocks as ParsedBlock[]) || [];
+      this.formatBlocksToTxt(blocks, lines);
+    } else if (detail) {
+      // ARTICLE / PEMBELAJARAN / KISAH: blocks from articleDetail
+      const blocks: ParsedBlock[] = (detail.blocks as ParsedBlock[]) || [];
+      this.formatBlocksToTxt(blocks, lines);
+    }
+
+    // ── Closing ─────────────────────────────────────────
+    if (content.closingText) {
+      lines.push('── PENUTUPAN ──────────────────────────');
+      lines.push(content.closingText);
+      lines.push('');
+    }
+
+    lines.push(sep);
+    lines.push(`Buka di dashboard: https://adably.id/admin`);
+    lines.push(sep);
+
+    const fileContent = lines.join('\n');
+    const slug = content.slug || content.id;
+    const filename = `hasil_${slug.substring(0, 40)}.txt`;
+
+    return { filename, content: fileContent };
+  }
+
+  private formatBlocksToTxt(blocks: ParsedBlock[], lines: string[]): void {
+    const BLOCK_LABEL: Record<string, string> = {
+      paragraph: 'ISI KONTEN',
+      heading: 'JUDUL BABAK',
+      dalil: 'DALIL',
+      analogy: 'ANALOGI',
+      tip: 'TIPS',
+      hikmah: 'HIKMAH',
+      doa: 'DOA',
+      dialog: 'DIALOG',
+      quick_answer: 'JAWABAN INSTAN',
+    };
+
+    for (const block of blocks) {
+      const label = BLOCK_LABEL[block.type] || block.type.toUpperCase();
+      lines.push(`════ BLOK: ${label} ════`);
+
+      switch (block.type) {
+        case 'paragraph':
+        case 'tip':
+        case 'hikmah':
+        case 'quick_answer':
+          lines.push(block.text || '');
+          break;
+
+        case 'heading':
+          lines.push(block.text || '');
+          break;
+
+        case 'analogy':
+          if (block.title) lines.push(`Judul: ${block.title}`);
+          if (block.text) lines.push(`Isi  : ${block.text}`);
+          break;
+
+        case 'dalil':
+          if (block.entries && Array.isArray(block.entries)) {
+            block.entries.forEach((e: any, i: number) => {
+              lines.push(`Dalil ${i + 1}:`);
+              if (e.arabic) lines.push(`  Arab     : ${e.arabic}`);
+              if (e.translation) lines.push(`  Terjemah : ${e.translation}`);
+              if (e.source) lines.push(`  Sumber   : ${e.source}`);
+              if (e.sourceUrl) lines.push(`  URL      : ${e.sourceUrl}`);
+            });
+          }
+          break;
+
+        case 'doa':
+          if (block.title) lines.push(`Judul    : ${block.title}`);
+          if (block.arabic) lines.push(`Arab     : ${block.arabic}`);
+          if (block.translation) lines.push(`Terjemah : ${block.translation}`);
+          if (block.source) lines.push(`Sumber   : ${block.source}`);
+          if (block.sourceUrl) lines.push(`URL      : ${block.sourceUrl}`);
+          break;
+
+        case 'dialog':
+          if (block.entries && Array.isArray(block.entries)) {
+            block.entries.forEach((e: any) => {
+              lines.push(`  [${e.role}] "${e.text}"`);
+            });
+          }
+          break;
+
+        default:
+          if (block.text) lines.push(block.text);
+      }
+
+      lines.push('');
+    }
+  }
 }
+
