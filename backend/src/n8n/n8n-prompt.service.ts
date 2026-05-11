@@ -259,7 +259,7 @@ Tulis narasi artikel yang mengalir, menginspirasi, dan terasa personal — bukan
 Sumber hukum Islam yang relevan. PENTING: Dalam 1 blok dalil bisa ada BANYAK sumber dalil sekaligus. Setiap dalil berisi:
 - Teks Arab (jika tersedia)
 - Terjemahan / isi dalil dalam Bahasa Indonesia
-- Sumber yang JELAS (contoh: QS. Al-Baqarah: 43, HR. Bukhari No. 8, HR. Muslim No. 16)
+- Sumber yang JELAS (contoh: Quran Surah Al-Baqarah ayat 43, Hadits Riwayat Bukhari Nomor 8, Hadits Riwayat Muslim Nomor 16)
 
 Format yang harus kamu ikuti:
 ---
@@ -267,21 +267,21 @@ DALIL:
 Dalil 1:
   Arab: إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا
   Terjemahan: "Sesungguhnya shalat itu adalah kewajiban yang ditentukan waktunya atas orang-orang yang beriman."
-  Sumber: QS. An-Nisa: 103
+  Sumber: Quran Surah An-Nisa ayat 103
   Sumber URL: https://quran.com/4/103
 
 Dalil 2:
   Arab: (jika ada)
   Terjemahan: "..."
-  Sumber: HR. Bukhari No. 8
+  Sumber: Hadits Riwayat Bukhari Nomor 8
   Sumber URL: https://www.hadits.id/hadits/bukhari/8
 ---
 
 ⚠️ PANDUAN URL SUMBER WAJIB DIBACA:
 - Al-Quran: format URL = https://quran.com/[nomor-surah]/[nomor-ayat]
-  Contoh: QS. An-Nisa: 103 → https://quran.com/4/103 | QS. Al-Baqarah: 255 → https://quran.com/2/255
+  Contoh: Quran Surah An-Nisa ayat 103 → https://quran.com/4/103 | Quran Surah Al-Baqarah ayat 255 → https://quran.com/2/255
 - Hadits: format URL = https://www.hadits.id/hadits/[nama-kitab]/[nomor]
-  Contoh: HR. Bukhari No. 8 → https://www.hadits.id/hadits/bukhari/8
+  Contoh: Hadits Riwayat Bukhari Nomor 8 → https://www.hadits.id/hadits/bukhari/8
 - 🛑 LARANGAN KERAS: JANGAN MENGARANG atau MENEBAK URL.
   Jika tidak 100% yakin URL-nya benar, KOSONGKAN field "Sumber URL" — cukup isi "Sumber" teks saja.
 
@@ -340,12 +340,12 @@ DOA:
 Judul: "Doa Memohon Ilmu yang Bermanfaat"
 Arab: رَبِّ زِدْنِي عِلْمًا
 Terjemahan: "Ya Tuhanku, tambahkanlah kepadaku ilmu."
-Sumber: QS. Thaha: 114
+Sumber: Quran Surah Thaha ayat 114
 Sumber URL: https://quran.com/20/114
 ---
 
 ⚠️ PANDUAN URL SUMBER DOA:
-- Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: QS. Thaha: 114 → https://quran.com/20/114
+- Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: Quran Surah Thaha ayat 114 → https://quran.com/20/114
 - Hadits: https://www.hadits.id/hadits/[nama-kitab]/[nomor]
 - 🛑 JANGAN mengarang URL. Jika tidak yakin, KOSONGKAN field "Sumber URL".
 
@@ -413,7 +413,7 @@ Ikuti aturan berikut dengan TEPAT atau konten tidak akan tersimpan dengan benar.
    Dalil 1:
    Arab: [teks arab]
    Terjemahan: [terjemahan bahasa Indonesia]
-   Sumber: [QS. Surah:Ayat atau HR. Kitab No.X]
+   Sumber: [Quran Surah NamaSurah ayat X atau Hadits Riwayat NamaKitab Nomor X]
    Sumber URL: [https://quran.com/surah/ayat ATAU https://www.hadits.id/hadits/kitab/nomor — KOSONGKAN jika tidak 100% yakin]
 
 5. Format WAJIB untuk blok (doa) — ikuti PERSIS:
@@ -421,7 +421,7 @@ Ikuti aturan berikut dengan TEPAT atau konten tidak akan tersimpan dengan benar.
    Judul: [nama doa singkat]
    Arab: [teks arab doa]
    Terjemahan: [terjemahan bahasa Indonesia]
-   Sumber: [QS. ... atau HR. Bukhari/Muslim No. ...]
+   Sumber: [Quran Surah ... ayat ... atau Hadits Riwayat Bukhari/Muslim Nomor ...]
    Sumber URL: [https://quran.com/... atau https://www.hadits.id/... — KOSONGKAN jika tidak 100% yakin]
 
 Contoh output yang BENAR:
@@ -441,20 +441,20 @@ Sholat adalah kewajiban setiap muslim yang sudah baligh...
 Dalil 1:
 Arab: إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا
 Terjemahan: Sesungguhnya shalat itu adalah kewajiban yang ditentukan waktunya atas orang-orang yang beriman.
-Sumber: QS. An-Nisa: 103
+Sumber: Quran Surah An-Nisa ayat 103
 Sumber URL: https://quran.com/4/103
 
 Dalil 2:
 Arab: (jika ada)
 Terjemahan: ...
-Sumber: HR. Bukhari No. 8
+Sumber: Hadits Riwayat Bukhari Nomor 8
 Sumber URL: https://www.hadits.id/hadits/bukhari/8
 
 (doa)
 Judul: Doa Memohon Keistiqomahan
 Arab: رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا
 Terjemahan: Ya Tuhan kami, janganlah Engkau jadikan hati kami condong kepada kesesatan setelah Engkau beri petunjuk kepada kami.
-Sumber: QS. Ali Imran: 8
+Sumber: Quran Surah Ali Imran ayat 8
 Sumber URL: https://quran.com/3/8
 
 (closing)
@@ -585,8 +585,8 @@ Format per dalil:
 • Sumber URL: [URL sumber — panduan di bawah]
 
 ⚠️ PANDUAN URL SUMBER:
-- Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: QS. Al-Baqarah:260 → https://quran.com/2/260
-- Hadits: https://www.hadits.id/hadits/[kitab]/[nomor] | Contoh: HR. Bukhari No. 1234 → https://www.hadits.id/hadits/bukhari/1234
+- Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: Quran Surah Al-Baqarah ayat 260 → https://quran.com/2/260
+- Hadits: https://www.hadits.id/hadits/[kitab]/[nomor] | Contoh: Hadits Riwayat Bukhari Nomor 1234 → https://www.hadits.id/hadits/bukhari/1234
 - 🛑 JANGAN mengarang URL. Jika tidak yakin, KOSONGKAN field "Sumber URL".
 Tempatkan di posisi paling bermakna (sebelum klimaks atau setelah narasi utama).
 
@@ -664,7 +664,7 @@ Format per doa:
 • Judul : [nama doa singkat]
 • Arab  : [teks arab doa]
 • Terjemah: [terjemahan bahasa Indonesia]
-• Sumber: [QS. ... atau HR. Bukhari/Muslim No. ...]
+• Sumber: [Quran Surah ... ayat ... atau Hadits Riwayat Bukhari/Muslim Nomor ...]
 • Sumber URL: [URL sumber]
   - Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat]
   - Hadits: https://www.hadits.id/hadits/[kitab]/[nomor]
@@ -744,7 +744,7 @@ Ikuti aturan berikut dengan TEPAT atau konten tidak akan tersimpan dengan benar.
    Dalil 1:
    Arab: [teks arab]
    Terjemahan: [terjemahan bahasa Indonesia]
-   Sumber: [QS. Surah:Ayat atau HR. Kitab No.X]
+   Sumber: [Quran Surah NamaSurah ayat X atau Hadits Riwayat NamaKitab Nomor X]
    Sumber URL: [https://quran.com/surah/ayat ATAU https://www.hadits.id/hadits/kitab/nomor — KOSONGKAN jika tidak 100% yakin]
 
 5. Format WAJIB untuk blok (doa):
@@ -752,7 +752,7 @@ Ikuti aturan berikut dengan TEPAT atau konten tidak akan tersimpan dengan benar.
    Judul: [nama doa singkat]
    Arab: [teks arab doa]
    Terjemahan: [terjemahan bahasa Indonesia]
-   Sumber: [QS. ... atau HR. Bukhari/Muslim No. ...]
+   Sumber: [Quran Surah ... ayat ... atau Hadits Riwayat Bukhari/Muslim Nomor ...]
    Sumber URL: [https://quran.com/... atau https://www.hadits.id/... — KOSONGKAN jika tidak 100% yakin]
 
 Contoh output yang BENAR:
@@ -778,14 +778,14 @@ Nabi Ibrahim berdiri tegak di hadapan api yang menyala-nyala...
 Dalil 1:
 Arab: قُلْنَا يَا نَارُ كُونِي بَرْدًا وَسَلَامًا عَلَىٰ إِبْرَاهِيمَ
 Terjemahan: Kami berfirman, Wahai api! Jadilah kamu dingin dan penyelamat bagi Ibrahim.
-Sumber: QS. Al-Anbiya: 69
+Sumber: Quran Surah Al-Anbiya ayat 69
 Sumber URL: https://quran.com/21/69
 
 (doa)
 Judul: Doa Memohon Perlindungan
 Arab: حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ
 Terjemahan: Cukuplah Allah bagi kami dan Dia adalah sebaik-baik pelindung.
-Sumber: QS. Ali Imran: 173
+Sumber: Quran Surah Ali Imran ayat 173
 Sumber URL: https://quran.com/3/173
 
 (closing)
