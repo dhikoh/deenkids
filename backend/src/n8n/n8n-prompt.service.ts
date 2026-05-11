@@ -22,6 +22,7 @@ export interface GenerateThumbPromptDto {
   ratio: '16:9' | '1:1' | '4:5';
   style?: string;
   scenePreset?: 'KELUARGA' | 'NABI_SAHABAT' | 'KELOMPOK_ANAK' | 'TUNGGAL' | 'TANPA_MAKHLUK';
+  category?: 'QNA' | 'KISAH' | 'PEMBELAJARAN' | 'ARTIKEL';
 }
 
 @Injectable()
@@ -52,7 +53,7 @@ export class N8nPromptService {
   // ═══════════════════════════════════════════════
 
   generateThumbnailPrompt(dto: GenerateThumbPromptDto): string {
-    const { title, ratio, style, scenePreset } = dto;
+    const { title, ratio, style, scenePreset, category } = dto;
     const sizeMap: Record<string, string> = { '16:9': '1280×720', '1:1': '1080×1080', '4:5': '1080×1350' };
     const arLabel = ratio === '16:9' ? 'Widescreen 16:9' : ratio === '1:1' ? 'Square 1:1' : 'Portrait 4:5';
     const visualStyle = style || 'Animasi 3D (Pixar/Disney)';
@@ -100,13 +101,18 @@ Spesifikasi Wajib:
 - Resolusi Target: ${sizeMap[ratio]}
 - ${charSpecId}
 - ATURAN KETAT: TIDAK BOLEH ADA TEKS, HURUF, ATAU TULISAN APAPUN. Sediakan Negative Space untuk penambahan teks manual.
-- WATERMARK: Tambahkan teks kecil "adably.id" di sudut kanan bawah gambar dengan font tipis semi-transparan (opacity 40-60%).`;
+- BRANDING (sudut KIRI ATAS gambar, disusun vertikal dari atas ke bawah):
+  Baris 1: "${this.getCategoryLabel(category)}" — font sama seperti judul, ukuran 50% dari ukuran judul, semi-transparan (opacity 50-70%)
+  Baris 2: "Adably.id" — font sama seperti judul, ukuran 50% dari ukuran judul, semi-transparan (opacity 50-70%)
+  Baris 3: "Platform Edukasi Anak Islami" — ukuran lebih kecil dari Adably.id (sekitar 30-40% dari judul), semi-transparan
+  Warna: putih dengan shadow halus agar terbaca di semua latar belakang.`;
 
     if (ratio !== '16:9') {
       prompt += `\n\n⚠️ PENTING — ASPEK RASIO ${arLabel}:\nKomposisi gambar HARUS sesuai ${ratio}. ${ratio === '1:1' ? 'Gambar harus persegi sempurna — tidak boleh landscape.' : 'Gambar harus portrait/tegak — tidak boleh landscape.'}\nPastikan elemen visual terpusat dan seimbang untuk format ${ratio}.`;
     }
 
-    prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${visualStyle}. ${charSpecEn}. Warm lighting, vibrant child-friendly colors. Resolution: ${sizeMap[ratio]}. NO TEXT, NO LETTERS, negative space for manual text. Small semi-transparent 'adably.id' watermark at bottom-right corner. --ar ${ratio}"`;
+    const categoryEn = this.getCategoryLabel(category);
+    prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${visualStyle}. ${charSpecEn}. Warm lighting, vibrant child-friendly colors. Resolution: ${sizeMap[ratio]}. NO TEXT, NO LETTERS, negative space for manual text. Top-left corner branding: '${categoryEn}' + 'Adably.id' + 'Platform Edukasi Anak Islami' in white semi-transparent text with subtle shadow. --ar ${ratio}"`;
 
     return prompt;
   }
@@ -143,6 +149,17 @@ KORIDOR KONTEN YANG WAJIB DIIKUTI:
 5. Konten tidak boleh mengandung unsur SARA, ujaran kebencian, atau fitnah.
 6. Gunakan bahasa yang lembut, ramah anak, dan mudah dipahami oleh anak usia ${ageLabel}.
 7. Jangan membuat konten yang menakut-nakuti anak.
+8. KAIDAH DALIL SESUAI PEMAHAMAN SALAF:
+   a. PERKARA IBADAH (shalat, puasa, zakat, haji, doa, dzikir, thaharah, dll):
+      Hukum asal ibadah adalah HARAM/TERLARANG sampai ada dalil yang memerintahkan (tauqifiyyah).
+      → Sumber WAJIB dari Al-Quran dan/atau Hadits Shahih saja (tuntunan langsung dari Rasulullah ﷺ).
+      → JANGAN mencantumkan amalan ibadah yang tidak ada tuntunannya dari Rasulullah ﷺ.
+      → Setiap amalan ibadah HARUS disertai dalil perintah/tuntunan yang jelas.
+   b. PERKARA MUAMALAH (jual-beli, sosial, adat, makanan, pakaian, teknologi, dll):
+      Hukum asal muamalah adalah MUBAH (boleh) sampai ada dalil yang melarang.
+      → Cukup sebutkan dalil LARANGAN jika ada hal yang dilarang, bukan dalil pembolehan.
+      → Jika tidak ada dalil larangan yang shahih, nyatakan bahwa hukum asalnya mubah/boleh.
+      → JANGAN mengharamkan sesuatu tanpa dalil larangan yang jelas dari Al-Quran atau Hadits Shahih.
 
 ═══════════════════════════════════════
 TUGAS:
@@ -818,6 +835,19 @@ Gunakan STRUKTUR BERPIKIR dari tokoh-tokoh berikut — bukan gaya bahasa atau ke
     }
 
     return section;
+  }
+
+  /**
+   * Map category enum to Indonesian label for thumbnail branding
+   */
+  private getCategoryLabel(category?: string): string {
+    const labels: Record<string, string> = {
+      QNA: '❓ Tanya Jawab',
+      KISAH: '📖 Kisah Islami',
+      PEMBELAJARAN: '📚 Pembelajaran',
+      ARTIKEL: '📝 Artikel',
+    };
+    return labels[category || ''] || '📚 Adably';
   }
 
   /**

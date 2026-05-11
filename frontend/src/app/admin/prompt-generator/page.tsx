@@ -538,6 +538,17 @@ KORIDOR KONTEN YANG WAJIB DIIKUTI:
 5. Konten tidak boleh mengandung unsur SARA, ujaran kebencian, atau fitnah.
 6. Gunakan bahasa yang lembut, ramah anak, dan mudah dipahami oleh anak usia ${ageLabel}.
 7. Jangan membuat konten yang menakut-nakuti anak.
+8. KAIDAH DALIL SESUAI PEMAHAMAN SALAF:
+   a. PERKARA IBADAH (shalat, puasa, zakat, haji, doa, dzikir, thaharah, dll):
+      Hukum asal ibadah adalah HARAM/TERLARANG sampai ada dalil yang memerintahkan (tauqifiyyah).
+      → Sumber WAJIB dari Al-Quran dan/atau Hadits Shahih saja (tuntunan langsung dari Rasulullah ﷺ).
+      → JANGAN mencantumkan amalan ibadah yang tidak ada tuntunannya dari Rasulullah ﷺ.
+      → Setiap amalan ibadah HARUS disertai dalil perintah/tuntunan yang jelas.
+   b. PERKARA MUAMALAH (jual-beli, sosial, adat, makanan, pakaian, teknologi, dll):
+      Hukum asal muamalah adalah MUBAH (boleh) sampai ada dalil yang melarang.
+      → Cukup sebutkan dalil LARANGAN jika ada hal yang dilarang, bukan dalil pembolehan.
+      → Jika tidak ada dalil larangan yang shahih, nyatakan bahwa hukum asalnya mubah/boleh.
+      → JANGAN mengharamkan sesuatu tanpa dalil larangan yang jelas dari Al-Quran atau Hadits Shahih.
 
 `;
 
@@ -964,6 +975,7 @@ function generateImagePrompt(
   extras: { expression: string; activity: string; setting: string; colorPalette: string },
   includeText: boolean,
   aspectRatio: AspectRatio = "16:9",
+  category: string = "",
 ): string {
   const arOption = ASPECT_RATIO_OPTIONS.find(a => a.value === aspectRatio) || ASPECT_RATIO_OPTIONS[0];
   const arLabel = aspectRatio === "16:9" ? "Widescreen 16:9" : aspectRatio === "1:1" ? "Square 1:1 (1080×1080)" : "Portrait 4:5 (1080×1350)";
@@ -987,11 +999,23 @@ function generateImagePrompt(
   const engActivity = extras.activity.trim() ? `, performing: ${extras.activity.trim()}` : "";
   const engSetting = extras.setting.trim() ? `, set in: ${extras.setting.trim()}` : "";
   const engColors = extras.colorPalette.trim() ? `, dominant colors: ${extras.colorPalette.trim()}` : "";
-  prompt += `\n- WATERMARK: Tambahkan teks kecil "adably.id" di sudut kanan bawah gambar dengan font tipis semi-transparan (opacity 40-60%). Ukuran kecil, tidak mengganggu komposisi utama.`;
-  prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${style}. ${charSpec.en}${engActivity}${engSetting}${engColors}. Warm lighting, vibrant child-friendly colors. Resolution: ${arOption.size}. ${includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, negative space for manual text."} Small semi-transparent "adably.id" watermark at bottom-right corner. ${arOption.arFlag}"`;
+  const categoryLabel = getCategoryLabel(category);
+  prompt += `\n- BRANDING (sudut KIRI ATAS gambar, disusun vertikal dari atas ke bawah):\n  Baris 1: "${categoryLabel}" — font sama seperti judul, ukuran 50% dari ukuran judul, semi-transparan (opacity 50-70%)\n  Baris 2: "Adably.id" — font sama seperti judul, ukuran 50% dari ukuran judul, semi-transparan (opacity 50-70%)\n  Baris 3: "Platform Edukasi Anak Islami" — ukuran lebih kecil dari Adably.id (sekitar 30-40% dari judul), semi-transparan\n  Warna: putih dengan shadow halus agar terbaca di semua latar belakang.`;
+  prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${style}. ${charSpec.en}${engActivity}${engSetting}${engColors}. Warm lighting, vibrant child-friendly colors. Resolution: ${arOption.size}. ${includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, negative space for manual text."} Top-left corner branding: '${categoryLabel}' + 'Adably.id' + 'Platform Edukasi Anak Islami' in white semi-transparent text with subtle shadow. ${arOption.arFlag}"`;
   return prompt;
 }
 
+
+// Map category enum to Indonesian label for thumbnail branding
+function getCategoryLabel(category: string): string {
+  const labels: Record<string, string> = {
+    QNA: "❓ Tanya Jawab",
+    KISAH: "📖 Kisah Islami",
+    PEMBELAJARAN: "📚 Pembelajaran",
+    ARTIKEL: "📝 Artikel",
+  };
+  return labels[category] || "📚 Adably";
+}
 
 // Map node title → KisahSubType for prompt generation
 function nodeToSubType(title: string): KisahSubType {
@@ -1056,6 +1080,7 @@ export default function PromptGeneratorPage() {
   const [includeText, setIncludeText] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [imageExtras, setImageExtras] = useState({ expression: "", activity: "", setting: "", colorPalette: "" });
+  const [thumbCategory, setThumbCategory] = useState<string>("");
 
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [copied, setCopied] = useState(false);
@@ -1085,7 +1110,7 @@ export default function PromptGeneratorPage() {
     if (mode === "CONTENT") {
       prompt = generatePrompt(type, title.trim(), ages, options, kisahSubType, selectedThinkers, artikelPov);
     } else {
-      prompt = generateImagePrompt(title.trim(), imageStyle, scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, imageExtras, includeText, aspectRatio);
+      prompt = generateImagePrompt(title.trim(), imageStyle, scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, imageExtras, includeText, aspectRatio, thumbCategory);
       historyType = "IMAGE_PROMPT";
     }
     setGeneratedPrompt(prompt);
@@ -1403,6 +1428,25 @@ export default function PromptGeneratorPage() {
                     📱 Prompt akan dioptimalkan untuk format {aspectRatio === "1:1" ? "persegi (Instagram Feed / Facebook Post)" : "portrait 4:5 (Instagram Post engagement terbaik)"}.
                   </p>
                 )}
+              </div>
+
+              {/* Kategori Konten (untuk branding thumbnail) */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-3">1c. Kategori Konten <span className="text-xs font-normal text-slate-400">(label di thumbnail)</span></label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { value: "QNA", label: "Tanya Jawab", icon: "❓", color: "amber" },
+                    { value: "KISAH", label: "Kisah Islami", icon: "📖", color: "orange" },
+                    { value: "PEMBELAJARAN", label: "Pembelajaran", icon: "📚", color: "emerald" },
+                    { value: "ARTIKEL", label: "Artikel", icon: "📝", color: "sky" },
+                  ].map(cat => (
+                    <button key={cat.value} onClick={() => setThumbCategory(cat.value)} className={`p-3 rounded-xl text-center border-2 transition-all ${thumbCategory === cat.value ? `border-${cat.color}-500 bg-${cat.color}-50 shadow-sm` : "border-slate-200 hover:border-slate-300"}`}>
+                      <span className="text-xl">{cat.icon}</span>
+                      <p className="font-bold text-xs text-slate-800 mt-1">{cat.label}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-400 mt-2">Label kategori akan muncul di sudut kiri atas thumbnail bersama branding Adably.</p>
               </div>
 
               {/* Judul */}
