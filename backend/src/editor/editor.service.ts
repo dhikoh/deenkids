@@ -6,6 +6,7 @@ import { NotificationService } from '../notification/notification.service';
 import { CreateContentDto, UpdateContentDto } from './dto/editor.dto';
 import { sanitizeText, sanitizeJsonDeep } from '../common/utils/sanitize.util';
 import { StorageService } from '../common/storage/storage.service';
+import { IndexNowService } from '../common/seo/indexnow.service';
 import { PointType } from '@prisma/client';
 import slugify from 'slugify';
 
@@ -18,6 +19,7 @@ export class EditorService {
     private rewardService: RewardService,
     private notificationService: NotificationService,
     private storageService: StorageService,
+    private indexNowService: IndexNowService,
   ) {}
 
   async createContent(authorId: string, dto: CreateContentDto) {
@@ -85,6 +87,21 @@ export class EditorService {
         );
       } catch (err) {
         this.logger.warn(`Reward on direct publish failed (non-fatal): ${err.message}`);
+      }
+
+      // Auto-generate SEO meta tags if empty
+      if (!dto.metaTitle || !dto.metaDesc) {
+        const autoMeta: any = {};
+        if (!dto.metaTitle) autoMeta.metaTitle = content.title.substring(0, 60);
+        if (!dto.metaDesc) autoMeta.metaDesc = (dto.description || content.title).substring(0, 160);
+        await this.prisma.contentItem.update({ where: { id: content.id }, data: autoMeta });
+      }
+
+      // IndexNow — notify search engines of new published content
+      const withNode = await this.prisma.contentItem.findUnique({ where: { id: content.id }, include: { node: { select: { slug: true } } } });
+      if (withNode) {
+        const path = this.indexNowService.buildContentPath(withNode);
+        this.indexNowService.submitUrl(path).catch(() => {});
       }
     }
 
@@ -316,6 +333,21 @@ export class EditorService {
           message: `Konten "${existing.title}" telah diterbitkan langsung oleh SuperAdmin.`,
           linkUrl: '/admin/my-contents',
         });
+      }
+
+      // Auto-generate SEO meta tags if empty
+      if (!updated.metaTitle || !updated.metaDesc) {
+        const autoMeta: any = {};
+        if (!updated.metaTitle) autoMeta.metaTitle = updated.title.substring(0, 60);
+        if (!updated.metaDesc) autoMeta.metaDesc = (updated.description || updated.title).substring(0, 160);
+        await this.prisma.contentItem.update({ where: { id: contentId }, data: autoMeta });
+      }
+
+      // IndexNow — notify search engines of newly published content
+      const withNode = await this.prisma.contentItem.findUnique({ where: { id: contentId }, include: { node: { select: { slug: true } } } });
+      if (withNode) {
+        const path = this.indexNowService.buildContentPath(withNode);
+        this.indexNowService.submitUrl(path).catch(() => {});
       }
     }
 

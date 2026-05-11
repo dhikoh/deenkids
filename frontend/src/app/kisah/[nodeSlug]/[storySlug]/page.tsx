@@ -7,20 +7,30 @@ import UnifiedBlockRenderer from "@/components/UnifiedBlockRenderer";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
 import NarrationAudioPlayer from "@/components/NarrationAudioPlayer";
 import type { Metadata } from "next";
+import { JsonLd, buildArticleSchema, buildBreadcrumbSchema } from "@/components/seo/JsonLd";
 
 export async function generateMetadata({ params }: { params: Promise<{ nodeSlug: string; storySlug: string }> }): Promise<Metadata> {
-  const { storySlug } = await params;
+  const { nodeSlug, storySlug } = await params;
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://adably.id';
   try {
     const content = await fetchContentBySlug(storySlug);
+    const canonical = `${SITE_URL}/kisah/${nodeSlug}/${storySlug}`;
     return {
-      title: content.title + " — Adably",
+      title: content.title,
       description: content.description || content.title,
+      alternates: { canonical },
       openGraph: {
         title: content.title,
         description: content.description || content.title,
         type: "article",
-        images: [{ url: content.thumbnailUrl || "/og-image.png", width: 1200, height: 630 }],
+        url: canonical,
+        images: [{ url: content.thumbnailUrl || `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: content.title }],
+        publishedTime: content.publishedAt ? new Date(content.publishedAt).toISOString() : undefined,
+        modifiedTime: content.updatedAt ? new Date(content.updatedAt).toISOString() : undefined,
+        authors: [content.displayAuthorName || content.author?.name || 'Adably'],
+        section: 'Kisah Islami',
       },
+      twitter: { card: "summary_large_image", title: content.title, description: content.description || "" },
     };
   } catch { return { title: "Kisah Islami — Adably" }; }
 }
@@ -42,8 +52,28 @@ export default async function KisahDetailPage({
   // Ensure this is actually a Kisah content
   if (content.type !== "KISAH") notFound();
 
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://adably.id';
   const authorName = content.authorName || content.displayAuthorName || content.author?.name || "Anonim";
   const blocks: any[] = content.articleDetail?.blocks || [];
+  const pageUrl = `${SITE_URL}/kisah/${nodeSlug}/${storySlug}`;
+
+  // JSON-LD structured data for Google Rich Results
+  const articleSchema = buildArticleSchema({
+    title: content.title,
+    description: content.description || content.title,
+    imageUrl: content.thumbnailUrl,
+    publishedAt: content.publishedAt,
+    updatedAt: content.updatedAt,
+    authorName,
+    url: pageUrl,
+    category: 'Kisah Islami',
+  });
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: 'Beranda', url: SITE_URL },
+    { name: 'Kisah', url: `${SITE_URL}/kisah` },
+    { name: content.node?.title || 'Kategori', url: `${SITE_URL}/kisah/${nodeSlug}` },
+    { name: content.title, url: pageUrl },
+  ]);
 
   // Audio for KISAH: title + description + all readable blocks (respecting enableAudio)
   const audioBlocks: any[] = [
@@ -56,6 +86,8 @@ export default async function KisahDetailPage({
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 pt-28 max-w-3xl">
+      <JsonLd schema={articleSchema} />
+      <JsonLd schema={breadcrumbSchema} />
       {/* Breadcrumb */}
       <Link href={`/kisah/${nodeSlug}`} className="inline-flex items-center text-amber-600 hover:text-amber-700 mb-8 font-bold text-sm gap-1">
         <ChevronLeft className="h-4 w-4" /> Kembali ke {content.node?.title || "Kisah"}

@@ -19,6 +19,7 @@ import { PageContentModule } from './page-content/page-content.module';
 import { StorageModule } from './common/storage/storage.module';
 import { SocialModule } from './social/social.module';
 import { N8nModule } from './n8n/n8n.module';
+import { SeoModule } from './common/seo/seo.module';
 import { SeedController } from './seed.controller';
 
 @Module({
@@ -48,6 +49,7 @@ import { SeedController } from './seed.controller';
     StorageModule,
     SocialModule,
     N8nModule,
+    SeoModule,
   ],
   controllers: [SeedController],
   providers: [
