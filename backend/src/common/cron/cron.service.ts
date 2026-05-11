@@ -277,6 +277,61 @@ export class CronService {
     }
   }
 
+  // Weekly: clean orphan files in MinIO (uploaded but never saved to any content)
+  @Cron('0 5 * * 1') // Every Monday at 5AM
+  async cleanupOrphanFiles() {
+    const gracePeriod = 24 * 60 * 60 * 1000; // 24 hours — skip recent uploads (user might still save)
+    const cutoff = new Date(Date.now() - gracePeriod);
+
+    // 1. Collect all URLs referenced in the database
+    const allContent = await this.prisma.contentItem.findMany({
+      select: { audioUrl: true, thumbnailUrl: true, socialThumbnailUrl: true },
+    });
+    const allBanners = await this.prisma.sponsorBanner.findMany({
+      select: { imageUrl: true },
+    });
+    const allDonations = await this.prisma.donationSubmission.findMany({
+      where: { proofUrl: { not: null } },
+      select: { proofUrl: true },
+    });
+
+    const referencedUrls = new Set<string>();
+    for (const c of allContent) {
+      if (c.audioUrl) referencedUrls.add(c.audioUrl);
+      if (c.thumbnailUrl) referencedUrls.add(c.thumbnailUrl);
+      if (c.socialThumbnailUrl) referencedUrls.add(c.socialThumbnailUrl);
+    }
+    for (const b of allBanners) {
+      if (b.imageUrl) referencedUrls.add(b.imageUrl);
+    }
+    for (const d of allDonations) {
+      if (d.proofUrl) referencedUrls.add(d.proofUrl);
+    }
+
+    // 2. List all files in storage prefixes
+    let totalOrphans = 0;
+    for (const prefix of ['audio/', 'content/', 'banners/', 'donations/']) {
+      try {
+        const files = await this.storageService.listFiles(prefix);
+        for (const file of files) {
+          // Skip recent files (grace period)
+          if (file.lastModified > cutoff) continue;
+          // Skip if referenced in any DB record
+          if (referencedUrls.has(file.url)) continue;
+          // Orphan: delete from storage
+          await this.storageService.deleteFile(file.url);
+          totalOrphans++;
+        }
+      } catch (err) {
+        this.logger.warn(`⚠️ Failed to list files in ${prefix}: ${err.message}`);
+      }
+    }
+
+    if (totalOrphans > 0) {
+      this.logger.log(`🧹 Cleaned up ${totalOrphans} orphan files from MinIO storage`);
+    }
+  }
+
   // ─── Social Media Cron Jobs ──────────────────────────────────
 
   @Cron(CronExpression.EVERY_MINUTE)

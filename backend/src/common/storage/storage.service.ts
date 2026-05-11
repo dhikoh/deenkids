@@ -7,6 +7,7 @@ import {
   CreateBucketCommand,
   HeadBucketCommand,
   PutBucketPolicyCommand,
+  ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { extname } from 'path';
 
@@ -125,5 +126,38 @@ export class StorageService implements OnModuleInit {
     } catch (err) {
       this.logger.warn(`⚠️  Failed to delete file from MinIO: ${err.message}`);
     }
+  }
+
+  /**
+   * List all files in a folder prefix.
+   * Returns array of { key, url, lastModified, size }.
+   */
+  async listFiles(prefix: string): Promise<{ key: string; url: string; lastModified: Date; size: number }[]> {
+    if (!this.enabled) return [];
+    const results: { key: string; url: string; lastModified: Date; size: number }[] = [];
+    let continuationToken: string | undefined;
+
+    do {
+      const response = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        }),
+      );
+      for (const obj of response.Contents || []) {
+        if (obj.Key) {
+          results.push({
+            key: obj.Key,
+            url: `${this.publicUrl}/${obj.Key}`,
+            lastModified: obj.LastModified || new Date(),
+            size: obj.Size || 0,
+          });
+        }
+      }
+      continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+    } while (continuationToken);
+
+    return results;
   }
 }
