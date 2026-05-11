@@ -114,10 +114,7 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
             ...(content.openingAudio !== false && content.openingText ? [{ type: 'paragraph', text: content.openingText, enableAudio: true }] : []),
             ...(content.articleDetail?.blocks || [
               ...(content.qnaDetail?.answerQuick ? [{ type: 'quick_answer', text: content.qnaDetail.answerQuick }] : []),
-              ...(content.qnaDetail?.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
-              ...(content.qnaDetail?.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
-              ...(content.qnaDetail?.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
-              ...(content.qnaDetail?.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
+              ...(Array.isArray(content.qnaDetail?.blocks) ? content.qnaDetail.blocks : []),
             ]),
             ...(content.closingAudio !== false && content.closingText ? [{ type: 'paragraph', text: content.closingText, enableAudio: true }] : []),
           ]
@@ -146,17 +143,7 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
               <p className="text-emerald-900 font-medium leading-relaxed">{content.qnaDetail.answerQuick}</p>
             </div>
           )}
-          {(() => {
-            const blockList: any[] = Array.isArray(content.qnaDetail.blocks) && content.qnaDetail.blocks.length > 0
-              ? content.qnaDetail.blocks
-              : [
-                  ...(content.qnaDetail.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
-                  ...(content.qnaDetail.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
-                  ...(content.qnaDetail.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
-                  ...(content.qnaDetail.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
-                ];
-            return <UnifiedBlockRenderer blocks={blockList} variant="qna" />;
-          })()}
+          <UnifiedBlockRenderer blocks={Array.isArray(content.qnaDetail.blocks) ? content.qnaDetail.blocks : []} variant="qna" />
         </div>
       )}
 

@@ -234,39 +234,35 @@ export default function ReviewPage() {
                 <p className="text-sm text-slate-700">{data.qnaDetail.answerQuick}</p>
               </div>
             )}
-            {(data.qnaDetail.dialogBlocks || []).map((d: any, i: number) => (
-              <div key={i} className="bg-amber-50 border border-amber-100 rounded-xl p-3">
-                <h4 className="text-xs font-bold text-amber-700 mb-1">💬 Dialog {i + 1}</h4>
-                {(d.lines || []).map((line: any, li: number) => (
-                  <p key={li} className="text-sm text-slate-700"><span className="font-semibold">{line.role}:</span> {line.text}</p>
-                ))}
-              </div>
-            ))}
-            {(data.qnaDetail.dalilBlocks || []).map((d: any, i: number) => (
-              <div key={i} className="bg-orange-50 border border-orange-100 rounded-xl p-3">
-                <h4 className="text-xs font-bold text-orange-700 mb-1">📖 Dalil {i + 1}</h4>
-                {(d.entries || []).map((e: any, ei: number) => (
-                  <div key={ei} className="text-sm">
-                    {e.arabic && <p className="text-right font-arabic text-lg text-slate-800 mb-1">{e.arabic}</p>}
-                    {e.translation && <p className="text-slate-600 italic">{e.translation}</p>}
-                    {e.source && <p className="text-xs text-slate-400 mt-1">Sumber: {e.source}</p>}
+            {Array.isArray(data.qnaDetail.blocks) && data.qnaDetail.blocks.length > 0 && (
+              <div className="space-y-2">
+                {data.qnaDetail.blocks.map((block: any, i: number) => (
+                  <div key={i} className={`border rounded-xl p-3 ${
+                    block.type === 'dialog' ? 'bg-amber-50 border-amber-100' :
+                    block.type === 'dalil' ? 'bg-orange-50 border-orange-100' :
+                    block.type === 'analogy' ? 'bg-teal-50 border-teal-100' :
+                    block.type === 'tip' ? 'bg-sky-50 border-sky-100' :
+                    block.type === 'hikmah' ? 'bg-purple-50 border-purple-100' :
+                    block.type === 'doa' ? 'bg-emerald-50 border-emerald-100' :
+                    'bg-white border-slate-100'
+                  }`}>
+                    <span className="text-[10px] font-bold uppercase text-slate-400">{block.type}</span>
+                    {block.type === 'dialog' && (block.lines || []).map((line: any, li: number) => (
+                      <p key={li} className="text-sm text-slate-700"><span className="font-semibold">{line.role}:</span> {line.text}</p>
+                    ))}
+                    {block.type === 'dalil' && (block.entries || []).map((e: any, ei: number) => (
+                      <div key={ei} className="text-sm">
+                        {e.arabic && <p className="text-right font-arabic text-lg text-slate-800 mb-1">{e.arabic}</p>}
+                        {e.translation && <p className="text-slate-600 italic">{e.translation}</p>}
+                        {e.source && <p className="text-xs text-slate-400 mt-1">Sumber: {e.source}</p>}
+                      </div>
+                    ))}
+                    {block.text && <p className="text-sm text-slate-700 mt-1">{block.text}</p>}
+                    {block.title && block.type !== 'paragraph' && <p className="text-sm font-semibold text-slate-800">{block.title}</p>}
                   </div>
                 ))}
               </div>
-            ))}
-            {(data.qnaDetail.analogyBlocks || []).map((a: any, i: number) => (
-              <div key={i} className="bg-teal-50 border border-teal-100 rounded-xl p-3">
-                <h4 className="text-xs font-bold text-teal-700 mb-1">🧩 Analogi</h4>
-                {a.title && <p className="text-sm font-semibold text-slate-800">{a.title}</p>}
-                <p className="text-sm text-slate-700">{a.text}</p>
-              </div>
-            ))}
-            {(data.qnaDetail.tipsBlocks || []).map((t: any, i: number) => (
-              <div key={i} className="bg-sky-50 border border-sky-100 rounded-xl p-3">
-                <h4 className="text-xs font-bold text-sky-700 mb-1">ℹ️ Tips</h4>
-                <p className="text-sm text-slate-700">{t.text}</p>
-              </div>
-            ))}
+            )}
           </div>
         )}
 

@@ -37,18 +37,7 @@ export default function ContentRenderer({ content, isPreview = false }: ContentR
   let contentBlocks: any[] = [];
 
   if (content.type === 'QNA' && qna) {
-    // Unified blocks[] format (new) — preferred
-    if (Array.isArray(qna.blocks) && qna.blocks.length > 0) {
-      contentBlocks = qna.blocks;
-    } else {
-      // Legacy fallback: compose from separate fields
-      contentBlocks = [
-        ...(qna.dialogBlocks || []).map((b: any) => ({ type: 'dialog', ...b })),
-        ...(qna.dalilBlocks || []).map((b: any) => ({ type: 'dalil', ...b })),
-        ...(qna.analogyBlocks || []).map((b: any) => ({ type: 'analogy', ...b })),
-        ...(qna.tipsBlocks || []).map((b: any) => ({ type: 'tip', ...b })),
-      ];
-    }
+    contentBlocks = Array.isArray(qna.blocks) ? qna.blocks : [];
   } else {
     // ARTIKEL, PEMBELAJARAN, KISAH — all use articleDetail.blocks
     contentBlocks = content.articleDetail?.blocks || [];

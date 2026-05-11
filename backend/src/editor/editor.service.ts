@@ -115,11 +115,6 @@ export class EditorService {
           answerQuick: sanitized.answerQuick || '',
           answerQuickReferenceUrl: sanitized.answerQuickReferenceUrl || null,
           blocks: sanitized.blocks || [],
-          // Legacy fields — kept empty during dual-phase migration
-          dialogBlocks: [],
-          dalilBlocks: [],
-          analogyBlocks: [],
-          tipsBlocks: [],
         },
       });
     } else if ((dto.type === 'ARTICLE' || dto.type === 'PEMBELAJARAN' || dto.type === 'KISAH') && dto.articleDetail) {
@@ -361,11 +356,6 @@ export class EditorService {
           answerQuick: sanitized.answerQuick,
           answerQuickReferenceUrl: sanitized.answerQuickReferenceUrl || null,
           blocks: sanitized.blocks || [],
-          // Legacy fields — kept empty during dual-phase migration
-          dialogBlocks: [],
-          dalilBlocks: [],
-          analogyBlocks: [],
-          tipsBlocks: [],
         },
         create: {
           contentId,
@@ -373,11 +363,6 @@ export class EditorService {
           answerQuick: sanitized.answerQuick || '',
           answerQuickReferenceUrl: sanitized.answerQuickReferenceUrl || null,
           blocks: sanitized.blocks || [],
-          // Legacy fields — kept empty during dual-phase migration
-          dialogBlocks: [],
-          dalilBlocks: [],
-          analogyBlocks: [],
-          tipsBlocks: [],
         },
       });
     }
