@@ -151,8 +151,9 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
           </button>
         ))}
       </div>
+      {/* ═══ Section Order: 1. Pembelajaran, 2. Tanya Jawab, 3. Artikel, 4. Kisah Islami ═══ */}
 
-      {/* Pembelajaran Utama */}
+      {/* 1️⃣ Pembelajaran Utama */}
       {visibility.pembelajaran && (
       <section className="py-24 bg-white relative z-20 -mt-10 rounded-t-[3rem] shadow-[0_-10px_40px_rgb(0,0,0,0.03)] border-t border-slate-100">
         <div className="container mx-auto px-4 md:px-6">
@@ -196,7 +197,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
       </section>
       )}
 
-      {/* Tanya Jawab Populer */}
+      {/* 2️⃣ Tanya Jawab Populer */}
       {visibility.qna && (
       <section className="py-20 bg-gradient-to-b from-white to-slate-50">
         <div className="container mx-auto px-4 md:px-6">
@@ -226,7 +227,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
       </section>
       )}
 
-      {/* Artikel Terbaru */}
+      {/* 3️⃣ Artikel Terbaru */}
       {visibility.article && (
       <section className="py-20 bg-slate-50">
         <div className="container mx-auto px-4 md:px-6">
@@ -256,7 +257,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
       </section>
       )}
 
-      {/* Kisah Islami */}
+      {/* 4️⃣ Kisah Islami (paling bawah) */}
       {visibility.kisah && (
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 md:px-6">
@@ -303,7 +304,7 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
       </section>
       )}
 
-      {/* Kisah Islami Populer */}
+      {/* 4️⃣b Kisah Islami Populer */}
       {visibility.kisah && (
       <section className="py-16 bg-gradient-to-b from-white to-amber-50/30">
         <div className="container mx-auto px-4 md:px-6">
