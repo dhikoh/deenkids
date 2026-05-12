@@ -88,6 +88,8 @@ function EditorContent() {
   const [blocks, setBlocks] = useState<EditorBlock[]>([]);
   const [nodes, setNodes] = useState<any[]>([]);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [showTagPanel, setShowTagPanel] = useState(false);
+  const [tagFilter, setTagFilter] = useState("");
   const [user, setUser] = useState<any>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [editStatus, setEditStatus] = useState<string | null>(null);
@@ -819,6 +821,53 @@ function EditorContent() {
                   <datalist id="tag-suggestions">{availableTags.map(t => <option key={t.id} value={t.name} />)}</datalist>
                   <button onClick={addTag} className="px-3 py-2 bg-slate-100 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-200"><Plus size={16} /></button>
                 </div>
+
+                {/* Tag Populer Panel */}
+                <button
+                  onClick={() => setShowTagPanel(!showTagPanel)}
+                  className="mt-2 text-xs font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1 transition-colors"
+                >
+                  🏷️ {showTagPanel ? 'Sembunyikan' : 'Tampilkan'} Tag Populer ({availableTags.length})
+                </button>
+                {showTagPanel && (
+                  <div className="mt-2 border border-purple-200 rounded-xl p-3 bg-purple-50/50">
+                    <input
+                      type="text"
+                      value={tagFilter}
+                      onChange={(e) => setTagFilter(e.target.value)}
+                      placeholder="🔍 Cari tag..."
+                      className="w-full border border-purple-200 rounded-lg p-2 text-xs mb-2 focus:border-purple-500 focus:ring-purple-500 bg-white"
+                    />
+                    <div className="max-h-48 overflow-y-auto space-y-1">
+                      {availableTags
+                        .filter(t => !tagFilter || t.name.toLowerCase().includes(tagFilter.toLowerCase()))
+                        .map(t => {
+                          const isSelected = tags.includes(t.name);
+                          return (
+                            <button
+                              key={t.id}
+                              onClick={() => { if (!isSelected) setTags(prev => [...prev, t.name]); }}
+                              disabled={isSelected}
+                              className={`w-full flex items-center justify-between p-2 rounded-lg text-xs transition-all ${
+                                isSelected
+                                  ? 'bg-emerald-100 text-emerald-700 cursor-default'
+                                  : 'bg-white hover:bg-purple-100 text-slate-700 hover:text-purple-800 border border-transparent hover:border-purple-200'
+                              }`}
+                            >
+                              <span className="font-medium">
+                                {isSelected ? '✓' : '+'} #{t.name}
+                              </span>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                isSelected ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                              }`}>
+                                {t.usageCount || 0}×
+                              </span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

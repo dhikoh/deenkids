@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ContentType } from '@prisma/client';
 
 @Injectable()
 export class ContentService {
@@ -132,7 +133,8 @@ export class ContentService {
 
     if (!content) throw new NotFoundException('Konten tidak ditemukan');
 
-    const related = await this.getRelatedContent(content.id, content.nodeId);
+    const tagIds = content.tags?.map(t => t.tagId) || [];
+    const related = await this.getRelatedContent(content.id, content.nodeId, tagIds, content.type);
 
     return {
       ...content,
@@ -141,13 +143,87 @@ export class ContentService {
     };
   }
 
-  private async getRelatedContent(contentId: string, nodeId: string | null) {
-    if (!nodeId) return [];
-    return this.prisma.contentItem.findMany({
-      where: { nodeId, id: { not: contentId }, status: 'PUBLISHED', deletedAt: null },
-      take: 5,
-      select: { id: true, title: true, slug: true, type: true, viewCount: true, thumbnailUrl: true, enableAudio: true },
-    });
+  // ─── Related Content (3-layer algorithm) ────────────────────────────────────
+  private async getRelatedContent(
+    contentId: string,
+    nodeId: string | null,
+    tagIds: string[],
+    contentType: string,
+  ) {
+    const LIMIT = 5;
+    const baseWhere = { status: 'PUBLISHED' as const, deletedAt: null };
+    const selectFields = {
+      id: true, title: true, slug: true, type: true,
+      viewCount: true, thumbnailUrl: true, enableAudio: true,
+      description: true,
+      node: { select: { slug: true } },
+    };
+    const collected = new Set<string>([contentId]);
+    const results: any[] = [];
+
+    // Layer 1: Tag matching (paling relevan — konten dengan tag yang sama)
+    if (tagIds.length > 0 && results.length < LIMIT) {
+      const tagMatches = await this.prisma.contentItem.findMany({
+        where: {
+          ...baseWhere,
+          id: { notIn: [...collected] },
+          tags: { some: { tagId: { in: tagIds } } },
+        },
+        take: LIMIT * 2, // fetch extra to allow dedup & sorting
+        orderBy: { viewCount: 'desc' },
+        select: {
+          ...selectFields,
+          tags: { select: { tagId: true } },
+        },
+      });
+
+      // Sort by number of matching tags (descending)
+      const scored = tagMatches.map(item => ({
+        ...item,
+        matchScore: item.tags.filter(t => tagIds.includes(t.tagId)).length,
+      }));
+      scored.sort((a, b) => b.matchScore - a.matchScore);
+
+      for (const item of scored) {
+        if (results.length >= LIMIT) break;
+        if (collected.has(item.id)) continue;
+        collected.add(item.id);
+        const { tags: _tags, matchScore: _score, ...rest } = item;
+        results.push(rest);
+      }
+    }
+
+    // Layer 2: Same node (fill remaining slots)
+    if (results.length < LIMIT && nodeId) {
+      const nodeMatches = await this.prisma.contentItem.findMany({
+        where: { ...baseWhere, nodeId, id: { notIn: [...collected] } },
+        take: LIMIT - results.length,
+        orderBy: { viewCount: 'desc' },
+        select: selectFields,
+      });
+      for (const item of nodeMatches) {
+        if (results.length >= LIMIT) break;
+        collected.add(item.id);
+        results.push(item);
+      }
+    }
+
+    // Layer 3: Same type fallback (fill any remaining)
+    if (results.length < LIMIT) {
+      const typeMatches = await this.prisma.contentItem.findMany({
+        where: { ...baseWhere, type: contentType as ContentType, id: { notIn: [...collected] } },
+        take: LIMIT - results.length,
+        orderBy: { viewCount: 'desc' },
+        select: selectFields,
+      });
+      for (const item of typeMatches) {
+        if (results.length >= LIMIT) break;
+        collected.add(item.id);
+        results.push(item);
+      }
+    }
+
+    return results;
   }
 
   // ─── General Content List ─────────────────────────────────────────────────────

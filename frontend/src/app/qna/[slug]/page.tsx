@@ -2,6 +2,7 @@ import { fetchContentBySlug } from "@/lib/api";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Star, ThumbsUp, Eye, Lightbulb, User } from "lucide-react";
+import BacaJuga from "@/components/BacaJuga";
 import { EngagementBar } from "@/components/ui/EngagementBar";
 import UnifiedBlockRenderer from "@/components/UnifiedBlockRenderer";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
@@ -149,6 +150,9 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
       )}
 
 
+      {/* Baca Juga */}
+      <BacaJuga items={content.related} />
+
       {/* Engagement Bar */}
       <EngagementBar
         contentId={content.id}
@@ -158,21 +162,6 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
         initialShares={content.shareCount || 0}
         initialViews={content.viewCount || 0}
       />
-
-      {/* Related Content */}
-      {content.related && content.related.length > 0 && (
-        <div className="mt-12">
-          <h2 className="text-xl font-bold text-slate-800 mb-4">📚 Konten Terkait</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {content.related.map((r: any) => (
-              <Link key={r.id} href={r.type === 'QNA' ? `/qna/${r.slug}` : `/artikel/${r.slug}`} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-emerald-200 transition-all group">
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded">{r.type === 'QNA' ? 'Tanya Jawab' : 'Artikel'}</span>
-                <h3 className="font-bold text-slate-800 mt-2 group-hover:text-emerald-600 transition-colors line-clamp-2">{r.title}</h3>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

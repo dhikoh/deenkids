@@ -2,6 +2,7 @@ import { fetchContentBySlug } from "@/lib/api";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Star, ThumbsUp, Eye, User, Volume2 } from "lucide-react";
+import BacaJuga from "@/components/BacaJuga";
 import { EngagementBar } from "@/components/ui/EngagementBar";
 import UnifiedBlockRenderer from "@/components/UnifiedBlockRenderer";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
@@ -158,33 +159,8 @@ export default async function KisahDetailPage({
         </div>
       )}
 
-      {/* Related Content */}
-      {content.related && content.related.length > 0 && (
-        <div className="mt-12 pt-8 border-t border-slate-100">
-          <h3 className="text-lg font-bold text-slate-800 mb-5">Kisah Lainnya</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {content.related.map((rel: any) => (
-              <Link
-                key={rel.id}
-                href={`/kisah/${nodeSlug}/${rel.slug}`}
-                className="group flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 transition-all"
-              >
-                {rel.thumbnailUrl ? (
-                  <img src={rel.thumbnailUrl} alt={rel.title} className="w-14 h-14 rounded-lg object-cover shrink-0" />
-                ) : (
-                  <div className="w-14 h-14 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-                    <Volume2 className="h-6 w-6 text-amber-400" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-slate-700 text-sm line-clamp-2 group-hover:text-amber-700">{rel.title}</p>
-                  <p className="text-xs text-slate-400 flex items-center gap-1 mt-1"><Eye className="h-3 w-3" /> {rel.viewCount}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Baca Juga */}
+      <BacaJuga items={content.related} />
 
       {/* Engagement */}
       <div className="mt-10 pt-8 border-t border-slate-100">
