@@ -64,7 +64,8 @@ export class StructureService {
         icon: body.icon ?? existing.icon,
         order: body.order ?? existing.order,
         isActive: body.isActive ?? existing.isActive,
-        parentId: body.parentId !== undefined ? body.parentId : existing.parentId,
+        // Fix: convert empty string to null for root-level nodes
+        parentId: body.parentId !== undefined ? (body.parentId || null) : existing.parentId,
         group: body.group ?? existing.group,
       },
     });
@@ -75,18 +76,55 @@ export class StructureService {
   async deleteNode(id: string) {
     const existing = await this.prisma.contentNode.findUnique({
       where: { id },
-      include: { _count: { select: { contents: true, children: true } } },
+      include: { _count: { select: { contents: { where: { deletedAt: null } }, children: true } } },
     });
     if (!existing) throw new NotFoundException('Node tidak ditemukan');
     if (existing._count.contents > 0) {
-      throw new BadRequestException('Tidak bisa menghapus node yang masih memiliki konten');
+      throw new BadRequestException(`Tidak bisa menghapus node yang masih memiliki ${existing._count.contents} konten. Pindahkan konten terlebih dahulu.`);
     }
     if (existing._count.children > 0) {
-      throw new BadRequestException('Tidak bisa menghapus node yang masih memiliki sub-node');
+      throw new BadRequestException(`Tidak bisa menghapus node yang masih memiliki ${existing._count.children} sub-node. Hapus sub-node terlebih dahulu.`);
     }
 
     await this.prisma.contentNode.delete({ where: { id } });
     return { message: 'Node berhasil dihapus' };
+  }
+
+  // ─── Get contents of a node (for migration modal) ─────────────────
+  async getNodeContents(nodeId: string) {
+    const node = await this.prisma.contentNode.findUnique({ where: { id: nodeId } });
+    if (!node) throw new NotFoundException('Node tidak ditemukan');
+
+    const contents = await this.prisma.contentItem.findMany({
+      where: { nodeId, deletedAt: null },
+      select: { id: true, title: true, slug: true, type: true, status: true },
+      orderBy: { title: 'asc' },
+    });
+
+    return { data: contents, count: contents.length };
+  }
+
+  // ─── Bulk move all contents from one node to another ───────────────
+  async bulkMoveContents(sourceNodeId: string, targetNodeId: string) {
+    const source = await this.prisma.contentNode.findUnique({ where: { id: sourceNodeId } });
+    if (!source) throw new NotFoundException('Node sumber tidak ditemukan');
+
+    const target = await this.prisma.contentNode.findUnique({ where: { id: targetNodeId } });
+    if (!target) throw new NotFoundException('Node tujuan tidak ditemukan');
+
+    if (sourceNodeId === targetNodeId) {
+      throw new BadRequestException('Node sumber dan tujuan tidak boleh sama');
+    }
+
+    const result = await this.prisma.contentItem.updateMany({
+      where: { nodeId: sourceNodeId, deletedAt: null },
+      data: { nodeId: targetNodeId },
+    });
+
+    return {
+      message: `${result.count} konten dipindahkan dari "${source.title}" ke "${target.title}"`,
+      movedCount: result.count,
+    };
   }
 
   async assignContentToNode(contentId: string, nodeId: string) {

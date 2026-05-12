@@ -43,6 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
       source: typeof window !== "undefined" ? window.location.href : undefined,
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
       userId: getCurrentUserId(),
+      category: 'REACT_CRASH',
     });
   }
 
@@ -99,6 +100,7 @@ export function GlobalErrorListener() {
         source: typeof window !== "undefined" ? window.location.href : undefined,
         userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
         userId: getCurrentUserId(),
+        category: 'JS_ERROR',
       });
     };
 
@@ -121,6 +123,7 @@ export function GlobalErrorListener() {
         source: typeof window !== "undefined" ? window.location.href : undefined,
         userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
         userId: getCurrentUserId(),
+        category: 'PROMISE_REJECT',
       });
     };
 

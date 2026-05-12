@@ -118,6 +118,21 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
       throw new Error('Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.');
     }
     const error = await res.json().catch(() => ({ message: 'Request failed' }));
+
+    // Auto-report API errors (4xx & 5xx, except 401/429 which are handled above)
+    if (res.status >= 400 && typeof window !== 'undefined') {
+      const userId = (() => { try { const u = localStorage.getItem('user'); return u ? JSON.parse(u)?.id : undefined; } catch { return undefined; } })();
+      submitErrorReport({
+        message: `API ${res.status}: ${error.message || 'Error'}`,
+        stack: `URL: ${url}\nMethod: ${options.method || 'GET'}\nStatus: ${res.status}`,
+        source: window.location.href,
+        userAgent: navigator.userAgent,
+        userId,
+        category: 'API_ERROR',
+        httpStatus: res.status,
+      });
+    }
+
     throw new Error(error.message || `HTTP ${res.status}`);
   }
   return res.json();
@@ -388,6 +403,20 @@ export async function deleteStructureNode(id: string, token: string) {
   return apiFetch(`${API_BASE_URL}/admin/structure/${id}`, {
     method: 'DELETE',
     headers: authHeaders(token),
+  });
+}
+
+export async function fetchNodeContents(nodeId: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/structure/${nodeId}/contents`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function bulkMoveNodeContents(nodeId: string, targetNodeId: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/structure/${nodeId}/move-contents`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify({ targetNodeId }),
   });
 }
 
@@ -679,7 +708,7 @@ export async function deleteBanner(id: string, token: string) {
 // ERROR REPORTING
 // ═══════════════════════════════════════
 
-export async function submitErrorReport(data: { message: string; stack?: string; source?: string; userAgent?: string; userId?: string }) {
+export async function submitErrorReport(data: { message: string; stack?: string; source?: string; userAgent?: string; userId?: string; category?: string; httpStatus?: number }) {
   try {
     await fetch(`${API_BASE_URL}/error-report`, {
       method: 'POST',
@@ -691,10 +720,12 @@ export async function submitErrorReport(data: { message: string; stack?: string;
   }
 }
 
-export async function fetchErrorReports(token: string, page = 1, resolved?: string, search?: string) {
+export async function fetchErrorReports(token: string, page = 1, resolved?: string, search?: string, category?: string, sortBy?: string) {
   const params = new URLSearchParams({ page: String(page) });
   if (resolved !== undefined) params.set('resolved', resolved);
   if (search) params.set('search', search);
+  if (category) params.set('category', category);
+  if (sortBy) params.set('sortBy', sortBy);
   return apiFetch(`${API_BASE_URL}/admin/error-reports?${params}`, { headers: authHeaders(token) });
 }
 
@@ -712,6 +743,14 @@ export async function reopenError(id: string, token: string) {
 
 export async function resolveAllErrors(token: string) {
   return apiFetch(`${API_BASE_URL}/admin/error-reports/resolve-all`, { method: 'PUT', headers: authHeaders(token) });
+}
+
+export async function deleteError(id: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/error-reports/${id}`, { method: 'DELETE', headers: authHeaders(token) });
+}
+
+export async function deleteResolvedErrors(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/error-reports/bulk/resolved`, { method: 'DELETE', headers: authHeaders(token) });
 }
 
 // ── Trash / Recycle Bin ──

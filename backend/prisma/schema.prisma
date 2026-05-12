@@ -71,7 +71,7 @@ model ContentNode {
   ageGroups   String[] // e.g., ["3-5", "5-7", "7-10"]
   order       Int           @default(0)
   icon        String?
-  group       String    @default("PEMBELAJARAN") // 'PEMBELAJARAN' | 'KISAH'
+  group       String        @default("PEMBELAJARAN") // 'PEMBELAJARAN' | 'KISAH'
   isActive    Boolean       @default(true)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -96,54 +96,54 @@ enum ContentType {
 }
 
 model ContentItem {
-  id                String            @id @default(uuid())
-  slug              String            @unique
-  title             String
-  description       String?
-  thumbnailUrl      String?           // URL gambar thumbnail untuk card & OG image
-  type              ContentType
-  status            ContentStatus     @default(DRAFT)
-  nodeId            String?
-  node              ContentNode?      @relation(fields: [nodeId], references: [id])
-  authorId          String
-  author            User              @relation(fields: [authorId], references: [id])
-  displayAuthorName String? // SuperAdmin alias — if set, shown instead of author.name
-  ageGroups         String[] // e.g., ["3-5", "5-7"]
-  metaTitle         String?
-  metaDesc          String?
-  viewCount         Int               @default(0)
-  likeCount         Int               @default(0)
-  bookmarkCount     Int               @default(0)
-  shareCount        Int               @default(0)
-  avgRating         Float             @default(0.0)
-  ratingCount       Int               @default(0)
-  publishedAt       DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  qnaDetail         QnaDetail?
-  articleDetail     ArticleDetail?
-  tags              ContentItemTag[]
-  likes             ContentLike[]
-  bookmarks         ContentBookmark[]
-  ratings           ContentRating[]
-  views             ContentView[]
-  reviewHistory     ReviewHistory[]
-  aiCheckResults    AiCheckResult[]
-  relatedFrom       RelatedContent[]  @relation("SourceContent")
-  relatedTo         RelatedContent[]  @relation("TargetContent")
-  enableAudio       Boolean           @default(false)
-  audioTitle        Boolean           @default(true)
-  audioDescription  Boolean           @default(true)
-  audioUrl          String?           // URL file MP3 narasi yang di-upload (hasil TTS generate)
-  pov               String?           // 'ORTU' | 'ANAK' — Point of view, hanya untuk ARTICLE type
-  openingText       String?           // Mukadimah/pembukaan: teks salam + pengantar
-  closingText       String?           // Penutupan: teks penutup + salam
-  openingAudio      Boolean           @default(true) // Enable audio for opening
-  closingAudio      Boolean           @default(true) // Enable audio for closing
-  deletedAt         DateTime? // Soft delete timestamp, null = active
-  previousStatus    String? // Status before deletion, for trash UI display
-  socialThumbnailUrl String?          // Thumbnail 1:1 untuk IG/FB post
-  socialPublishLogs SocialPublishLog[]
+  id                 String             @id @default(uuid())
+  slug               String             @unique
+  title              String
+  description        String?
+  thumbnailUrl       String? // URL gambar thumbnail untuk card & OG image
+  type               ContentType
+  status             ContentStatus      @default(DRAFT)
+  nodeId             String?
+  node               ContentNode?       @relation(fields: [nodeId], references: [id])
+  authorId           String
+  author             User               @relation(fields: [authorId], references: [id])
+  displayAuthorName  String? // SuperAdmin alias — if set, shown instead of author.name
+  ageGroups          String[] // e.g., ["3-5", "5-7"]
+  metaTitle          String?
+  metaDesc           String?
+  viewCount          Int                @default(0)
+  likeCount          Int                @default(0)
+  bookmarkCount      Int                @default(0)
+  shareCount         Int                @default(0)
+  avgRating          Float              @default(0.0)
+  ratingCount        Int                @default(0)
+  publishedAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  qnaDetail          QnaDetail?
+  articleDetail      ArticleDetail?
+  tags               ContentItemTag[]
+  likes              ContentLike[]
+  bookmarks          ContentBookmark[]
+  ratings            ContentRating[]
+  views              ContentView[]
+  reviewHistory      ReviewHistory[]
+  aiCheckResults     AiCheckResult[]
+  relatedFrom        RelatedContent[]   @relation("SourceContent")
+  relatedTo          RelatedContent[]   @relation("TargetContent")
+  enableAudio        Boolean            @default(false)
+  audioTitle         Boolean            @default(true)
+  audioDescription   Boolean            @default(true)
+  audioUrl           String? // URL file MP3 narasi yang di-upload (hasil TTS generate)
+  pov                String? // 'ORTU' | 'ANAK' — Point of view, hanya untuk ARTICLE type
+  openingText        String? // Mukadimah/pembukaan: teks salam + pengantar
+  closingText        String? // Penutupan: teks penutup + salam
+  openingAudio       Boolean            @default(true) // Enable audio for opening
+  closingAudio       Boolean            @default(true) // Enable audio for closing
+  deletedAt          DateTime? // Soft delete timestamp, null = active
+  previousStatus     String? // Status before deletion, for trash UI display
+  socialThumbnailUrl String? // Thumbnail 1:1 untuk IG/FB post
+  socialPublishLogs  SocialPublishLog[]
 
   @@index([authorId, status])
   @@index([status, type])
@@ -158,7 +158,7 @@ model QnaDetail {
   content                 ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
   question                String
   answerQuick             String
-  answerQuickReferenceUrl String?     // Reference URL for the quick answer
+  answerQuickReferenceUrl String? // Reference URL for the quick answer
   blocks                  Json        @default("[]") // unified block array (paragraph, dialog, dalil, analogy, tip, image, video)
   // Legacy fields — kept for dual-phase migration safety, will be removed after Phase 2 cleanup
   dialogBlocks            Json        @default("[]")
@@ -482,6 +482,8 @@ model ErrorReport {
   source      String? // URL where error occurred
   userAgent   String?
   userId      String?
+  category    String   @default("JS_ERROR") // JS_ERROR | REACT_CRASH | API_ERROR | PROMISE_REJECT
+  httpStatus  Int? // HTTP status code for API_ERROR (400, 500, etc.)
   occurrences Int      @default(1)
   isResolved  Boolean  @default(false)
   lastSeenAt  DateTime @default(now())
@@ -490,6 +492,7 @@ model ErrorReport {
 
   @@index([isResolved, lastSeenAt])
   @@index([lastSeenAt])
+  @@index([category])
 }
 
 model LoginHistory {
@@ -520,8 +523,8 @@ model SocialAccount {
   pageName          String
   pageId            String             @unique
   igAccountId       String?
-  igUsername         String?
-  pageAccessToken   String             // Encrypted (AES-256-GCM)
+  igUsername        String?
+  pageAccessToken   String // Encrypted (AES-256-GCM)
   profilePictureUrl String?
   defaultHashtags   String?            @default("#adably #edukasiislami #parentingislami")
   captionTemplate   String?
@@ -539,7 +542,7 @@ model SocialPublishLog {
   content         ContentItem   @relation(fields: [contentId], references: [id])
   socialAccountId String
   socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
-  platform        String        // 'INSTAGRAM' | 'FACEBOOK'
+  platform        String // 'INSTAGRAM' | 'FACEBOOK'
   postId          String?
   postUrl         String?
   caption         String

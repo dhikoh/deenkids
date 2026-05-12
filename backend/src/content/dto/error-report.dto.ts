@@ -31,4 +31,14 @@ export class SubmitErrorReportDto {
   @IsString()
   @MaxLength(100)
   userId?: string;
+
+  @ApiPropertyOptional({ description: 'Error category: JS_ERROR | REACT_CRASH | API_ERROR | PROMISE_REJECT', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  category?: string;
+
+  @ApiPropertyOptional({ description: 'HTTP status code for API errors' })
+  @IsOptional()
+  httpStatus?: number;
 }

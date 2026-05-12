@@ -91,6 +91,20 @@ export class AdminController {
     return this.structureService.deleteNode(id);
   }
 
+  @Get('structure/:id/contents')
+  @Roles('ADMIN', 'SUPERADMIN')
+  @ApiOperation({ summary: 'Get contents inside a specific node (for migration)' })
+  async getNodeContents(@Param('id') id: string) {
+    return this.structureService.getNodeContents(id);
+  }
+
+  @Put('structure/:id/move-contents')
+  @Roles('ADMIN', 'SUPERADMIN')
+  @ApiOperation({ summary: 'Bulk move all contents from one node to another' })
+  async bulkMoveContents(@Param('id') id: string, @Body() body: { targetNodeId: string }) {
+    return this.structureService.bulkMoveContents(id, body.targetNodeId);
+  }
+
   @Put('content/:id/assign-node')
   @Roles('ADMIN', 'SUPERADMIN')
   @ApiOperation({ summary: 'Assign content to a specific node in the structure' })

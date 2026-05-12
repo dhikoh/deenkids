@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Query, Param, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Query, Param, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard, RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -6,6 +6,9 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { createHash } from 'crypto';
 import { SubmitErrorReportDto } from './dto/error-report.dto';
+
+// Valid categories — prevent garbage data
+const VALID_CATEGORIES = ['JS_ERROR', 'REACT_CRASH', 'API_ERROR', 'PROMISE_REJECT'];
 
 // ─── Public endpoint: receive error reports from frontend ───
 @ApiTags('Error Reporting')
@@ -24,10 +27,12 @@ export class ErrorReportPublicController {
     const source = dto.source || null;
     const userAgent = dto.userAgent || null;
     const userId = dto.userId || null;
+    const category = VALID_CATEGORIES.includes(dto.category || '') ? dto.category! : 'JS_ERROR';
+    const httpStatus = typeof dto.httpStatus === 'number' ? dto.httpStatus : null;
 
     // Create fingerprint from message + source to group identical errors
     const fingerprint = createHash('sha256')
-      .update(`${message}|${source || ''}`)
+      .update(`${message}|${source || ''}|${category}`)
       .digest('hex')
       .substring(0, 64);
 
@@ -41,6 +46,7 @@ export class ErrorReportPublicController {
         ...(stack && { stack }),
         ...(userAgent && { userAgent }),
         ...(userId && { userId }),
+        ...(httpStatus && { httpStatus }),
         isResolved: false, // Re-open if previously resolved
       },
       create: {
@@ -50,6 +56,8 @@ export class ErrorReportPublicController {
         source,
         userAgent,
         userId,
+        category,
+        httpStatus,
       },
     });
 
@@ -67,11 +75,13 @@ export class ErrorReportAdminController {
 
   @Get()
   @Roles('SUPERADMIN')
-  @ApiOperation({ summary: 'List error reports with pagination and filters' })
+  @ApiOperation({ summary: 'List error reports with pagination, filters, and sorting' })
   async listErrors(
     @Query('page') page?: string,
     @Query('resolved') resolved?: string,
     @Query('search') search?: string,
+    @Query('category') category?: string,
+    @Query('sortBy') sortBy?: string,
   ) {
     const limit = 20;
     const skip = ((parseInt(page || '1') || 1) - 1) * limit;
@@ -80,6 +90,10 @@ export class ErrorReportAdminController {
     if (resolved === 'true') where.isResolved = true;
     else if (resolved === 'false') where.isResolved = false;
 
+    if (category && VALID_CATEGORIES.includes(category)) {
+      where.category = category;
+    }
+
     if (search) {
       where.OR = [
         { message: { contains: search, mode: 'insensitive' } },
@@ -87,10 +101,14 @@ export class ErrorReportAdminController {
       ];
     }
 
+    const orderBy = sortBy === 'occurrences'
+      ? { occurrences: 'desc' as const }
+      : { lastSeenAt: 'desc' as const };
+
     const [data, total, unresolvedCount] = await Promise.all([
       this.prisma.errorReport.findMany({
         where,
-        orderBy: { lastSeenAt: 'desc' },
+        orderBy,
         skip,
         take: limit,
       }),
@@ -114,14 +132,17 @@ export class ErrorReportAdminController {
   @Roles('SUPERADMIN')
   @ApiOperation({ summary: 'Get error report summary stats' })
   async getStats() {
-    const [total, unresolved, last24h] = await Promise.all([
+    const [total, unresolved, last24h, apiErrors] = await Promise.all([
       this.prisma.errorReport.count(),
       this.prisma.errorReport.count({ where: { isResolved: false } }),
       this.prisma.errorReport.count({
         where: { lastSeenAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
       }),
+      this.prisma.errorReport.count({
+        where: { category: 'API_ERROR', isResolved: false },
+      }),
     ]);
-    return { total, unresolved, last24h };
+    return { total, unresolved, last24h, apiErrors };
   }
 
   @Put(':id/resolve')
@@ -155,5 +176,23 @@ export class ErrorReportAdminController {
       data: { isResolved: true },
     });
     return { message: `${result.count} error ditandai resolved` };
+  }
+
+  @Delete(':id')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Delete a single error report' })
+  async deleteError(@Param('id') id: string) {
+    await this.prisma.errorReport.delete({ where: { id } });
+    return { message: 'Error dihapus' };
+  }
+
+  @Delete('bulk/resolved')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Delete all resolved error reports' })
+  async deleteResolved() {
+    const result = await this.prisma.errorReport.deleteMany({
+      where: { isResolved: true },
+    });
+    return { message: `${result.count} error resolved dihapus` };
   }
 }
