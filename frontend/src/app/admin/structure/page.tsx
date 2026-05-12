@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { fetchStructure, createStructureNode, updateStructureNode, deleteStructureNode, bulkMoveNodeContents } from "@/lib/api";
-import { FolderTree, Plus, Edit2, Trash2, ChevronRight, ChevronDown, X, ArrowRight, AlertTriangle } from "lucide-react";
+import { Plus, Edit2, Trash2, ChevronRight, ChevronDown, X, ArrowRight, AlertTriangle } from "lucide-react";
 
 export default function StructurePage() {
   const [tree, setTree] = useState<any[]>([]);

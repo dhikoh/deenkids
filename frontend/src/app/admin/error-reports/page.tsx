@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { fetchErrorReports, fetchErrorStats, resolveError, reopenError, resolveAllErrors, deleteError, deleteResolvedErrors } from "@/lib/api";
-import { AlertTriangle, CheckCircle2, RotateCcw, Search, ChevronLeft, ChevronRight, Eye, Clock, Hash, Globe, Monitor, User, ChevronDown, ChevronUp, CheckCheck, Trash2, Zap, Server, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RotateCcw, Search, ChevronLeft, ChevronRight, Eye, Clock, Hash, Globe, Monitor, User, ChevronDown, ChevronUp, CheckCheck, Trash2, Server } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface ErrorItem {
