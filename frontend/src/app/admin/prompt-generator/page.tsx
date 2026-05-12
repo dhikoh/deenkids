@@ -296,24 +296,8 @@ ATURAN TRANSISI WAJIB:
 - Contoh kalimat penghubung: "Tapi ujian yang sesungguhnya belum selesai...", "Justru di saat itulah, sesuatu yang tak terduga terjadi..."
 \n\n`;
 
-  if (subType !== "CERITA_FIKSI") {
-    prompt += `━━━ 📖 BLOK 2: DALIL / LANDASAN (dalil) ━━━
-Cantumkan 1–2 ayat Al-Quran atau Hadits Shahih yang paling relevan dengan tema kisah.
-Format per dalil:
-• Arabic  : [teks arab]
-• Terjemah: [terjemahan bahasa Indonesia]
-• Sumber  : [nama surah + ayat, atau kitab hadits + nomor]
-• Sumber URL: [URL sumber — panduan di bawah]
-
-⚠️ PANDUAN URL SUMBER:
-- Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: Quran Surah Al-Baqarah ayat 260 → https://quran.com/2/260
-- Hadits: https://www.hadits.id/hadits/[kitab]/[nomor] | Contoh: Hadits Riwayat Bukhari Nomor 1234 → https://www.hadits.id/hadits/bukhari/1234
-- 🛑 JANGAN mengarang URL. Jika tidak yakin, KOSONGKAN field "Sumber URL".
-Tempatkan di posisi paling bermakna (sebelum klimaks atau setelah narasi utama).\n\n`;
-  }
-
   if (options.analogi) {
-    const bloknr = subType !== "CERITA_FIKSI" ? "3" : "2";
+    const bloknr = "2";
     prompt += `━━━ 🧩 BLOK ${bloknr}: ANALOGI ORGANIK (analogy) ━━━
 Analogi WAJIB lahir dari elemen yang SUDAH ADA dalam kisah di atas — bukan analogi generik.
 
@@ -332,42 +316,6 @@ Format:
 • Judul: [ambil dari elemen yang sudah muncul dalam kisah]
 • Penjelasan: [2–3 kalimat, menggunakan benda/situasi dari kisah itu sendiri]\n\n`;
   }
-
-  const tipBlockNr = subType !== "CERITA_FIKSI" ? (options.analogi ? "4" : "3") : (options.analogi ? "3" : "2");
-  prompt += `━━━ ℹ️ BLOK ${tipBlockNr}: CATATAN / TIPS (tip) ━━━
-Tips WAJIB merupakan REFLEKSI NATURAL dari momen spesifik yang terjadi dalam kisah di atas.
-Setiap tips harus bisa dijawab: "Di bagian mana kisah ini poin ini muncul?"
-
-❌ SALAH: Tips generik yang bisa ditulis tanpa membaca kisah sama sekali.
-✅ BENAR: Tips yang hanya masuk akal setelah membaca kisah di atas.
-
-Tulis 3–4 poin, hangat dan memotivasi — BUKAN ceramah.
-Format per poin:
-• 💡 [poin hikmah + referensi ke momen kisah]
-   Contoh: "Seperti [tokoh] yang [momen dari kisah], ajak anak..."\n\n`;
-
-  if ((subType === "SIRAH" || subType === "QASHASH" || subType === "TELADAN") && options.referensi) {
-    prompt += `━━━ 📚 REFERENSI SUMBER (dalil — tipe referensi) ━━━
-Cantumkan sumber kitab utama rujukan kisah ini.
-Format:
-• Kitab  : [judul kitab]
-• Penulis: [nama ulama pengarang]
-• Hal./No.: [nomor halaman atau hadits]\n\n`;
-  }
-
-  prompt += `══════════════════════════════════════════
-PANDUAN PENULISAN — GAYA PENCERITA
-══════════════════════════════════════════
-✅ Tulis seperti MENDONGENG — gambarkan suasana, cuaca, perasaan, warna, suara
-✅ Gunakan kalimat aktif yang hidup: "Matanya berbinar...", "Angin berhembus pelan..."
-✅ Setiap babak harus punya KONFLIK kecil dan RESOLUSI yang memuaskan
-✅ Bahasa SEDERHANA tapi KAYA — anak usia 3–10 tahun bisa memahaminya saat didengarkan
-✅ Konten ini akan DIBACAKAN audio — pastikan kalimat enak didengar & mengalir
-✅ Gunakan sapaan langsung ke anak di mukadimah: "Teman-teman...", "Adik-adik..."
-✅ Nilai Islam terasa ALAMI dalam cerita — tidak dipaksakan
-✅ Akhiri dengan kehangatan, rasa syukur, atau motivasi yang menyentuh
-❌ JANGAN terlalu singkat — ini bukan ringkasan, ini KISAH LENGKAP
-❌ JANGAN menggurui atau berceramah langsung kepada pembaca`;
 
   // === BLOK HIKMAH (semua sub-type kisah) ===
   prompt += `\n\n━━━ ✨ BLOK HIKMAH / PELAJARAN (hikmah) ━━━
@@ -407,6 +355,59 @@ Format (jika digunakan):
 • Terjemah: [terjemahan]
 • Sumber: [sumber shahih]
 • Sumber URL: [URL jika tersedia — JANGAN mengarang URL]\n`;
+  }
+
+  const tipBlockNr = options.analogi ? "3" : "2";
+  prompt += `━━━ ℹ️ BLOK ${tipBlockNr}: CATATAN / TIPS (tip) ━━━
+Tips WAJIB merupakan REFLEKSI NATURAL dari momen spesifik yang terjadi dalam kisah di atas.
+Setiap tips harus bisa dijawab: "Di bagian mana kisah ini poin ini muncul?"
+
+❌ SALAH: Tips generik yang bisa ditulis tanpa membaca kisah sama sekali.
+✅ BENAR: Tips yang hanya masuk akal setelah membaca kisah di atas.
+
+Tulis 3–4 poin, hangat dan memotivasi — BUKAN ceramah.
+Format per poin:
+• 💡 [poin hikmah + referensi ke momen kisah]
+   Contoh: "Seperti [tokoh] yang [momen dari kisah], ajak anak..."\n\n`;
+
+  if ((subType === "SIRAH" || subType === "QASHASH" || subType === "TELADAN") && options.referensi) {
+    prompt += `━━━ 📚 REFERENSI SUMBER (dalil — tipe referensi) ━━━
+Cantumkan sumber kitab utama rujukan kisah ini.
+Format:
+• Kitab  : [judul kitab]
+• Penulis: [nama ulama pengarang]
+• Hal./No.: [nomor halaman atau hadits]\n\n`;
+  }
+
+  prompt += `══════════════════════════════════════════
+PANDUAN PENULISAN — GAYA PENCERITA
+══════════════════════════════════════════
+✅ Tulis seperti MENDONGENG — gambarkan suasana, cuaca, perasaan, warna, suara
+✅ Gunakan kalimat aktif yang hidup: "Matanya berbinar...", "Angin berhembus pelan..."
+✅ Setiap babak harus punya KONFLIK kecil dan RESOLUSI yang memuaskan
+✅ Bahasa SEDERHANA tapi KAYA — anak usia 3–10 tahun bisa memahaminya saat didengarkan
+✅ Konten ini akan DIBACAKAN audio — pastikan kalimat enak didengar & mengalir
+✅ Gunakan sapaan langsung ke anak di mukadimah: "Teman-teman...", "Adik-adik..."
+✅ Nilai Islam terasa ALAMI dalam cerita — tidak dipaksakan
+✅ Akhiri dengan kehangatan, rasa syukur, atau motivasi yang menyentuh
+❌ JANGAN terlalu singkat — ini bukan ringkasan, ini KISAH LENGKAP
+❌ JANGAN menggurui atau berceramah langsung kepada pembaca`;
+
+  if (subType !== "CERITA_FIKSI") {
+    const dalilBlockNr = options.analogi ? "4" : "3";
+    prompt += `━━━ 📖 BLOK ${dalilBlockNr}: DALIL / LANDASAN (dalil) ━━━
+Cantumkan 1–2 ayat Al-Quran atau Hadits Shahih yang paling relevan dengan tema kisah.
+Format per dalil:
+• Arabic  : [teks arab]
+• Terjemah: [terjemahan bahasa Indonesia]
+• Sumber  : [nama surah + ayat, atau kitab hadits + nomor]
+• Sumber URL: [URL sumber — panduan di bawah]
+
+⚠️ PANDUAN URL SUMBER:
+- Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: Quran Surah Al-Baqarah ayat 260 → https://quran.com/2/260
+- Hadits: https://www.hadits.id/hadits/[kitab]/[nomor] | Contoh: Hadits Riwayat Bukhari Nomor 1234 → https://www.hadits.id/hadits/bukhari/1234
+- 🛑 JANGAN mengarang URL. Jika tidak yakin, KOSONGKAN field "Sumber URL".
+Tempatkan di posisi paling bermakna (sebelum klimaks atau setelah narasi utama).\n\n`;
   }
 
   // Inject intellectual framework if thinkers selected
@@ -664,6 +665,89 @@ Teks narasi atau penjelasan utama. Gunakan bahasa yang mudah dipahami anak.
 `;
   }
 
+
+  if (options.analogi) {
+    prompt += `🧩 BLOK: ANALOGI KONTEKSTUAL (analogy)
+Analogi HARUS relevan dengan usia target DAN lahir dari konteks konten yang sudah kamu tulis.
+
+PANDUAN USIA:
+- 3-5 tahun: mainan, hewan peliharaan, makanan favorit, teman bermain
+- 5-7 tahun: sekolah, PR, jajan, sepeda, teman sekelas
+- 7-10 tahun: game, olahraga, eksplorasi alam, tim/kelompok
+- 10-13 tahun: media sosial, teknologi, cita-cita, tanggung jawab
+
+ATURAN:
+1. Baca ulang konten yang sudah kamu tulis → ambil elemen di dalamnya → jadikan analogi.
+2. TEST MANDIRI: Jika analogi ini bisa dipakai untuk topik LAIN tanpa perubahan → terlalu generik, buat ulang.
+
+Format:
+---
+ANALOGI:
+Judul: "[judul yang spesifik, ambil dari elemen konten]"
+Isi: "[2-3 kalimat menggunakan referensi dari konten yang sudah ditulis]"
+---
+
+`;
+  }
+
+
+  // === BLOK HIKMAH ===
+  prompt += `✨ BLOK: HIKMAH / PELAJARAN (hikmah)
+Pelajaran utama atau refleksi mendalam dari topik ini.
+Tulis 1–3 poin hikmah yang menyentuh hati dan relevan dengan kehidupan anak/orang tua.
+Gunakan bahasa yang reflektif, hangat, dan memotivasi — BUKAN menggurui.
+
+Format:
+---
+HIKMAH:
+"Dari pembahasan ini kita belajar bahwa..."
+---
+
+`;
+
+
+  // === BLOK DOA ===
+  prompt += `🤲 BLOK: DOA (doa)
+Doa yang relevan dengan topik pembahasan.
+
+⚠️ ATURAN KETAT DOA:
+1. WAJIB bersumber dari Al-Quran atau Hadits SHAHIH SAJA.
+2. DILARANG KERAS mencantumkan doa dari hadits dha'if, maudhu' (palsu), atau munkar — meskipun populer di masyarakat.
+3. Setiap doa WAJIB disertai sumber yang jelas dan dapat diverifikasi.
+4. Jika tidak ada doa shahih yang spesifik untuk topik ini, gunakan doa umum dari Al-Quran/Sunnah yang relevan.
+
+Format:
+---
+DOA:
+Judul: "Doa Memohon Ilmu yang Bermanfaat"
+Arab: رَبِّ زِدْنِي عِلْمًا
+Terjemahan: "Ya Tuhanku, tambahkanlah kepadaku ilmu."
+Sumber: Quran Surah Thaha ayat 114
+Sumber URL: https://quran.com/20/114
+---
+
+⚠️ PANDUAN URL SUMBER DOA:
+- Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: Quran Surah Thaha ayat 114 → https://quran.com/20/114
+- Hadits: https://www.hadits.id/hadits/[nama-kitab]/[nomor]
+- 🛑 JANGAN mengarang URL. Jika tidak yakin, KOSONGKAN field "Sumber URL".
+
+`;
+
+
+  if (options.tips && type !== "ARTIKEL") {
+    prompt += `ℹ️ BLOK: TIPS ORANG TUA (tip)
+Tips praktis untuk orang tua dalam menjelaskan topik ini ke anak di rumah.
+
+Format:
+---
+TIPS:
+"Ajak anak sholat bersama sejak usia 7 tahun dengan lembut, tanpa memaksa."
+---
+
+`;
+  }
+
+
   if (options.dalil) {
     prompt += `📖 BLOK: DALIL/LANDASAN (dalil)
 Sumber hukum Islam yang relevan. PENTING: Dalam 1 blok dalil bisa ada BANYAK sumber dalil sekaligus. Setiap dalil berisi:
@@ -697,84 +781,6 @@ Dalil 2:
 
 `;
   }
-
-  if (options.analogi) {
-    prompt += `🧩 BLOK: ANALOGI KONTEKSTUAL (analogy)
-Analogi HARUS relevan dengan usia target DAN lahir dari konteks konten yang sudah kamu tulis.
-
-PANDUAN USIA:
-- 3-5 tahun: mainan, hewan peliharaan, makanan favorit, teman bermain
-- 5-7 tahun: sekolah, PR, jajan, sepeda, teman sekelas
-- 7-10 tahun: game, olahraga, eksplorasi alam, tim/kelompok
-- 10-13 tahun: media sosial, teknologi, cita-cita, tanggung jawab
-
-ATURAN:
-1. Baca ulang konten yang sudah kamu tulis → ambil elemen di dalamnya → jadikan analogi.
-2. TEST MANDIRI: Jika analogi ini bisa dipakai untuk topik LAIN tanpa perubahan → terlalu generik, buat ulang.
-
-Format:
----
-ANALOGI:
-Judul: "[judul yang spesifik, ambil dari elemen konten]"
-Isi: "[2-3 kalimat menggunakan referensi dari konten yang sudah ditulis]"
----
-
-`;
-  }
-
-  if (options.tips && type !== "ARTIKEL") {
-    prompt += `ℹ️ BLOK: TIPS ORANG TUA (tip)
-Tips praktis untuk orang tua dalam menjelaskan topik ini ke anak di rumah.
-
-Format:
----
-TIPS:
-"Ajak anak sholat bersama sejak usia 7 tahun dengan lembut, tanpa memaksa."
----
-
-`;
-  }
-
-  // === BLOK HIKMAH ===
-  prompt += `✨ BLOK: HIKMAH / PELAJARAN (hikmah)
-Pelajaran utama atau refleksi mendalam dari topik ini.
-Tulis 1–3 poin hikmah yang menyentuh hati dan relevan dengan kehidupan anak/orang tua.
-Gunakan bahasa yang reflektif, hangat, dan memotivasi — BUKAN menggurui.
-
-Format:
----
-HIKMAH:
-"Dari pembahasan ini kita belajar bahwa..."
----
-
-`;
-
-  // === BLOK DOA ===
-  prompt += `🤲 BLOK: DOA (doa)
-Doa yang relevan dengan topik pembahasan.
-
-⚠️ ATURAN KETAT DOA:
-1. WAJIB bersumber dari Al-Quran atau Hadits SHAHIH SAJA.
-2. DILARANG KERAS mencantumkan doa dari hadits dha'if, maudhu' (palsu), atau munkar — meskipun populer di masyarakat.
-3. Setiap doa WAJIB disertai sumber yang jelas dan dapat diverifikasi.
-4. Jika tidak ada doa shahih yang spesifik untuk topik ini, gunakan doa umum dari Al-Quran/Sunnah yang relevan.
-
-Format:
----
-DOA:
-Judul: "Doa Memohon Ilmu yang Bermanfaat"
-Arab: رَبِّ زِدْنِي عِلْمًا
-Terjemahan: "Ya Tuhanku, tambahkanlah kepadaku ilmu."
-Sumber: Quran Surah Thaha ayat 114
-Sumber URL: https://quran.com/20/114
----
-
-⚠️ PANDUAN URL SUMBER DOA:
-- Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: Quran Surah Thaha ayat 114 → https://quran.com/20/114
-- Hadits: https://www.hadits.id/hadits/[nama-kitab]/[nomor]
-- 🛑 JANGAN mengarang URL. Jika tidak yakin, KOSONGKAN field "Sumber URL".
-
-`;
 
   // === BAGIAN 4: PANDUAN USIA ===
   prompt += `

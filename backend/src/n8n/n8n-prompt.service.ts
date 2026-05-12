@@ -185,16 +185,16 @@ Platform kami menggunakan sistem "Blok Konten". Kamu HARUS memberikan output dal
     if (type === 'QNA') {
       prompt += `URUTAN BLOK YANG DIREKOMENDASIKAN (ikuti urutan ini untuk alur terbaik):
 1. 💡 JAWABAN INSTAN — langsung jawab pertanyaan anak (quick_answer)
-2. 💬 DIALOG — simulasi bagaimana orangtua menjelaskan ke anak (dialog)
-3. 📖 DALIL — landasan dari Al-Quran/Hadits (dalil)
+2. 📝 ISI KONTEN — penjelasan lebih detail (paragraph)
+3. 💬 DIALOG — simulasi bagaimana orangtua menjelaskan ke anak (dialog)
 4. 🧩 ANALOGI — perumpamaan dari kehidupan anak (analogy)
-5. 📝 ISI KONTEN — penjelasan tambahan jika perlu detail lebih (paragraph)
-6. ℹ️ TIPS — panduan praktis untuk orangtua (tip)
-7. ✨ HIKMAH — refleksi penutup (hikmah)
-8. 🤲 DOA — doa relevan (doa)
+5. ✨ HIKMAH — refleksi dan pelajaran (hikmah)
+6. 🤲 DOA — doa relevan (doa)
+7. ℹ️ TIPS — panduan praktis untuk orangtua (tip)
+8. 📖 DALIL — landasan dari Al-Quran/Hadits (dalil)
 
 KUNCI ALUR: Setiap blok harus TERASA SAMBUNGAN dari blok sebelumnya.
-Dialog menjelaskan jawaban instan. Dalil memperkuat dialog. Analogi menyederhanakan dalil. Tips mengaplikasikan semuanya.
+Jawaban instan memberi gambaran cepat. Isi konten menjelaskan lebih detail. Dialog menghidupkan penjelasan. Analogi menyederhanakan konsep. Hikmah merefleksikan pelajaran. Doa menghubungkan ke Allah. Tips memberi panduan praktis. Dalil memperkuat landasan di akhir.
 
 💡 BLOK: JAWABAN INSTAN (quick_answer)
 Jawaban singkat dan langsung. Maksimal 2-3 kalimat yang menjawab inti pertanyaan.
@@ -222,12 +222,12 @@ DIALOG:
       prompt += `URUTAN BLOK PEDAGOGIS (ikuti urutan ini untuk pembelajaran efektif):
 1. 📝 HOOK — buka dengan pertanyaan/fakta/cerita pendek yang buat anak PENASARAN (paragraph)
 2. 📝 PENJELASAN INTI — jelaskan konsep utama dengan bahasa sederhana (paragraph)
-3. 📖 DALIL — tunjukkan landasannya dari Al-Quran/Hadits (dalil)
-4. 🧩 ANALOGI — buat konsep lebih mudah dimengerti (analogy)
+3. 🧩 ANALOGI — buat konsep lebih mudah dimengerti (analogy)
+4. ✨ HIKMAH — refleksi mengapa ini penting (hikmah)
 5. 📝 PRAKTIK — langkah konkret yang bisa dilakukan anak (paragraph)
-6. ℹ️ TIPS — panduan untuk orang tua (tip)
-7. ✨ HIKMAH — refleksi mengapa ini penting (hikmah)
-8. 🤲 DOA — doa yang relevan (doa)
+6. 🤲 DOA — doa yang relevan (doa)
+7. ℹ️ TIPS — panduan untuk orang tua (tip)
+8. 📖 DALIL — tunjukkan landasannya dari Al-Quran/Hadits (dalil)
 
 KUNCI: Setiap blok harus menjawab "lalu apa?" dari blok sebelumnya — sehingga terasa satu alur yang mengalir.
 
@@ -254,38 +254,8 @@ Tulis narasi artikel yang mengalir, menginspirasi, dan terasa personal — bukan
 `;
     }
 
-    // Common blocks
-    prompt += `📖 BLOK: DALIL/LANDASAN (dalil)
-Sumber hukum Islam yang relevan. PENTING: Dalam 1 blok dalil bisa ada BANYAK sumber dalil sekaligus. Setiap dalil berisi:
-- Teks Arab (jika tersedia)
-- Terjemahan / isi dalil dalam Bahasa Indonesia
-- Sumber yang JELAS (contoh: Quran Surah Al-Baqarah ayat 43, Hadits Riwayat Bukhari Nomor 8, Hadits Riwayat Muslim Nomor 16)
-
-Format yang harus kamu ikuti:
----
-DALIL:
-Dalil 1:
-  Arab: إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا
-  Terjemahan: "Sesungguhnya shalat itu adalah kewajiban yang ditentukan waktunya atas orang-orang yang beriman."
-  Sumber: Quran Surah An-Nisa ayat 103
-  Sumber URL: https://quran.com/4/103
-
-Dalil 2:
-  Arab: (jika ada)
-  Terjemahan: "..."
-  Sumber: Hadits Riwayat Bukhari Nomor 8
-  Sumber URL: https://www.hadits.id/hadits/bukhari/8
----
-
-⚠️ PANDUAN URL SUMBER WAJIB DIBACA:
-- Al-Quran: format URL = https://quran.com/[nomor-surah]/[nomor-ayat]
-  Contoh: Quran Surah An-Nisa ayat 103 → https://quran.com/4/103 | Quran Surah Al-Baqarah ayat 255 → https://quran.com/2/255
-- Hadits: format URL = https://www.hadits.id/hadits/[nama-kitab]/[nomor]
-  Contoh: Hadits Riwayat Bukhari Nomor 8 → https://www.hadits.id/hadits/bukhari/8
-- 🛑 LARANGAN KERAS: JANGAN MENGARANG atau MENEBAK URL.
-  Jika tidak 100% yakin URL-nya benar, KOSONGKAN field "Sumber URL" — cukup isi "Sumber" teks saja.
-
-🧩 BLOK: ANALOGI KONTEKSTUAL (analogy)
+    // Common blocks — Order: Analogi → Hikmah → Doa → Tips → Dalil
+    prompt += `🧩 BLOK: ANALOGI KONTEKSTUAL (analogy)
 Analogi HARUS relevan dengan usia target DAN lahir dari konteks konten yang sudah kamu tulis.
 
 PANDUAN USIA:
@@ -303,15 +273,6 @@ Format:
 ANALOGI:
 Judul: "[judul yang spesifik, ambil dari elemen konten]"
 Isi: "[2-3 kalimat menggunakan referensi dari konten yang sudah ditulis]"
----
-
-ℹ️ BLOK: TIPS ORANG TUA (tip)
-Tips praktis untuk orang tua dalam menjelaskan topik ini ke anak di rumah.
-
-Format:
----
-TIPS:
-"Ajak anak sholat bersama sejak usia 7 tahun dengan lembut, tanpa memaksa."
 ---
 
 ✨ BLOK: HIKMAH / PELAJARAN (hikmah)
@@ -348,6 +309,45 @@ Sumber URL: https://quran.com/20/114
 - Al-Quran: https://quran.com/[nomor-surah]/[nomor-ayat] | Contoh: Quran Surah Thaha ayat 114 → https://quran.com/20/114
 - Hadits: https://www.hadits.id/hadits/[nama-kitab]/[nomor]
 - 🛑 JANGAN mengarang URL. Jika tidak yakin, KOSONGKAN field "Sumber URL".
+
+ℹ️ BLOK: TIPS ORANG TUA (tip)
+Tips praktis untuk orang tua dalam menjelaskan topik ini ke anak di rumah.
+
+Format:
+---
+TIPS:
+"Ajak anak sholat bersama sejak usia 7 tahun dengan lembut, tanpa memaksa."
+---
+
+📖 BLOK: DALIL/LANDASAN (dalil)
+Sumber hukum Islam yang relevan. PENTING: Dalam 1 blok dalil bisa ada BANYAK sumber dalil sekaligus. Setiap dalil berisi:
+- Teks Arab (jika tersedia)
+- Terjemahan / isi dalil dalam Bahasa Indonesia
+- Sumber yang JELAS (contoh: Quran Surah Al-Baqarah ayat 43, Hadits Riwayat Bukhari Nomor 8, Hadits Riwayat Muslim Nomor 16)
+
+Format yang harus kamu ikuti:
+---
+DALIL:
+Dalil 1:
+  Arab: إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا
+  Terjemahan: "Sesungguhnya shalat itu adalah kewajiban yang ditentukan waktunya atas orang-orang yang beriman."
+  Sumber: Quran Surah An-Nisa ayat 103
+  Sumber URL: https://quran.com/4/103
+
+Dalil 2:
+  Arab: (jika ada)
+  Terjemahan: "..."
+  Sumber: Hadits Riwayat Bukhari Nomor 8
+  Sumber URL: https://www.hadits.id/hadits/bukhari/8
+---
+
+⚠️ PANDUAN URL SUMBER WAJIB DIBACA:
+- Al-Quran: format URL = https://quran.com/[nomor-surah]/[nomor-ayat]
+  Contoh: Quran Surah An-Nisa ayat 103 → https://quran.com/4/103 | Quran Surah Al-Baqarah ayat 255 → https://quran.com/2/255
+- Hadits: format URL = https://www.hadits.id/hadits/[nama-kitab]/[nomor]
+  Contoh: Hadits Riwayat Bukhari Nomor 8 → https://www.hadits.id/hadits/bukhari/8
+- 🛑 LARANGAN KERAS: JANGAN MENGARANG atau MENEBAK URL.
+  Jika tidak 100% yakin URL-nya benar, KOSONGKAN field "Sumber URL" — cukup isi "Sumber" teks saja.
 
 `;
 
