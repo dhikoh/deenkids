@@ -672,17 +672,23 @@ export class SocialService {
       throw new Error(`FB publish: ${data.error.message}`);
     }
 
-    // Get permalink
-    const postId = data.post_id || data.id;
-    let postUrl = `https://www.facebook.com/${postId}`;
+    // Facebook Photos API returns: { id: "photoId", post_id: "pageId_photoId" }
+    const photoId = data.id;
+    const postId = data.post_id || `${pageId}_${photoId}`;
+
+    // Try to get permalink via Graph API (use post_id for feed posts)
+    let postUrl = `https://www.facebook.com/${pageId}/posts/${photoId}`;
     try {
       const linkRes = await fetch(`https://graph.facebook.com/v19.0/${postId}?fields=permalink_url&access_token=${pageToken}`);
       const linkData = await linkRes.json();
-      if (linkData.permalink_url) postUrl = linkData.permalink_url;
+      if (linkData.permalink_url) {
+        postUrl = linkData.permalink_url;
+      }
     } catch {
-      // Use fallback URL
+      this.logger.warn(`⚠️ Could not fetch FB permalink for ${postId}, using fallback`);
     }
 
+    this.logger.log(`📘 FB photo published: postId=${postId}, url=${postUrl}`);
     return { postId, postUrl };
   }
 
@@ -754,17 +760,22 @@ export class SocialService {
       throw new Error(`FB video publish: ${data.error.message}`);
     }
 
-    const postId = data.id;
-    let postUrl = `https://www.facebook.com/${postId}`;
+    const videoId = data.id;
+
+    // Try to get permalink via Graph API
+    let postUrl = `https://www.facebook.com/${pageId}/videos/${videoId}`;
     try {
-      const linkRes = await fetch(`https://graph.facebook.com/v19.0/${postId}?fields=permalink_url&access_token=${pageToken}`);
+      const linkRes = await fetch(`https://graph.facebook.com/v19.0/${videoId}?fields=permalink_url&access_token=${pageToken}`);
       const linkData = await linkRes.json();
-      if (linkData.permalink_url) postUrl = linkData.permalink_url;
+      if (linkData.permalink_url) {
+        postUrl = linkData.permalink_url;
+      }
     } catch {
-      // Use fallback URL
+      this.logger.warn(`⚠️ Could not fetch FB video permalink for ${videoId}, using fallback`);
     }
 
-    return { postId, postUrl };
+    this.logger.log(`📘 FB video published: videoId=${videoId}, url=${postUrl}`);
+    return { postId: videoId, postUrl };
   }
 
   // ─── Retry & Cancel ────────────────────────────────────────────
