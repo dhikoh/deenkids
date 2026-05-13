@@ -1033,8 +1033,86 @@ function nodeToSubType(title: string): KisahSubType {
   return 'SIRAH'; // fallback
 }
 
+function generateQuizPrompt(
+  customTitle: string,
+  topic: string,
+  difficulty: string,
+  count: number,
+  includeImage: boolean,
+  imageStyle: string,
+): string {
+  const topicGuides: Record<string, string> = {
+    'Akidah': 'Rukun Iman, sifat-sifat Allah, tauhid, syirik, hari akhir, malaikat, kitab-kitab Allah, qada dan qadar',
+    'Ibadah': 'Rukun Islam, sholat, puasa, zakat, haji, wudhu, tayamum, adzan, doa sehari-hari',
+    'Akhlak': 'Akhlak mulia, adab makan, adab bertemu, sabar, jujur, amanah, kasih sayang, tolong menolong',
+    'Sirah': 'Kisah Nabi Muhammad ﷺ, sahabat Nabi, peristiwa hijrah, Isra Mi\'raj, Fathu Makkah, perang Badar',
+    'Al-Quran': 'Nama-nama surat, jumlah ayat, makna surat pendek, kisah dalam Al-Quran, adab membaca Al-Quran',
+    'Hadits': 'Hadits pendek, riwayat Bukhari-Muslim, adab Nabi, sunah harian, keutamaan amal',
+  };
+
+  const titleSection = customTitle
+    ? `PERTANYAAN SPESIFIK dari user:\n"${customTitle}"\n\nGunakan pertanyaan ini sebagai soal utama/pertama. Tambahkan ${count - 1} soal lainnya yang masih satu topik.`
+    : `Buatkan ${count} soal quiz interaktif seputar topik: ${topic}\nCakupan materi: ${topicGuides[topic] || topic}`;
+
+  const difficultyAge = difficulty.match(/\(([^)]+)\)/)?.[1] || '5-7 tahun';
+
+  let imageSection = '';
+  if (includeImage) {
+    imageSection = `
+
+═══ PROMPT GAMBAR PER SOAL ═══
+Untuk SETIAP soal, buatkan juga prompt gambar (dalam bahasa Inggris) dengan aturan:
+- Gaya: ${imageStyle}
+- WAJIB FACELESS: Semua karakter manusia TIDAK BOLEH menampilkan wajah (punggung menghadap kamera, siluet, bayangan, tampak jauh, atau tertutup)
+- Wajib memakai busana islami/syar'i (hijab, jubah, gamis, kopiah)
+- Warna: Warm Islamic palette (emerald green, gold, deep blue, cream)
+- DILARANG: Menampilkan wajah, salib, patung, simbol non-Islam
+- Aspek rasio: 1:1 (square)
+- Format output gambar: [IMAGE_PROMPT]: "..."`;
+  }
+
+  return `═══════════════════════════════════════════
+🧩 QUIZ ISLAMI — PROMPT GENERATOR
+═══════════════════════════════════════════
+
+TOPIK: ${topic}
+TINGKAT: ${difficulty}
+TARGET USIA: Anak ${difficultyAge}
+JUMLAH SOAL: ${count}
+
+${titleSection}
+
+═══ FORMAT OUTPUT WAJIB ═══
+
+Untuk setiap soal, gunakan format PERSIS seperti ini:
+
+---
+SOAL [nomor]:
+[Tuliskan pertanyaan dengan bahasa sederhana & menarik untuk anak]
+
+A) [Pilihan A]
+B) [Pilihan B]  
+C) [Pilihan C]
+D) [Pilihan D]
+
+✅ JAWABAN: [Huruf yang benar]
+📖 PENJELASAN: [Penjelasan singkat 1-2 kalimat, sertakan dalil dari Al-Quran/Hadits jika ada]${includeImage ? '\n[IMAGE_PROMPT]: "[Prompt gambar dalam bahasa Inggris]"' : ''}
+---
+
+═══ ATURAN KONTEN ═══
+1. Setiap soal WAJIB memiliki 4 pilihan jawaban (A-D)
+2. Bahasa sederhana sesuai usia ${difficultyAge}
+3. Jawaban pengecoh harus masuk akal (tidak terlalu mudah ditebak)
+4. Sertakan dalil Al-Quran atau Hadits shahih pada penjelasan (jika relevan)
+5. Soal bervariasi: ada yang hafalan, pemahaman, dan penerapan
+6. Gunakan emoji agar menarik untuk anak-anak
+7. DILARANG: konten yang menyimpang dari Ahlussunnah wal Jamaah${imageSection}
+
+═══════════════════════════════════════════`;
+}
+
 export default function PromptGeneratorPage() {
-  const [mode, setMode] = useState<"CONTENT" | "IMAGE">("CONTENT");
+  const [mode, setMode] = useState<"CONTENT" | "IMAGE" | "QUIZ">("CONTENT");
   const [type, setType] = useState<ContentType>("QNA");
   const [title, setTitle] = useState("");
   const [kisahSubType, setKisahSubType] = useState<KisahSubType>("SIRAH");
@@ -1099,6 +1177,14 @@ export default function PromptGeneratorPage() {
   // POV for ARTIKEL type
   const [artikelPov, setArtikelPov] = useState<string>("");
 
+  // Quiz states
+  const [quizTopic, setQuizTopic] = useState<string>("Akidah");
+  const [quizTitle, setQuizTitle] = useState("");
+  const [quizDifficulty, setQuizDifficulty] = useState<string>("Sedang (5-7 tahun)");
+  const [quizCount, setQuizCount] = useState(3);
+  const [quizIncludeImage, setQuizIncludeImage] = useState(true);
+  const [quizImageStyle, setQuizImageStyle] = useState("Animasi 3D (Pixar/Disney)");
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(HISTORY_KEY);
@@ -1110,6 +1196,17 @@ export default function PromptGeneratorPage() {
   useEffect(() => { if (type !== "ARTIKEL") setArtikelPov(""); }, [type]);
 
   const handleGenerate = () => {
+    if (mode === "QUIZ") {
+      // Quiz mode: title is optional
+      const prompt = generateQuizPrompt(quizTitle.trim(), quizTopic, quizDifficulty, quizCount, quizIncludeImage, quizImageStyle);
+      setGeneratedPrompt(prompt);
+      const entry = { title: quizTitle.trim() || `Quiz ${quizTopic}`, type: "IMAGE_PROMPT" as ContentType, prompt, date: new Date().toISOString() };
+      const updated = [entry, ...history.filter(h => h.prompt !== prompt)].slice(0, MAX_HISTORY);
+      setHistory(updated);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      toast.success("Quiz prompt berhasil di-generate!");
+      return;
+    }
     if (!title.trim()) return toast.error("Judul/topik wajib diisi");
     let prompt = "";
     let historyType: ContentType = type;
@@ -1184,15 +1281,21 @@ export default function PromptGeneratorPage() {
         <div className="flex bg-slate-200/50 p-1 rounded-xl w-full md:w-auto">
           <button 
             onClick={() => { setMode("CONTENT"); setGeneratedPrompt(""); }} 
-            className={`flex-1 md:px-6 py-2 text-sm font-bold rounded-lg transition-all ${mode === "CONTENT" ? "bg-white shadow-sm text-purple-700" : "text-slate-500 hover:text-slate-700"}`}
+            className={`flex-1 md:px-5 py-2 text-sm font-bold rounded-lg transition-all ${mode === "CONTENT" ? "bg-white shadow-sm text-purple-700" : "text-slate-500 hover:text-slate-700"}`}
           >
-            📝 Teks Konten
+            📝 Teks
           </button>
           <button 
             onClick={() => { setMode("IMAGE"); setGeneratedPrompt(""); }} 
-            className={`flex-1 md:px-6 py-2 text-sm font-bold rounded-lg transition-all ${mode === "IMAGE" ? "bg-white shadow-sm text-purple-700" : "text-slate-500 hover:text-slate-700"}`}
+            className={`flex-1 md:px-5 py-2 text-sm font-bold rounded-lg transition-all ${mode === "IMAGE" ? "bg-white shadow-sm text-purple-700" : "text-slate-500 hover:text-slate-700"}`}
           >
             🖼️ Thumbnail
+          </button>
+          <button 
+            onClick={() => { setMode("QUIZ"); setGeneratedPrompt(""); }} 
+            className={`flex-1 md:px-5 py-2 text-sm font-bold rounded-lg transition-all ${mode === "QUIZ" ? "bg-white shadow-sm text-purple-700" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            🧩 Quiz
           </button>
         </div>
       </div>
@@ -1400,7 +1503,7 @@ export default function PromptGeneratorPage() {
                 )}
               </div>
             </>
-          ) : (
+          ) : mode === "IMAGE" ? (
             <>
               {/* Gaya Visual */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -1565,7 +1668,78 @@ export default function PromptGeneratorPage() {
                 </div>
               </div>
             </>
-          )}
+          ) : mode === "QUIZ" ? (
+            <>
+              {/* Quiz Form */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-3">1. Topik Quiz</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {["Akidah", "Ibadah", "Akhlak", "Sirah", "Al-Quran", "Hadits"].map(t => (
+                    <button key={t} onClick={() => setQuizTopic(t)} className={`p-3 rounded-xl text-center border-2 transition-all text-sm font-bold ${quizTopic === t ? "border-purple-500 bg-purple-50 text-purple-700" : "border-slate-200 hover:border-slate-300 text-slate-600"}`}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-2">2. Judul Pertanyaan <span className="text-xs font-normal text-slate-400">(opsional — kosongkan agar AI buat otomatis)</span></label>
+                <textarea
+                  value={quizTitle}
+                  onChange={e => setQuizTitle(e.target.value)}
+                  rows={3}
+                  className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:border-purple-400 resize-none"
+                  placeholder="Contoh: Siapakah nabi yang dilempar ke dalam api, tapi apinya berubah menjadi dingin?"
+                />
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">3. Tingkat Kesulitan</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {["Mudah (3-5 tahun)", "Sedang (5-7 tahun)", "Sulit (8-10 tahun)"].map(d => (
+                      <button key={d} onClick={() => setQuizDifficulty(d)} className={`p-3 rounded-xl text-center border-2 transition-all text-xs font-bold ${quizDifficulty === d ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 hover:border-slate-300 text-slate-600"}`}>
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">4. Jumlah Soal: <span className="text-purple-600">{quizCount}</span></label>
+                  <div className="flex gap-3">
+                    {[1, 3, 5, 10].map(n => (
+                      <button key={n} onClick={() => setQuizCount(n)} className={`flex-1 py-2.5 text-sm font-bold rounded-xl border-2 transition-all ${quizCount === n ? "border-purple-500 bg-purple-50 text-purple-700" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Image prompt toggle */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-sm font-medium transition-all ${quizIncludeImage ? "border-purple-200 bg-purple-50 text-purple-800" : "border-slate-200 text-slate-600"}`}>
+                  <input type="checkbox" checked={quizIncludeImage} onChange={e => setQuizIncludeImage(e.target.checked)} className="w-4 h-4 mt-0.5 text-purple-600 rounded" />
+                  <div>
+                    <p className="font-bold">🖼️ Sertakan Prompt Gambar per Soal</p>
+                    <p className="text-xs mt-0.5 opacity-80">AI akan generate prompt gambar (faceless, salaf-friendly) untuk setiap pertanyaan quiz</p>
+                  </div>
+                </label>
+                {quizIncludeImage && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-2">Gaya Gambar</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {["Animasi 3D (Pixar/Disney)", "Ilustrasi Vektor 2D", "Buku Cerita Anak (Watercolor)", "Fotografi Realistis"].map(s => (
+                        <button key={s} onClick={() => setQuizImageStyle(s)} className={`p-2.5 rounded-xl text-xs font-bold border-2 transition-all ${quizImageStyle === s ? "border-purple-500 bg-purple-50 text-purple-700" : "border-slate-200 text-slate-500"}`}>
+                          {s.split("(")[0].trim()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : null}
 
           {/* Generate Button */}
           <button onClick={handleGenerate} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2">

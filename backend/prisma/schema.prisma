@@ -519,12 +519,12 @@ model SocialAccount {
   id                String             @id @default(uuid())
   userId            String
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  platform          String             @default("META") // 'META' = FB + IG, 'YOUTUBE' = YouTube
+  platform          String             @default("META") // 'META' | 'YOUTUBE' | 'TIKTOK'
   pageName          String
-  pageId            String?            @unique // Meta page ID (null for YouTube)
+  pageId            String?            @unique // Meta page ID (null for YouTube/TikTok)
   igAccountId       String?
   igUsername        String?
-  pageAccessToken   String // Encrypted — Meta page token or YouTube refresh token
+  pageAccessToken   String // Encrypted — Meta page token or YouTube/TikTok refresh token
   profilePictureUrl String?
   defaultHashtags   String?            @default("#adably #edukasiislami #parentingislami")
   captionTemplate   String?
@@ -536,6 +536,10 @@ model SocialAccount {
   // YouTube-specific fields
   ytChannelId       String?            @unique // YouTube channel ID
   ytChannelTitle    String?            // YouTube channel display name
+
+  // TikTok-specific fields
+  tiktokOpenId      String?            @unique // TikTok user open_id
+  tiktokUsername    String?            // TikTok display username
 
   @@index([userId])
 }

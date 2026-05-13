@@ -10,6 +10,7 @@ import { SetMetadata } from '@nestjs/common';
 import { SocialService } from './social.service';
 import { SocialTokenService } from './social-token.service';
 import { YouTubeTokenService } from './youtube-token.service';
+import { TikTokTokenService } from './tiktok-token.service';
 import { PublishSocialDto, UpdateSocialDefaultsDto } from './dto/social.dto';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
@@ -28,9 +29,19 @@ export class SocialController {
     private readonly socialService: SocialService,
     private readonly tokenService: SocialTokenService,
     private readonly ytTokenService: YouTubeTokenService,
+    private readonly ttTokenService: TikTokTokenService,
     private readonly config: ConfigService,
   ) {
     this.frontendUrl = this.config.get<string>('FRONTEND_URL') || 'https://adably.id';
+  }
+
+  // ─── Stats ─────────────────────────────────────────────────────
+
+  @Get('stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  async getStats() {
+    return this.socialService.getStats();
   }
 
   // ─── OAuth Flow ────────────────────────────────────────────────
@@ -124,6 +135,38 @@ export class SocialController {
   async connectAccount(@Req() req: Request, @Body('code') code: string) {
     const userId = (req as any).user.id;
     const account = await this.socialService.connectAccount(userId, code);
+    return { success: true, data: account };
+  }
+
+  // ─── TikTok OAuth ──────────────────────────────────────────────
+
+  @Get('tiktok/auth-url')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  getTikTokAuthUrl() {
+    const csrfState = randomBytes(16).toString('hex');
+    const url = this.ttTokenService.getAuthUrl(csrfState);
+    return { url, state: csrfState };
+  }
+
+  @Get('tiktok/callback')
+  async handleTikTokCallback(
+    @Query('code') code: string,
+    @Query('error') error: string,
+    @Res() res: Response,
+  ) {
+    if (error || !code) {
+      return res.redirect(`${this.frontendUrl}/admin/social-settings?error=tiktok_denied`);
+    }
+    return res.redirect(`${this.frontendUrl}/admin/social-settings?tt_code=${code}`);
+  }
+
+  @Post('tiktok/connect')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  async connectTikTok(@Req() req: Request, @Body('code') code: string) {
+    const userId = (req as any).user.id;
+    const account = await this.socialService.connectTikTok(userId, code);
     return { success: true, data: account };
   }
 

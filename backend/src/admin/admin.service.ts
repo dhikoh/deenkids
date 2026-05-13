@@ -159,4 +159,38 @@ export class AdminService {
     this.logger.log(`Bulk deleted ${validIds.length} DRAFT items: [${validIds.join(', ')}]`);
     return { deleted: validIds.length, failed };
   }
+
+  // ── Scheduled Social Posts ──
+  async getScheduledPosts(userId: string, userRole: string) {
+    const where: any = {
+      status: 'SCHEDULED',
+      scheduledAt: { gte: new Date() },
+    };
+
+    // AUTHOR can only see their own content's scheduled posts
+    if (userRole === 'AUTHOR') {
+      where.content = { authorId: userId };
+    }
+
+    const posts = await this.prisma.socialPublishLog.findMany({
+      where,
+      include: {
+        content: { select: { title: true, slug: true, type: true } },
+      },
+      orderBy: { scheduledAt: 'asc' },
+      take: 10,
+    });
+
+    return {
+      data: posts.map(p => ({
+        id: p.id,
+        platform: p.platform,
+        status: p.status,
+        scheduledAt: p.scheduledAt,
+        contentTitle: p.content?.title || '—',
+        contentType: p.content?.type || '—',
+      })),
+      total: posts.length,
+    };
+  }
 }

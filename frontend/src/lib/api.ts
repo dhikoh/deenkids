@@ -354,6 +354,18 @@ export async function fetchDashboardStats(token: string) {
   });
 }
 
+export async function fetchScheduledPosts(token: string) {
+  return apiFetch(`${API_BASE_URL}/admin/dashboard/scheduled-posts`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function fetchSocialStats(token: string) {
+  return apiFetch(`${API_BASE_URL}/social/stats`, {
+    headers: authHeaders(token),
+  });
+}
+
 export async function fetchReviewQueue(token: string, page = 1) {
   return apiFetch(`${API_BASE_URL}/admin/review?page=${page}`, {
     headers: authHeaders(token),
@@ -843,6 +855,21 @@ export async function getYouTubeAuthUrl(token: string) {
 
 export async function connectYouTubeAccount(code: string, token: string) {
   return apiFetch(`${API_BASE_URL}/social/youtube/connect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ code }),
+  });
+}
+
+// ── TikTok OAuth ──
+export async function getTikTokAuthUrl(token: string) {
+  return apiFetch(`${API_BASE_URL}/social/tiktok/auth-url`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function connectTikTokAccount(code: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/social/tiktok/connect`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ code }),

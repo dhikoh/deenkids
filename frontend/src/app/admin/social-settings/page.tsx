@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { getSocialAuthUrl, connectSocialAccount, fetchSocialAccounts, disconnectSocialAccount, updateSocialDefaults, fetchSocialLogs, retrySocialPublish, cancelSocialScheduled, fetchSocialCronSettings, updateSocialCronSettings, getYouTubeAuthUrl, connectYouTubeAccount } from "@/lib/api";
+import { getSocialAuthUrl, connectSocialAccount, fetchSocialAccounts, disconnectSocialAccount, updateSocialDefaults, fetchSocialLogs, retrySocialPublish, cancelSocialScheduled, fetchSocialCronSettings, updateSocialCronSettings, getYouTubeAuthUrl, connectYouTubeAccount, getTikTokAuthUrl, connectTikTokAccount } from "@/lib/api";
 import { Share2, Link2, Unlink, Instagram, Facebook, RefreshCw, X, CheckCircle, Clock, AlertTriangle, ExternalLink, Settings, Zap, ShieldCheck, Youtube } from "lucide-react";
 
 export default function SocialSettingsPage() {
@@ -116,6 +116,21 @@ export default function SocialSettingsPage() {
         setConnecting(false);
         window.history.replaceState({}, "", "/admin/social-settings");
       }
+
+      // Handle TikTok OAuth callback
+      const ttCode = params.get("tt_code");
+      if (ttCode) {
+        setConnecting(true);
+        try {
+          await connectTikTokAccount(ttCode, token);
+          showToast("success", "TikTok berhasil terhubung! 🎉");
+          await loadAccounts();
+        } catch (err: any) {
+          showToast("error", err.message || "Gagal menghubungkan TikTok.");
+        }
+        setConnecting(false);
+        window.history.replaceState({}, "", "/admin/social-settings");
+      }
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -136,6 +151,15 @@ export default function SocialSettingsPage() {
       window.location.href = res.url;
     } catch (err: any) {
       showToast("error", err.message || "Gagal membuat URL koneksi YouTube.");
+    }
+  };
+
+  const handleConnectTikTok = async () => {
+    try {
+      const res = await getTikTokAuthUrl(token);
+      window.location.href = res.url;
+    } catch (err: any) {
+      showToast("error", err.message || "Gagal membuat URL koneksi TikTok.");
     }
   };
 
@@ -236,6 +260,9 @@ export default function SocialSettingsPage() {
             <button onClick={handleConnectYouTube} disabled={connecting} className="bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-red-500/25 transition-all disabled:opacity-50 mt-3">
               {connecting ? "Menghubungkan..." : "▶️ Hubungkan YouTube"}
             </button>
+            <button onClick={handleConnectTikTok} disabled={connecting} className="bg-gradient-to-r from-gray-800 to-black text-white px-6 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-gray-500/25 transition-all disabled:opacity-50 mt-3">
+              {connecting ? "Menghubungkan..." : "🎵 Hubungkan TikTok"}
+            </button>
           </div>
         ) : (
           <>
@@ -247,9 +274,9 @@ export default function SocialSettingsPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    {acc.platform === 'YOUTUBE' ? <Youtube size={16} className="text-red-600" /> : <Facebook size={16} className="text-blue-600" />}
+                    {acc.platform === 'YOUTUBE' ? <Youtube size={16} className="text-red-600" /> : acc.platform === 'TIKTOK' ? <span className="text-sm">🎵</span> : <Facebook size={16} className="text-blue-600" />}
                     <span className="font-semibold text-slate-800">{acc.pageName}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium">{acc.platform === 'YOUTUBE' ? 'YouTube' : 'Meta'}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium">{acc.platform === 'YOUTUBE' ? 'YouTube' : acc.platform === 'TIKTOK' ? 'TikTok' : 'Meta'}</span>
                     {acc.isActive ? (
                       <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">✅ Aktif</span>
                     ) : (
@@ -280,6 +307,9 @@ export default function SocialSettingsPage() {
             </button>
             <button onClick={handleConnectYouTube} disabled={connecting} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-colors disabled:opacity-50">
               <Youtube size={16} /> + YouTube
+            </button>
+            <button onClick={handleConnectTikTok} disabled={connecting} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50">
+              🎵 + TikTok
             </button>
           </div>
           </>

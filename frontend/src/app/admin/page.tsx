@@ -1,21 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, FileText, Eye, Heart, Activity, TrendingUp, AlertCircle, PenLine } from "lucide-react";
+import { Users, FileText, Eye, Heart, AlertCircle, PenLine, Instagram, Facebook, Youtube, Clock, Calendar, Share2 } from "lucide-react";
 import Link from "next/link";
 import Cookies from "js-cookie";
-import { fetchDashboardStats } from "@/lib/api";
+import { fetchDashboardStats, fetchScheduledPosts } from "@/lib/api";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<any>(null);
+  const [scheduled, setScheduled] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const token = Cookies.get("_at");
     if (token) {
-      fetchDashboardStats(token)
-        .then(setStats)
-        .catch(() => {})
+      Promise.all([
+        fetchDashboardStats(token).catch(() => null),
+        fetchScheduledPosts(token).catch(() => ({ data: [] })),
+      ])
+        .then(([s, sp]) => {
+          setStats(s);
+          setScheduled(sp?.data || []);
+        })
         .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
@@ -25,7 +31,15 @@ export default function AdminDashboardPage() {
   if (isLoading) return <div className="p-8 text-center text-slate-500">Memuat dashboard...</div>;
 
   const isAUTHOR = stats?.role === "AUTHOR";
+  const isSuperAdmin = stats?.role === "SUPERADMIN";
   const roleLabel = stats?.role === "SUPERADMIN" ? "SuperAdmin" : stats?.role === "ADMIN" ? "Admin" : "Penulis";
+
+  const platformIcon = (p: string) => {
+    if (p === "INSTAGRAM") return <Instagram size={16} className="text-pink-500" />;
+    if (p === "FACEBOOK") return <Facebook size={16} className="text-blue-600" />;
+    if (p === "YOUTUBE") return <Youtube size={16} className="text-red-600" />;
+    return <Share2 size={16} className="text-slate-400" />;
+  };
 
   return (
     <div className="space-y-8">
@@ -81,6 +95,33 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Scheduled Social Posts */}
+      {scheduled.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2"><Calendar className="text-indigo-500" size={20} /> Jadwal Publish Sosmed</h3>
+            {isSuperAdmin && (
+              <Link href="/admin/social-settings" className="text-sm text-emerald-600 font-semibold hover:text-emerald-700">Kelola Sosmed →</Link>
+            )}
+          </div>
+          <div className="divide-y divide-slate-100">
+            {scheduled.map((item: any) => (
+              <div key={item.id} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                <div className="flex-shrink-0">{platformIcon(item.platform)}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 truncate">{item.contentTitle}</p>
+                  <p className="text-xs text-slate-400">{item.contentType} • {item.platform}</p>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full font-medium flex-shrink-0">
+                  <Clock size={12} />
+                  {new Date(item.scheduledAt).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Review Queue (Admin/SuperAdmin) */}
       {!isAUTHOR && stats?.recentReviewQueue?.length > 0 && (

@@ -30,6 +30,13 @@ export class AdminController {
     return this.adminService.getDashboardStats(req.user.id, req.user.role);
   }
 
+  @Get('dashboard/scheduled-posts')
+  @Roles('AUTHOR', 'ADMIN', 'SUPERADMIN')
+  @ApiOperation({ summary: 'Get upcoming scheduled social posts' })
+  async getScheduledPosts(@Req() req: any) {
+    return this.adminService.getScheduledPosts(req.user.id, req.user.role);
+  }
+
   // ── Review Queue ──
   @Get('review')
   @Roles('ADMIN', 'SUPERADMIN')

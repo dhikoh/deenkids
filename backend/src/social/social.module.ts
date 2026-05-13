@@ -8,12 +8,14 @@ import { SocialCaptionService } from './social-caption.service';
 import { VideoGeneratorService } from './video-generator.service';
 import { YouTubeTokenService } from './youtube-token.service';
 import { YouTubeUploadService } from './youtube-upload.service';
+import { TikTokTokenService } from './tiktok-token.service';
+import { TikTokUploadService } from './tiktok-upload.service';
 import { StorageModule } from '../common/storage/storage.module';
 
 @Module({
   imports: [PrismaModule, ConfigModule, StorageModule],
   controllers: [SocialController],
-  providers: [SocialService, SocialTokenService, SocialCaptionService, VideoGeneratorService, YouTubeTokenService, YouTubeUploadService],
+  providers: [SocialService, SocialTokenService, SocialCaptionService, VideoGeneratorService, YouTubeTokenService, YouTubeUploadService, TikTokTokenService, TikTokUploadService],
   exports: [SocialService],
 })
 export class SocialModule {}

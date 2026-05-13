@@ -357,4 +357,36 @@ export class CronService {
       this.logger.error(`Social token validation failed: ${err.message}`);
     }
   }
+
+  // ─── Video Temp Cleanup ─────────────────────────────────────────
+  @Cron('0 6 * * *') // Every day at 6AM
+  async cleanupVideoTempFiles() {
+    const os = require('os');
+    const tmpDir = os.tmpdir();
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
+    let cleaned = 0;
+
+    try {
+      const entries = fs.readdirSync(tmpDir).filter(f => f.startsWith('adably-video-'));
+      for (const entry of entries) {
+        const fullPath = join(tmpDir, entry);
+        try {
+          const stat = fs.statSync(fullPath);
+          if (stat.mtimeMs < cutoff) {
+            if (stat.isDirectory()) {
+              fs.rmSync(fullPath, { recursive: true, force: true });
+            } else {
+              fs.unlinkSync(fullPath);
+            }
+            cleaned++;
+          }
+        } catch {}
+      }
+      if (cleaned > 0) {
+        this.logger.log(`🧹 Cleaned up ${cleaned} FFmpeg temp files/dirs from ${tmpDir}`);
+      }
+    } catch (err) {
+      this.logger.warn(`⚠️ Video temp cleanup failed: ${err.message}`);
+    }
+  }
 }

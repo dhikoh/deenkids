@@ -14,7 +14,7 @@ interface SocialPublishModalProps {
 export default function SocialPublishModal({ contentId, contentTitle, onClose, onPublished }: SocialPublishModalProps) {
   const [caption, setCaption] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [platforms, setPlatforms] = useState<string[]>(["INSTAGRAM", "FACEBOOK", "YOUTUBE"]);
+  const [platforms, setPlatforms] = useState<string[]>(["INSTAGRAM", "FACEBOOK", "YOUTUBE", "TIKTOK"]);
   const [mode, setMode] = useState<"IMMEDIATE" | "SCHEDULED">("IMMEDIATE");
   const [scheduledAt, setScheduledAt] = useState("");
   const [loading, setLoading] = useState(true);
@@ -23,6 +23,8 @@ export default function SocialPublishModal({ contentId, contentTitle, onClose, o
   const [previousPosts, setPreviousPosts] = useState<any[]>([]);
   const [results, setResults] = useState<any[] | null>(null);
   const [hasAudio, setHasAudio] = useState(false);
+  const [hasDescription, setHasDescription] = useState(false);
+  const [tagCount, setTagCount] = useState(0);
 
   const token = Cookies.get("_at") || "";
 
@@ -41,6 +43,8 @@ export default function SocialPublishModal({ contentId, contentTitle, onClose, o
           setCaption(captionRes.caption || "");
           setImageUrl(captionRes.imageUrl || null);
           setHasAudio(!!captionRes.hasAudio);
+          setHasDescription(!!captionRes.hasDescription);
+          setTagCount(captionRes.tagCount || 0);
 
           // Check previous posts
           const logsRes = await fetchSocialLogs({ contentId }, token);
@@ -170,6 +174,24 @@ export default function SocialPublishModal({ contentId, contentTitle, onClose, o
                 <label className="text-sm font-medium text-slate-700 mb-1.5 block">Caption</label>
                 <textarea value={caption} onChange={(e) => setCaption(e.target.value)} rows={8} className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:border-indigo-500 focus:ring-indigo-500 resize-none" placeholder="Caption akan otomatis di-generate..." />
                 <p className={`text-xs mt-1 text-right ${charColor}`}>{charCount} / 2200</p>
+                {/* Description & Tag badges */}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {hasDescription ? (
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700"><CheckCircle size={12} /> Deskripsi termasuk</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-700"><AlertTriangle size={12} /> Tidak ada deskripsi</span>
+                  )}
+                  {tagCount > 0 ? (
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700"><CheckCircle size={12} /> {tagCount} tag termasuk</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-700"><AlertTriangle size={12} /> Belum ada tag</span>
+                  )}
+                  {hasAudio ? (
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700"><Video size={12} /> Publish sebagai video</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-slate-50 text-slate-500"><Image size={12} /> Publish sebagai gambar</span>
+                  )}
+                </div>
               </div>
 
               {/* Platform Selection */}
@@ -184,6 +206,9 @@ export default function SocialPublishModal({ contentId, contentTitle, onClose, o
                   </button>
                   <button onClick={() => togglePlatform("YOUTUBE")} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-medium text-sm transition-all ${platforms.includes("YOUTUBE") ? "border-red-500 bg-red-50 text-red-700" : "border-slate-200 text-slate-400 hover:border-slate-300"}`}>
                     <Youtube size={20} /> YouTube
+                  </button>
+                  <button onClick={() => togglePlatform("TIKTOK")} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-medium text-sm transition-all ${platforms.includes("TIKTOK") ? "border-gray-800 bg-gray-100 text-gray-800" : "border-slate-200 text-slate-400 hover:border-slate-300"}`}>
+                    🎵 TikTok
                   </button>
                 </div>
               </div>

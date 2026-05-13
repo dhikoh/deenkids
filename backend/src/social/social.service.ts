@@ -6,6 +6,8 @@ import { PublishSocialDto } from './dto/social.dto';
 import { VideoGeneratorService } from './video-generator.service';
 import { YouTubeTokenService } from './youtube-token.service';
 import { YouTubeUploadService } from './youtube-upload.service';
+import { TikTokTokenService } from './tiktok-token.service';
+import { TikTokUploadService } from './tiktok-upload.service';
 
 @Injectable()
 export class SocialService {
@@ -18,6 +20,8 @@ export class SocialService {
     private readonly videoGenerator: VideoGeneratorService,
     private readonly ytTokenService: YouTubeTokenService,
     private readonly ytUploadService: YouTubeUploadService,
+    private readonly ttTokenService: TikTokTokenService,
+    private readonly ttUploadService: TikTokUploadService,
   ) {}
 
   // ─── Account Management ────────────────────────────────────────
@@ -139,6 +143,35 @@ export class SocialService {
     return account;
   }
 
+  async connectTikTok(userId: string, code: string) {
+    const tokens = await this.ttTokenService.exchangeCodeForTokens(code);
+    const userInfo = await this.ttTokenService.getUserInfo(tokens.accessToken);
+
+    const account = await this.prisma.socialAccount.upsert({
+      where: { tiktokOpenId: tokens.openId },
+      update: {
+        userId,
+        pageName: userInfo.displayName,
+        pageAccessToken: tokens.refreshToken,
+        tiktokUsername: userInfo.displayName,
+        profilePictureUrl: userInfo.avatarUrl,
+        isActive: true,
+      },
+      create: {
+        userId,
+        platform: 'TIKTOK',
+        pageName: userInfo.displayName,
+        pageAccessToken: tokens.refreshToken,
+        tiktokOpenId: tokens.openId,
+        tiktokUsername: userInfo.displayName,
+        profilePictureUrl: userInfo.avatarUrl,
+      },
+    });
+
+    this.logger.log(`✅ TikTok connected: ${userInfo.displayName} (${tokens.openId})`);
+    return account;
+  }
+
   async updateDefaults(accountId: string, userId: string, data: { defaultHashtags?: string; captionTemplate?: string }) {
     const account = await this.prisma.socialAccount.findFirst({
       where: { id: accountId, userId },
@@ -154,6 +187,74 @@ export class SocialService {
     });
   }
 
+  // ─── Stats ─────────────────────────────────────────────────────
+
+  async getStats() {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [allLogs, monthlyLogs, recentLogs] = await Promise.all([
+      this.prisma.socialPublishLog.groupBy({
+        by: ['platform', 'status'],
+        _count: { id: true },
+      }),
+      this.prisma.socialPublishLog.groupBy({
+        by: ['platform', 'status'],
+        where: { createdAt: { gte: thirtyDaysAgo } },
+        _count: { id: true },
+      }),
+      this.prisma.socialPublishLog.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        include: { content: { select: { title: true, type: true } } },
+      }),
+    ]);
+
+    // Aggregate all-time stats
+    let totalAll = 0, totalSuccess = 0;
+    const platformBreakdown: Record<string, { total: number; success: number; failed: number; scheduled: number }> = {};
+
+    for (const row of allLogs) {
+      const count = row._count.id;
+      totalAll += count;
+      if (row.status === 'PUBLISHED') totalSuccess += count;
+
+      if (!platformBreakdown[row.platform]) {
+        platformBreakdown[row.platform] = { total: 0, success: 0, failed: 0, scheduled: 0 };
+      }
+      platformBreakdown[row.platform].total += count;
+      if (row.status === 'PUBLISHED') platformBreakdown[row.platform].success += count;
+      else if (row.status === 'FAILED') platformBreakdown[row.platform].failed += count;
+      else if (row.status === 'SCHEDULED') platformBreakdown[row.platform].scheduled += count;
+    }
+
+    // Monthly totals
+    let monthlyTotal = 0, monthlySuccess = 0;
+    for (const row of monthlyLogs) {
+      monthlyTotal += row._count.id;
+      if (row.status === 'PUBLISHED') monthlySuccess += row._count.id;
+    }
+
+    return {
+      totalPublish: totalAll,
+      totalSuccess,
+      successRate: totalAll > 0 ? Math.round((totalSuccess / totalAll) * 100) : 0,
+      monthlyPublish: monthlyTotal,
+      monthlySuccess,
+      platformBreakdown,
+      recentActivity: recentLogs.map(l => ({
+        id: l.id,
+        platform: l.platform,
+        status: l.status,
+        contentTitle: l.content?.title || '—',
+        contentType: l.content?.type || '—',
+        publishedAt: l.publishedAt,
+        createdAt: l.createdAt,
+        error: l.error,
+      })),
+    };
+  }
+
   // ─── Caption Generation ────────────────────────────────────────
 
   async generateCaption(contentId: string, userId: string) {
@@ -162,10 +263,16 @@ export class SocialService {
       where: { userId, isActive: true },
     });
 
+    const tagCount = content.tags?.length || 0;
+    const hasDescription = !!(content.description && content.description.trim().length > 0);
+
     return {
       caption: this.captionService.buildCaption(content, account),
       imageUrl: content.socialThumbnailUrl || content.thumbnailUrl || null,
       hasAudio: !!(content.enableAudio && content.audioUrl),
+      hasDescription,
+      tagCount,
+      contentTitle: content.title || '',
     };
   }
 
@@ -219,10 +326,10 @@ export class SocialService {
     }
 
     for (const platform of dto.platforms) {
-      if (!['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'].includes(platform)) continue;
+      if (!['INSTAGRAM', 'FACEBOOK', 'YOUTUBE', 'TIKTOK'].includes(platform)) continue;
 
       // Find appropriate account for this platform
-      const platformType = platform === 'YOUTUBE' ? 'YOUTUBE' : 'META';
+      const platformType = platform === 'YOUTUBE' ? 'YOUTUBE' : platform === 'TIKTOK' ? 'TIKTOK' : 'META';
       const account = await this.prisma.socialAccount.findFirst({
         where: { userId, platform: platformType, isActive: true },
       });
@@ -233,10 +340,58 @@ export class SocialService {
 
       // Determine media for this platform
       const isYouTube = platform === 'YOUTUBE';
+      const isTikTok = platform === 'TIKTOK';
       const mediaUrl = isYouTube ? (ytVideoUrl || imageUrl) : (socialVideoUrl || imageUrl);
       const isVideo = isYouTube ? !!ytVideoUrl : !!socialVideoUrl;
 
-      if (isYouTube) {
+      if (isTikTok) {
+        // TikTok uses dedicated upload path (video only, 9:16)
+        if (!socialVideoUrl) {
+          results.push({ platform: 'TIKTOK', status: 'FAILED', error: 'Konten harus memiliki audio untuk publish ke TikTok' });
+          continue;
+        }
+        try {
+          const refreshed = await this.ttTokenService.refreshAccessToken(account.pageAccessToken);
+          // Update stored refresh token
+          await this.prisma.socialAccount.update({ where: { id: account.id }, data: { pageAccessToken: refreshed.refreshToken } });
+
+          const ttResult = await this.ttUploadService.uploadVideo(
+            refreshed.accessToken,
+            socialVideoUrl,
+            dto.caption.substring(0, 150),
+          );
+
+          await this.prisma.socialPublishLog.create({
+            data: {
+              contentId: content.id,
+              socialAccountId: account.id,
+              platform: 'TIKTOK',
+              caption: dto.caption,
+              imageUrl: socialVideoUrl,
+              status: 'PUBLISHED',
+              postId: ttResult.publishId,
+              publishedAt: new Date(),
+            },
+          });
+
+          results.push({ platform: 'TIKTOK', status: 'PUBLISHED', postId: ttResult.publishId, isVideo: true });
+        } catch (err) {
+          const errorMsg = err.message || 'TikTok upload gagal';
+          await this.prisma.socialPublishLog.create({
+            data: {
+              contentId: content.id,
+              socialAccountId: account.id,
+              platform: 'TIKTOK',
+              caption: dto.caption,
+              imageUrl: socialVideoUrl,
+              status: 'FAILED',
+              error: errorMsg,
+            },
+          });
+          results.push({ platform: 'TIKTOK', status: 'FAILED', error: errorMsg, isVideo: true });
+          this.logger.error(`❌ TikTok publish failed: ${errorMsg}`);
+        }
+      } else if (isYouTube) {
         // YouTube uses dedicated upload path
         if (!ytVideoUrl) {
           results.push({ platform: 'YOUTUBE', status: 'FAILED', error: 'Konten harus memiliki audio untuk publish ke YouTube' });

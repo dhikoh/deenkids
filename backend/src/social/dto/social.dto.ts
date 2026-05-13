@@ -6,7 +6,7 @@ export class PublishSocialDto {
   @IsString()
   contentId: string;
 
-  @ApiProperty({ description: 'Platform tujuan', enum: ['INSTAGRAM', 'FACEBOOK'], isArray: true })
+  @ApiProperty({ description: 'Platform tujuan', enum: ['INSTAGRAM', 'FACEBOOK', 'YOUTUBE', 'TIKTOK'], isArray: true })
   @IsArray()
   @IsString({ each: true })
   platforms: string[];

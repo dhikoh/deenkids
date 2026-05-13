@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image, AlertTriangle, Trash2, BookOpen, Share2, Upload } from "lucide-react";
+import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image, AlertTriangle, Trash2, BookOpen, Share2, Upload, BarChart3 } from "lucide-react";
 import Cookies from "js-cookie";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -167,6 +167,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       { name: "Error Reports", icon: <AlertTriangle size={20} />, href: "/admin/error-reports", show: isSuperAdmin, badge: errorCount },
       { name: "Pengaturan", icon: <Settings size={20} />, href: "/admin/settings", show: isSuperAdmin },
       { name: "Sosial Media", icon: <Share2 size={20} />, href: "/admin/social-settings", show: isSuperAdmin },
+      { name: "Statistik Sosmed", icon: <BarChart3 size={20} />, href: "/admin/social-dashboard", show: isSuperAdmin },
       { name: "Backup & Export", icon: <Database size={20} />, href: "/admin/settings#backup", show: isSuperAdmin },
     ]},
   ];
