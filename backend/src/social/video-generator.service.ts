@@ -87,7 +87,7 @@ export class VideoGeneratorService {
         outputPath,
       ];
 
-      await execFileAsync('ffmpeg', ffmpegArgs, { timeout: 120000 }); // 2 min timeout
+      await execFileAsync('ffmpeg', ffmpegArgs, { timeout: 900000 }); // 15 min timeout
 
       // 5. Read the generated video
       const { readFile } = await import('fs/promises');
