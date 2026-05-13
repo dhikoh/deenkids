@@ -344,8 +344,8 @@ export class SocialService {
 
       try {
         if (hasSocialPlatforms) {
-          // Use thumbnailUrl (16:9) for 9:16 video — avoids black bars from 1:1 socialThumbnailUrl
-          const socialThumb = content.thumbnailUrl || content.socialThumbnailUrl;
+          // Use socialThumbnailUrl (1:1) for IG/FB/TikTok — designed for social media
+          const socialThumb = content.socialThumbnailUrl || content.thumbnailUrl;
           if (socialThumb) {
             socialVideoUrl = await this.videoGenerator.generateVideo(socialThumb, content.audioUrl!, content.slug || content.id, '9:16');
             this.logger.log(`🎬 Social video (9:16) generated: ${socialVideoUrl}`);
