@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { FileText, Trash2, Edit2, Film, Search, RotateCcw, X, Send, Share2 } from "lucide-react";
+import { FileText, Trash2, Edit2, Film, Search, RotateCcw, X, Send, Share2, Download, Music, Image, Smartphone } from "lucide-react";
 import { copyVideoScript } from "@/lib/videoScript";
 import { fetchAllContents, deleteContent, fetchContentForEdit, unpublishContent, submitContentForReview } from "@/lib/api";
 import SocialPublishModal from "@/components/SocialPublishModal";
@@ -25,6 +25,8 @@ export default function ContentManagementPage() {
   const [unpublishNotes, setUnpublishNotes] = useState("");
   const [publishSocialTarget, setPublishSocialTarget] = useState<any | null>(null);
   const [exportTarget, setExportTarget] = useState<string | null>(null);
+  const [downloadTarget, setDownloadTarget] = useState<string | null>(null);
+  const downloadRef = useRef<HTMLDivElement>(null);
 
   const load = async () => {
     const token = Cookies.get("_at"); if (!token) return;
@@ -72,6 +74,38 @@ export default function ContentManagementPage() {
       toast.success("Konten diajukan untuk review"); load();
     } catch (e: any) { toast.error(e.message); }
   };
+
+  // ── Download handler — fetch as blob for cross-origin support ──
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      toast.loading("Mengunduh...", { id: "dl" });
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Gagal mengunduh file");
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      toast.success("Berhasil diunduh!", { id: "dl" });
+    } catch (e: any) {
+      toast.error(e.message || "Gagal mengunduh", { id: "dl" });
+    }
+    setDownloadTarget(null);
+  };
+
+  // Close download dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (downloadRef.current && !downloadRef.current.contains(e.target as Node)) {
+        setDownloadTarget(null);
+      }
+    };
+    if (downloadTarget) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [downloadTarget]);
 
   return (
     <div className="space-y-6">
@@ -137,6 +171,47 @@ export default function ContentManagementPage() {
                   <Link href={`/admin/editor?id=${item.id}`} className="p-2 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100" title="Edit">
                     <Edit2 size={16} />
                   </Link>
+                  {/* Download Dropdown */}
+                  <div className="relative" ref={downloadTarget === item.id ? downloadRef : undefined}>
+                    <button
+                      onClick={() => setDownloadTarget(downloadTarget === item.id ? null : item.id)}
+                      className={`p-2 rounded-lg transition-colors ${downloadTarget === item.id ? 'bg-teal-500 text-white' : 'bg-teal-50 text-teal-600 hover:bg-teal-100'}`}
+                      title="Download Audio / Thumbnail"
+                    >
+                      <Download size={16} />
+                    </button>
+                    {downloadTarget === item.id && (
+                      <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-slate-200 z-20 py-1 overflow-hidden">
+                        <button
+                          onClick={() => item.audioUrl && handleDownload(item.audioUrl, `${item.slug || item.id}_audio.mp3`)}
+                          disabled={!item.audioUrl}
+                          className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-colors ${item.audioUrl ? 'text-slate-700 hover:bg-teal-50' : 'text-slate-300 cursor-not-allowed'}`}
+                        >
+                          <Music size={14} className={item.audioUrl ? 'text-teal-500' : 'text-slate-300'} />
+                          <span className="font-medium">Audio (MP3)</span>
+                          {!item.audioUrl && <span className="ml-auto text-[10px] text-slate-300">—</span>}
+                        </button>
+                        <button
+                          onClick={() => item.thumbnailUrl && handleDownload(item.thumbnailUrl, `${item.slug || item.id}_web.jpg`)}
+                          disabled={!item.thumbnailUrl}
+                          className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-colors ${item.thumbnailUrl ? 'text-slate-700 hover:bg-sky-50' : 'text-slate-300 cursor-not-allowed'}`}
+                        >
+                          <Image size={14} className={item.thumbnailUrl ? 'text-sky-500' : 'text-slate-300'} />
+                          <span className="font-medium">Thumbnail Web</span>
+                          <span className="ml-auto text-[10px] text-slate-400">16:9</span>
+                        </button>
+                        <button
+                          onClick={() => item.socialThumbnailUrl && handleDownload(item.socialThumbnailUrl, `${item.slug || item.id}_sosmed.jpg`)}
+                          disabled={!item.socialThumbnailUrl}
+                          className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-colors ${item.socialThumbnailUrl ? 'text-slate-700 hover:bg-pink-50' : 'text-slate-300 cursor-not-allowed'}`}
+                        >
+                          <Smartphone size={14} className={item.socialThumbnailUrl ? 'text-pink-500' : 'text-slate-300'} />
+                          <span className="font-medium">Thumbnail Sosmed</span>
+                          <span className="ml-auto text-[10px] text-slate-400">9:16</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <button onClick={() => setExportTarget(item.id)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100" title="Export Script Video">
                     <Film size={16} />
                   </button>

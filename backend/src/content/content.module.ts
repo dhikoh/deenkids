@@ -4,12 +4,13 @@ import { ContentService } from './content.service';
 import { HealthController } from './health.controller';
 import { PublicFormController, AdminInboxController } from './public-form.controller';
 import { ErrorReportPublicController, ErrorReportAdminController } from './error-report.controller';
+import { PodcastController } from './podcast.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [PrismaModule, NotificationModule],
-  controllers: [ContentController, HealthController, PublicFormController, AdminInboxController, ErrorReportPublicController, ErrorReportAdminController],
+  controllers: [ContentController, HealthController, PublicFormController, AdminInboxController, ErrorReportPublicController, ErrorReportAdminController, PodcastController],
   providers: [ContentService],
   exports: [ContentService],
 })

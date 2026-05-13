@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SocialTokenService } from './social-token.service';
 import { SocialCaptionService } from './social-caption.service';
 import { PublishSocialDto } from './dto/social.dto';
+import { VideoGeneratorService } from './video-generator.service';
 
 @Injectable()
 export class SocialService {
@@ -12,6 +13,7 @@ export class SocialService {
     private readonly prisma: PrismaService,
     private readonly tokenService: SocialTokenService,
     private readonly captionService: SocialCaptionService,
+    private readonly videoGenerator: VideoGeneratorService,
   ) {}
 
   // ─── Account Management ────────────────────────────────────────
@@ -126,6 +128,7 @@ export class SocialService {
     return {
       caption: this.captionService.buildCaption(content, account),
       imageUrl: content.socialThumbnailUrl || content.thumbnailUrl || null,
+      hasAudio: !!(content.enableAudio && content.audioUrl),
     };
   }
 
@@ -149,6 +152,38 @@ export class SocialService {
 
     const results: any[] = [];
 
+    // Determine if we can publish as video (has audio)
+    const hasAudio = !!(content.enableAudio && content.audioUrl);
+    let videoUrl: string | null = null;
+
+    // Generate video if audio is available
+    if (hasAudio) {
+      try {
+        // For IG/FB/TikTok → use social thumbnail (9:16), for YouTube → web thumbnail (16:9)
+        const hasSocialPlatforms = dto.platforms.some(p => ['INSTAGRAM', 'FACEBOOK', 'TIKTOK'].includes(p));
+        const videoThumb = hasSocialPlatforms
+          ? (content.socialThumbnailUrl || content.thumbnailUrl)
+          : content.thumbnailUrl;
+
+        if (videoThumb) {
+          const aspectRatio = hasSocialPlatforms ? '9:16' as const : '16:9' as const;
+          videoUrl = await this.videoGenerator.generateVideo(
+            videoThumb,
+            content.audioUrl!,
+            content.slug || content.id,
+            aspectRatio,
+          );
+          this.logger.log(`🎬 Video generated for social publish: ${videoUrl}`);
+        }
+      } catch (err) {
+        this.logger.warn(`⚠️ Video generation failed, falling back to image: ${err.message}`);
+        videoUrl = null;
+      }
+    }
+
+    const mediaUrl = videoUrl || imageUrl;
+    const isVideo = !!videoUrl;
+
     for (const platform of dto.platforms) {
       if (!['INSTAGRAM', 'FACEBOOK'].includes(platform)) continue;
 
@@ -160,15 +195,15 @@ export class SocialService {
             socialAccountId: account.id,
             platform,
             caption: dto.caption,
-            imageUrl,
+            imageUrl: mediaUrl,
             status: 'SCHEDULED',
             scheduledAt: new Date(dto.scheduledAt),
           },
         });
-        results.push({ platform, status: 'SCHEDULED', logId: log.id, scheduledAt: dto.scheduledAt });
+        results.push({ platform, status: 'SCHEDULED', logId: log.id, scheduledAt: dto.scheduledAt, isVideo });
       } else {
         // IMMEDIATE — publish now
-        const result = await this.publishNow(account, content, platform, dto.caption, imageUrl);
+        const result = await this.publishNow(account, content, platform, dto.caption, mediaUrl, isVideo);
         results.push(result);
       }
     }
@@ -179,7 +214,7 @@ export class SocialService {
   /**
    * Actually publish to a platform (used by both immediate & cron-scheduled).
    */
-  async publishNow(account: any, content: any, platform: string, caption: string, imageUrl: string, logId?: string) {
+  async publishNow(account: any, content: any, platform: string, caption: string, mediaUrl: string, isVideo: boolean = false, logId?: string) {
     const pageToken = this.tokenService.decryptToken(account.pageAccessToken);
 
     // Create or update log
@@ -194,7 +229,7 @@ export class SocialService {
             socialAccountId: account.id,
             platform,
             caption,
-            imageUrl,
+            imageUrl: mediaUrl,
             status: 'PUBLISHING',
           },
         });
@@ -204,11 +239,15 @@ export class SocialService {
       let postUrl: string | null = null;
 
       if (platform === 'INSTAGRAM') {
-        const result = await this.publishToInstagram(account.igAccountId, pageToken, imageUrl, caption);
+        const result = isVideo
+          ? await this.publishVideoToInstagram(account.igAccountId, pageToken, mediaUrl, caption)
+          : await this.publishToInstagram(account.igAccountId, pageToken, mediaUrl, caption);
         postId = result.postId;
         postUrl = result.postUrl;
       } else if (platform === 'FACEBOOK') {
-        const result = await this.publishToFacebook(account.pageId, pageToken, imageUrl, caption);
+        const result = isVideo
+          ? await this.publishVideoToFacebook(account.pageId, pageToken, mediaUrl, caption)
+          : await this.publishToFacebook(account.pageId, pageToken, mediaUrl, caption);
         postId = result.postId;
         postUrl = result.postUrl;
       }
@@ -219,8 +258,8 @@ export class SocialService {
         data: { status: 'PUBLISHED', postId, postUrl, publishedAt: new Date(), error: null },
       });
 
-      this.logger.log(`📱 Published to ${platform}: ${postUrl}`);
-      return { platform, status: 'PUBLISHED', postUrl, postId, logId: log.id };
+      this.logger.log(`📱 Published ${isVideo ? 'video' : 'image'} to ${platform}: ${postUrl}`);
+      return { platform, status: 'PUBLISHED', postUrl, postId, logId: log.id, isVideo };
     } catch (err) {
       const errorMsg = err.message || 'Unknown error';
       await this.prisma.socialPublishLog.update({
@@ -228,7 +267,7 @@ export class SocialService {
         data: { status: 'FAILED', error: errorMsg, retryCount: { increment: 1 } },
       });
       this.logger.error(`❌ Publish to ${platform} failed: ${errorMsg}`);
-      return { platform, status: 'FAILED', error: errorMsg, logId: log.id };
+      return { platform, status: 'FAILED', error: errorMsg, logId: log.id, isVideo };
     }
   }
 
@@ -343,6 +382,87 @@ export class SocialService {
     return { postId, postUrl };
   }
 
+  // ─── Video Publishing (Instagram Reels) ────────────────────────
+
+  private async publishVideoToInstagram(igAccountId: string, pageToken: string, videoUrl: string, caption: string) {
+    // Step 1: Create video container (Reels)
+    const containerUrl = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
+    const containerRes = await fetch(containerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        video_url: videoUrl,
+        caption,
+        media_type: 'REELS',
+        access_token: pageToken,
+      }),
+    });
+    const containerData = await containerRes.json();
+    if (containerData.error) {
+      throw new Error(`IG video container: ${containerData.error.message}`);
+    }
+
+    // Step 2: Wait for video processing (videos take longer than images)
+    const containerId = containerData.id;
+    await this.waitForContainerReady(containerId, pageToken, 120000); // 2 min for video
+
+    // Step 3: Publish container
+    const publishUrl = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
+    const publishRes = await fetch(publishUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creation_id: containerId,
+        access_token: pageToken,
+      }),
+    });
+    const publishData = await publishRes.json();
+    if (publishData.error) {
+      throw new Error(`IG video publish: ${publishData.error.message}`);
+    }
+
+    // Step 4: Get permalink
+    const permalinkUrl = `https://graph.facebook.com/v19.0/${publishData.id}?fields=permalink&access_token=${pageToken}`;
+    const permalinkRes = await fetch(permalinkUrl);
+    const permalinkData = await permalinkRes.json();
+
+    return {
+      postId: publishData.id,
+      postUrl: permalinkData.permalink || `https://www.instagram.com/`,
+    };
+  }
+
+  // ─── Video Publishing (Facebook) ───────────────────────────────
+
+  private async publishVideoToFacebook(pageId: string, pageToken: string, videoUrl: string, caption: string) {
+    const url = `https://graph.facebook.com/v19.0/${pageId}/videos`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_url: videoUrl,
+        description: caption,
+        access_token: pageToken,
+      }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      throw new Error(`FB video publish: ${data.error.message}`);
+    }
+
+    const postId = data.id;
+    let postUrl = `https://www.facebook.com/${postId}`;
+    try {
+      const linkRes = await fetch(`https://graph.facebook.com/v19.0/${postId}?fields=permalink_url&access_token=${pageToken}`);
+      const linkData = await linkRes.json();
+      if (linkData.permalink_url) postUrl = linkData.permalink_url;
+    } catch {
+      // Use fallback URL
+    }
+
+    return { postId, postUrl };
+  }
+
   // ─── Retry & Cancel ────────────────────────────────────────────
 
   async retryPublish(logId: string, userId: string) {
@@ -353,7 +473,7 @@ export class SocialService {
     if (!log) throw new NotFoundException('Log tidak ditemukan atau status bukan FAILED');
     if (log.socialAccount.userId !== userId) throw new BadRequestException('Akses ditolak');
 
-    return this.publishNow(log.socialAccount, log.content, log.platform, log.caption, log.imageUrl, log.id);
+    return this.publishNow(log.socialAccount, log.content, log.platform, log.caption, log.imageUrl, false, log.id);
   }
 
   async cancelScheduled(logId: string, userId: string) {
@@ -438,7 +558,7 @@ export class SocialService {
         });
         continue;
       }
-      await this.publishNow(log.socialAccount, log.content, log.platform, log.caption, log.imageUrl, log.id);
+      await this.publishNow(log.socialAccount, log.content, log.platform, log.caption, log.imageUrl, false, log.id);
     }
   }
 

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { getSocialCaptionPreview, publishToSocial, fetchSocialAccounts, fetchSocialLogs } from "@/lib/api";
-import { X, Instagram, Facebook, Send, Clock, AlertTriangle, CheckCircle } from "lucide-react";
+import { X, Instagram, Facebook, Send, Clock, AlertTriangle, CheckCircle, Video, Image } from "lucide-react";
 
 interface SocialPublishModalProps {
   contentId: string;
@@ -22,6 +22,7 @@ export default function SocialPublishModal({ contentId, contentTitle, onClose, o
   const [connected, setConnected] = useState(false);
   const [previousPosts, setPreviousPosts] = useState<any[]>([]);
   const [results, setResults] = useState<any[] | null>(null);
+  const [hasAudio, setHasAudio] = useState(false);
 
   const token = Cookies.get("_at") || "";
 
@@ -39,6 +40,7 @@ export default function SocialPublishModal({ contentId, contentTitle, onClose, o
           const captionRes = await getSocialCaptionPreview(contentId, token);
           setCaption(captionRes.caption || "");
           setImageUrl(captionRes.imageUrl || null);
+          setHasAudio(!!captionRes.hasAudio);
 
           // Check previous posts
           const logsRes = await fetchSocialLogs({ contentId }, token);
@@ -142,8 +144,11 @@ export default function SocialPublishModal({ contentId, contentTitle, onClose, o
             <>
               {/* Image Preview */}
               {imageUrl ? (
-                <div className="rounded-xl overflow-hidden border border-slate-100 aspect-square max-h-48 flex items-center justify-center bg-slate-50">
+                <div className="relative rounded-xl overflow-hidden border border-slate-100 aspect-square max-h-48 flex items-center justify-center bg-slate-50">
                   <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <div className={`absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold backdrop-blur-sm ${hasAudio ? 'bg-purple-500/90 text-white' : 'bg-slate-700/70 text-white'}`}>
+                    {hasAudio ? <><Video size={12} /> Video (MP4)</> : <><Image size={12} /> Gambar</>}
+                  </div>
                 </div>
               ) : (
                 <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 p-4 text-center">
