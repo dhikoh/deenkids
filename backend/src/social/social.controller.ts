@@ -9,6 +9,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { SetMetadata } from '@nestjs/common';
 import { SocialService } from './social.service';
 import { SocialTokenService } from './social-token.service';
+import { YouTubeTokenService } from './youtube-token.service';
 import { PublishSocialDto, UpdateSocialDefaultsDto } from './dto/social.dto';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
@@ -26,6 +27,7 @@ export class SocialController {
   constructor(
     private readonly socialService: SocialService,
     private readonly tokenService: SocialTokenService,
+    private readonly ytTokenService: YouTubeTokenService,
     private readonly config: ConfigService,
   ) {
     this.frontendUrl = this.config.get<string>('FRONTEND_URL') || 'https://adably.id';
@@ -69,6 +71,48 @@ export class SocialController {
       this.logger.error(`OAuth callback failed: ${err.message}`);
       return res.redirect(`${this.frontendUrl}/admin/social-settings?error=callback_failed`);
     }
+  }
+
+  // ─── YouTube OAuth Flow ─────────────────────────────────────────
+
+  /**
+   * GET /social/youtube/auth-url — Generate OAuth URL for YouTube
+   */
+  @Get('youtube/auth-url')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  getYouTubeAuthUrl() {
+    const csrfState = randomBytes(16).toString('hex');
+    const url = this.ytTokenService.getAuthUrl(csrfState);
+    return { url, state: csrfState };
+  }
+
+  /**
+   * GET /social/youtube/callback — OAuth callback from Google
+   */
+  @Get('youtube/callback')
+  async handleYouTubeCallback(
+    @Query('code') code: string,
+    @Query('error') error: string,
+    @Res() res: Response,
+  ) {
+    if (error || !code) {
+      this.logger.warn(`YouTube OAuth callback error: ${error || 'no code'}`);
+      return res.redirect(`${this.frontendUrl}/admin/social-settings?error=youtube_oauth_denied`);
+    }
+    return res.redirect(`${this.frontendUrl}/admin/social-settings?yt_code=${code}`);
+  }
+
+  /**
+   * POST /social/youtube/connect — Connect YouTube account using OAuth code
+   */
+  @Post('youtube/connect')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  async connectYouTube(@Req() req: Request, @Body('code') code: string) {
+    const userId = (req as any).user.id;
+    const account = await this.socialService.connectYouTube(userId, code);
+    return { success: true, data: account };
   }
 
   /**

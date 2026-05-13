@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { getSocialAuthUrl, connectSocialAccount, fetchSocialAccounts, disconnectSocialAccount, updateSocialDefaults, fetchSocialLogs, retrySocialPublish, cancelSocialScheduled, fetchSocialCronSettings, updateSocialCronSettings } from "@/lib/api";
-import { Share2, Link2, Unlink, Instagram, Facebook, RefreshCw, X, CheckCircle, Clock, AlertTriangle, ExternalLink, Settings, Zap, ShieldCheck } from "lucide-react";
+import { getSocialAuthUrl, connectSocialAccount, fetchSocialAccounts, disconnectSocialAccount, updateSocialDefaults, fetchSocialLogs, retrySocialPublish, cancelSocialScheduled, fetchSocialCronSettings, updateSocialCronSettings, getYouTubeAuthUrl, connectYouTubeAccount } from "@/lib/api";
+import { Share2, Link2, Unlink, Instagram, Facebook, RefreshCw, X, CheckCircle, Clock, AlertTriangle, ExternalLink, Settings, Zap, ShieldCheck, Youtube } from "lucide-react";
 
 export default function SocialSettingsPage() {
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -101,6 +101,21 @@ export default function SocialSettingsPage() {
         setConnecting(false);
         window.history.replaceState({}, "", "/admin/social-settings");
       }
+
+      // Handle YouTube OAuth callback
+      const ytCode = params.get("yt_code");
+      if (ytCode) {
+        setConnecting(true);
+        try {
+          await connectYouTubeAccount(ytCode, token);
+          showToast("success", "YouTube channel berhasil terhubung! 🎉");
+          await loadAccounts();
+        } catch (err: any) {
+          showToast("error", err.message || "Gagal menghubungkan YouTube.");
+        }
+        setConnecting(false);
+        window.history.replaceState({}, "", "/admin/social-settings");
+      }
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -112,6 +127,15 @@ export default function SocialSettingsPage() {
       window.location.href = res.url;
     } catch (err: any) {
       showToast("error", err.message || "Gagal membuat URL koneksi.");
+    }
+  };
+
+  const handleConnectYouTube = async () => {
+    try {
+      const res = await getYouTubeAuthUrl(token);
+      window.location.href = res.url;
+    } catch (err: any) {
+      showToast("error", err.message || "Gagal membuat URL koneksi YouTube.");
     }
   };
 
@@ -209,8 +233,12 @@ export default function SocialSettingsPage() {
             <button onClick={handleConnect} disabled={connecting} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-50">
               {connecting ? "Menghubungkan..." : "🔗 Hubungkan Facebook & Instagram"}
             </button>
+            <button onClick={handleConnectYouTube} disabled={connecting} className="bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-red-500/25 transition-all disabled:opacity-50 mt-3">
+              {connecting ? "Menghubungkan..." : "▶️ Hubungkan YouTube"}
+            </button>
           </div>
         ) : (
+          <>
           <div className="space-y-4">
             {accounts.map((acc) => (
               <div key={acc.id} className="flex items-center gap-4 p-4 bg-gradient-to-r from-slate-50 to-white rounded-xl border border-slate-100">
@@ -219,8 +247,9 @@ export default function SocialSettingsPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Facebook size={16} className="text-blue-600" />
+                    {acc.platform === 'YOUTUBE' ? <Youtube size={16} className="text-red-600" /> : <Facebook size={16} className="text-blue-600" />}
                     <span className="font-semibold text-slate-800">{acc.pageName}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium">{acc.platform === 'YOUTUBE' ? 'YouTube' : 'Meta'}</span>
                     {acc.isActive ? (
                       <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">✅ Aktif</span>
                     ) : (
@@ -244,6 +273,16 @@ export default function SocialSettingsPage() {
               </div>
             ))}
           </div>
+          {/* Add more accounts */}
+          <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
+            <button onClick={handleConnect} disabled={connecting} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors disabled:opacity-50">
+              <Facebook size={16} /> + Meta
+            </button>
+            <button onClick={handleConnectYouTube} disabled={connecting} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-colors disabled:opacity-50">
+              <Youtube size={16} /> + YouTube
+            </button>
+          </div>
+          </>
         )}
       </div>
 
@@ -343,7 +382,7 @@ export default function SocialSettingsPage() {
             {logs.map((log: any) => (
               <div key={log.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
                 <div className="flex-shrink-0">
-                  {log.platform === "INSTAGRAM" ? <Instagram size={20} className="text-pink-500" /> : <Facebook size={20} className="text-blue-600" />}
+                  {log.platform === "INSTAGRAM" ? <Instagram size={20} className="text-pink-500" /> : log.platform === "YOUTUBE" ? <Youtube size={20} className="text-red-600" /> : <Facebook size={20} className="text-blue-600" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-700 truncate">{log.content?.title || "—"}</p>

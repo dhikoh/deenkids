@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { getSocialCaptionPreview, publishToSocial, fetchSocialAccounts, fetchSocialLogs } from "@/lib/api";
-import { X, Instagram, Facebook, Send, Clock, AlertTriangle, CheckCircle, Video, Image } from "lucide-react";
+import { X, Instagram, Facebook, Send, Clock, AlertTriangle, CheckCircle, Video, Image, Youtube } from "lucide-react";
 
 interface SocialPublishModalProps {
   contentId: string;
@@ -14,7 +14,7 @@ interface SocialPublishModalProps {
 export default function SocialPublishModal({ contentId, contentTitle, onClose, onPublished }: SocialPublishModalProps) {
   const [caption, setCaption] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [platforms, setPlatforms] = useState<string[]>(["INSTAGRAM", "FACEBOOK"]);
+  const [platforms, setPlatforms] = useState<string[]>(["INSTAGRAM", "FACEBOOK", "YOUTUBE"]);
   const [mode, setMode] = useState<"IMMEDIATE" | "SCHEDULED">("IMMEDIATE");
   const [scheduledAt, setScheduledAt] = useState("");
   const [loading, setLoading] = useState(true);
@@ -129,7 +129,7 @@ export default function SocialPublishModal({ contentId, contentTitle, onClose, o
               </div>
               {results.map((r: any, i: number) => (
                 <div key={i} className={`flex items-center gap-3 p-3 rounded-xl ${r.status === "PUBLISHED" ? "bg-emerald-50" : r.status === "SCHEDULED" ? "bg-blue-50" : "bg-red-50"}`}>
-                  {r.platform === "INSTAGRAM" ? <Instagram size={20} className="text-pink-500" /> : r.platform === "FACEBOOK" ? <Facebook size={20} className="text-blue-600" /> : <AlertTriangle size={20} className="text-red-500" />}
+                  {r.platform === "INSTAGRAM" ? <Instagram size={20} className="text-pink-500" /> : r.platform === "FACEBOOK" ? <Facebook size={20} className="text-blue-600" /> : r.platform === "YOUTUBE" ? <Youtube size={20} className="text-red-600" /> : <AlertTriangle size={20} className="text-red-500" />}
                   <div className="flex-1">
                     <p className="text-sm font-medium">{r.platform}</p>
                     <p className="text-xs text-slate-500">{r.status === "PUBLISHED" ? "Berhasil dipublish!" : r.status === "SCHEDULED" ? "Dijadwalkan" : r.error || "Gagal"}</p>
@@ -175,12 +175,15 @@ export default function SocialPublishModal({ contentId, contentTitle, onClose, o
               {/* Platform Selection */}
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">Platform</label>
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
                   <button onClick={() => togglePlatform("INSTAGRAM")} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-medium text-sm transition-all ${platforms.includes("INSTAGRAM") ? "border-pink-500 bg-pink-50 text-pink-700" : "border-slate-200 text-slate-400 hover:border-slate-300"}`}>
                     <Instagram size={20} /> Instagram
                   </button>
                   <button onClick={() => togglePlatform("FACEBOOK")} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-medium text-sm transition-all ${platforms.includes("FACEBOOK") ? "border-blue-500 bg-blue-50 text-blue-700" : "border-slate-200 text-slate-400 hover:border-slate-300"}`}>
                     <Facebook size={20} /> Facebook
+                  </button>
+                  <button onClick={() => togglePlatform("YOUTUBE")} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-medium text-sm transition-all ${platforms.includes("YOUTUBE") ? "border-red-500 bg-red-50 text-red-700" : "border-slate-200 text-slate-400 hover:border-slate-300"}`}>
+                    <Youtube size={20} /> YouTube
                   </button>
                 </div>
               </div>

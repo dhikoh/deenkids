@@ -4,6 +4,8 @@ import { SocialTokenService } from './social-token.service';
 import { SocialCaptionService } from './social-caption.service';
 import { PublishSocialDto } from './dto/social.dto';
 import { VideoGeneratorService } from './video-generator.service';
+import { YouTubeTokenService } from './youtube-token.service';
+import { YouTubeUploadService } from './youtube-upload.service';
 
 @Injectable()
 export class SocialService {
@@ -14,6 +16,8 @@ export class SocialService {
     private readonly tokenService: SocialTokenService,
     private readonly captionService: SocialCaptionService,
     private readonly videoGenerator: VideoGeneratorService,
+    private readonly ytTokenService: YouTubeTokenService,
+    private readonly ytUploadService: YouTubeUploadService,
   ) {}
 
   // ─── Account Management ────────────────────────────────────────
@@ -102,6 +106,39 @@ export class SocialService {
     this.logger.log(`🔌 Social account disconnected: ${account.pageName}`);
   }
 
+  /**
+   * Connect a YouTube channel via Google OAuth.
+   */
+  async connectYouTube(userId: string, code: string) {
+    const { accessToken, refreshToken } = await this.ytTokenService.exchangeCodeForTokens(code);
+    const channel = await this.ytTokenService.fetchChannelInfo(accessToken);
+    const encryptedToken = this.ytTokenService.encryptToken(refreshToken);
+
+    const account = await this.prisma.socialAccount.upsert({
+      where: { ytChannelId: channel.channelId },
+      update: {
+        userId,
+        pageName: channel.channelTitle,
+        pageAccessToken: encryptedToken,
+        ytChannelTitle: channel.channelTitle,
+        profilePictureUrl: channel.thumbnailUrl,
+        isActive: true,
+      },
+      create: {
+        userId,
+        platform: 'YOUTUBE',
+        pageName: channel.channelTitle,
+        pageAccessToken: encryptedToken,
+        ytChannelId: channel.channelId,
+        ytChannelTitle: channel.channelTitle,
+        profilePictureUrl: channel.thumbnailUrl,
+      },
+    });
+
+    this.logger.log(`✅ YouTube channel connected: ${channel.channelTitle} (${channel.channelId})`);
+    return account;
+  }
+
   async updateDefaults(accountId: string, userId: string, data: { defaultHashtags?: string; captionTemplate?: string }) {
     const account = await this.prisma.socialAccount.findFirst({
       where: { id: accountId, userId },
@@ -135,13 +172,6 @@ export class SocialService {
   // ─── Publishing ────────────────────────────────────────────────
 
   async handlePublish(userId: string, dto: PublishSocialDto) {
-    const account = await this.prisma.socialAccount.findFirst({
-      where: { userId, isActive: true },
-    });
-    if (!account) {
-      throw new BadRequestException('Belum ada akun sosial media yang terhubung. Hubungkan di Pengaturan Sosmed.');
-    }
-
     const content = await this.getContentWithDetails(dto.contentId);
     if (!content) throw new NotFoundException('Konten tidak ditemukan');
 
@@ -154,57 +184,126 @@ export class SocialService {
 
     // Determine if we can publish as video (has audio)
     const hasAudio = !!(content.enableAudio && content.audioUrl);
-    let videoUrl: string | null = null;
 
-    // Generate video if audio is available
+    // Generate videos if audio is available (separate aspect ratios)
+    let socialVideoUrl: string | null = null; // 9:16 for IG/FB
+    let ytVideoUrl: string | null = null;     // 16:9 for YouTube
+
     if (hasAudio) {
-      try {
-        // For IG/FB/TikTok → use social thumbnail (9:16), for YouTube → web thumbnail (16:9)
-        const hasSocialPlatforms = dto.platforms.some(p => ['INSTAGRAM', 'FACEBOOK', 'TIKTOK'].includes(p));
-        const videoThumb = hasSocialPlatforms
-          ? (content.socialThumbnailUrl || content.thumbnailUrl)
-          : content.thumbnailUrl;
+      const hasSocialPlatforms = dto.platforms.some(p => ['INSTAGRAM', 'FACEBOOK', 'TIKTOK'].includes(p));
+      const hasYouTube = dto.platforms.includes('YOUTUBE');
 
-        if (videoThumb) {
-          const aspectRatio = hasSocialPlatforms ? '9:16' as const : '16:9' as const;
-          videoUrl = await this.videoGenerator.generateVideo(
-            videoThumb,
-            content.audioUrl!,
-            content.slug || content.id,
-            aspectRatio,
-          );
-          this.logger.log(`🎬 Video generated for social publish: ${videoUrl}`);
+      try {
+        if (hasSocialPlatforms) {
+          const socialThumb = content.socialThumbnailUrl || content.thumbnailUrl;
+          if (socialThumb) {
+            socialVideoUrl = await this.videoGenerator.generateVideo(socialThumb, content.audioUrl!, content.slug || content.id, '9:16');
+            this.logger.log(`🎬 Social video (9:16) generated: ${socialVideoUrl}`);
+          }
         }
       } catch (err) {
-        this.logger.warn(`⚠️ Video generation failed, falling back to image: ${err.message}`);
-        videoUrl = null;
+        this.logger.warn(`⚠️ Social video generation failed: ${err.message}`);
+      }
+
+      try {
+        if (hasYouTube) {
+          const ytThumb = content.thumbnailUrl;
+          if (ytThumb) {
+            ytVideoUrl = await this.videoGenerator.generateVideo(ytThumb, content.audioUrl!, `${content.slug || content.id}_yt`, '16:9');
+            this.logger.log(`🎬 YouTube video (16:9) generated: ${ytVideoUrl}`);
+          }
+        }
+      } catch (err) {
+        this.logger.warn(`⚠️ YouTube video generation failed: ${err.message}`);
       }
     }
 
-    const mediaUrl = videoUrl || imageUrl;
-    const isVideo = !!videoUrl;
-
     for (const platform of dto.platforms) {
-      if (!['INSTAGRAM', 'FACEBOOK'].includes(platform)) continue;
+      if (!['INSTAGRAM', 'FACEBOOK', 'YOUTUBE'].includes(platform)) continue;
 
-      if (dto.mode === 'SCHEDULED') {
-        if (!dto.scheduledAt) throw new BadRequestException('Tanggal jadwal wajib diisi untuk mode SCHEDULED');
-        const log = await this.prisma.socialPublishLog.create({
-          data: {
-            contentId: dto.contentId,
-            socialAccountId: account.id,
-            platform,
-            caption: dto.caption,
-            imageUrl: mediaUrl,
-            status: 'SCHEDULED',
-            scheduledAt: new Date(dto.scheduledAt),
-          },
-        });
-        results.push({ platform, status: 'SCHEDULED', logId: log.id, scheduledAt: dto.scheduledAt, isVideo });
+      // Find appropriate account for this platform
+      const platformType = platform === 'YOUTUBE' ? 'YOUTUBE' : 'META';
+      const account = await this.prisma.socialAccount.findFirst({
+        where: { userId, platform: platformType, isActive: true },
+      });
+      if (!account) {
+        results.push({ platform, status: 'FAILED', error: `Akun ${platform} belum terhubung` });
+        continue;
+      }
+
+      // Determine media for this platform
+      const isYouTube = platform === 'YOUTUBE';
+      const mediaUrl = isYouTube ? (ytVideoUrl || imageUrl) : (socialVideoUrl || imageUrl);
+      const isVideo = isYouTube ? !!ytVideoUrl : !!socialVideoUrl;
+
+      if (isYouTube) {
+        // YouTube uses dedicated upload path
+        if (!ytVideoUrl) {
+          results.push({ platform: 'YOUTUBE', status: 'FAILED', error: 'Konten harus memiliki audio untuk publish ke YouTube' });
+          continue;
+        }
+        try {
+          const tags = content.tags?.map((t: any) => t.tag?.name).filter(Boolean) || [];
+          const description = this.captionService.buildCaption(content, account);
+          const ytResult = await this.ytUploadService.uploadVideo(
+            account.pageAccessToken, // encrypted refresh token
+            ytVideoUrl,
+            content.title,
+            description,
+            tags,
+          );
+
+          await this.prisma.socialPublishLog.create({
+            data: {
+              contentId: content.id,
+              socialAccountId: account.id,
+              platform: 'YOUTUBE',
+              caption: description,
+              imageUrl: ytVideoUrl,
+              status: 'PUBLISHED',
+              postId: ytResult.videoId,
+              postUrl: ytResult.videoUrl,
+              publishedAt: new Date(),
+            },
+          });
+
+          results.push({ platform: 'YOUTUBE', status: 'PUBLISHED', postUrl: ytResult.videoUrl, postId: ytResult.videoId, isVideo: true });
+        } catch (err) {
+          const errorMsg = err.message || 'YouTube upload gagal';
+          await this.prisma.socialPublishLog.create({
+            data: {
+              contentId: content.id,
+              socialAccountId: account.id,
+              platform: 'YOUTUBE',
+              caption: dto.caption,
+              imageUrl: ytVideoUrl,
+              status: 'FAILED',
+              error: errorMsg,
+            },
+          });
+          results.push({ platform: 'YOUTUBE', status: 'FAILED', error: errorMsg, isVideo: true });
+          this.logger.error(`❌ YouTube publish failed: ${errorMsg}`);
+        }
       } else {
-        // IMMEDIATE — publish now
-        const result = await this.publishNow(account, content, platform, dto.caption, mediaUrl, isVideo);
-        results.push(result);
+        // Meta platforms (IG/FB)
+        if (dto.mode === 'SCHEDULED') {
+          if (!dto.scheduledAt) throw new BadRequestException('Tanggal jadwal wajib diisi untuk mode SCHEDULED');
+          const log = await this.prisma.socialPublishLog.create({
+            data: {
+              contentId: dto.contentId,
+              socialAccountId: account.id,
+              platform,
+              caption: dto.caption,
+              imageUrl: mediaUrl,
+              status: 'SCHEDULED',
+              scheduledAt: new Date(dto.scheduledAt),
+            },
+          });
+          results.push({ platform, status: 'SCHEDULED', logId: log.id, scheduledAt: dto.scheduledAt, isVideo });
+        } else {
+          const result = await this.publishNow(account, content, platform, dto.caption, mediaUrl, isVideo);
+          results.push(result);
+        }
       }
     }
 

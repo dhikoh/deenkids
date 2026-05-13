@@ -834,6 +834,21 @@ export async function connectSocialAccount(code: string, token: string) {
   });
 }
 
+// ── YouTube OAuth ──
+export async function getYouTubeAuthUrl(token: string) {
+  return apiFetch(`${API_BASE_URL}/social/youtube/auth-url`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function connectYouTubeAccount(code: string, token: string) {
+  return apiFetch(`${API_BASE_URL}/social/youtube/connect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ code }),
+  });
+}
+
 export async function fetchSocialAccounts(token: string) {
   return apiFetch(`${API_BASE_URL}/social/accounts`, {
     headers: { Authorization: `Bearer ${token}` },
