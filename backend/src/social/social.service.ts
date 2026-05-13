@@ -1,7 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SocialTokenService } from './social-token.service';
-import { SocialCaptionService } from './social-caption.service';
 import { PublishSocialDto } from './dto/social.dto';
 import { VideoGeneratorService } from './video-generator.service';
 import { YouTubeTokenService } from './youtube-token.service';
@@ -16,7 +15,6 @@ export class SocialService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenService: SocialTokenService,
-    private readonly captionService: SocialCaptionService,
     private readonly videoGenerator: VideoGeneratorService,
     private readonly ytTokenService: YouTubeTokenService,
     private readonly ytUploadService: YouTubeUploadService,
