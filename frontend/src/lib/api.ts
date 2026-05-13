@@ -1055,3 +1055,19 @@ export async function rotateN8nApiKey(token: string) {
     headers: authHeaders(token),
   });
 }
+
+// ─── Podcast ────────────────────────────────────────────────────
+
+export async function fetchPodcastSettings(token: string) {
+  return apiFetch(`${API_BASE_URL}/podcast/settings`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function updatePodcastSettings(token: string, data: Record<string, unknown>) {
+  return apiFetch(`${API_BASE_URL}/podcast/settings`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+}

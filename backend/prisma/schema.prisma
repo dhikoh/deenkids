@@ -567,3 +567,17 @@ model SocialPublishLog {
   @@index([contentId])
   @@index([socialAccountId])
 }
+
+// ─── Podcast / RSS Feed ─────────────────────────────────────────
+model PodcastConfig {
+  id          String   @id @default("default")
+  title       String   @default("Adably — Belajar Islam untuk Anak")
+  description String   @default("Podcast edukasi Islam interaktif untuk anak-anak muslim. Belajar akidah, ibadah, akhlak, dan kisah islami dengan cara yang menyenangkan.")
+  author      String   @default("Adably")
+  coverUrl    String?  // Cover art (min 3000x3000 untuk Spotify)
+  language    String   @default("id")
+  category    String   @default("Education")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
