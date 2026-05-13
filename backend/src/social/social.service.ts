@@ -267,13 +267,55 @@ export class SocialService {
     const hasDescription = !!(content.description && content.description.trim().length > 0);
 
     return {
-      caption: this.captionService.buildCaption(content, account),
+      caption: this.buildSimpleCaption(content, account),
       imageUrl: content.socialThumbnailUrl || content.thumbnailUrl || null,
       hasAudio: !!(content.enableAudio && content.audioUrl),
       hasDescription,
       tagCount,
       contentTitle: content.title || '',
     };
+  }
+
+  /**
+   * Build a simple caption: Title + Description + Link + Hashtags
+   * Used for ALL social media platforms (IG, FB, YouTube, TikTok)
+   */
+  private buildSimpleCaption(content: any, account: any): string {
+    const sections: string[] = [];
+
+    // 1. HOOK — title with emoji
+    const emojiMap: Record<string, string> = { QNA: '🤔', PEMBELAJARAN: '📚', ARTICLE: '📝', KISAH: '✨' };
+    const emoji = emojiMap[content.type] || '';
+    sections.push(`${content.title} ${emoji}`.trim());
+
+    // 2. DESKRIPSI SINGKAT — content.description only
+    if (content.description && content.description.trim()) {
+      sections.push(content.description.trim());
+    }
+
+    // 3. LINK
+    const contentUrl = this.buildContentUrl(content);
+    sections.push(`🔗 ${contentUrl}`);
+
+    // 4. HASHTAG
+    const contentHashtags = (content.tags || [])
+      .map((t: any) => `#${(t.tag?.name || t.name || '').replace(/\s+/g, '')}`)
+      .filter((h: string) => h.length > 1)
+      .join(' ');
+    const defaultHashtags = account?.defaultHashtags || '#adably #edukasiislami #parentingislami';
+    sections.push(`${contentHashtags} ${defaultHashtags}`.trim());
+
+    return sections.join('\n\n');
+  }
+
+  /** Build content URL based on type */
+  private buildContentUrl(content: any): string {
+    const baseUrl = 'https://adably.id';
+    switch (content.type) {
+      case 'QNA': return `${baseUrl}/qna/${content.slug}`;
+      case 'KISAH': return `${baseUrl}/kisah/${content.node?.slug || 'kisah'}/${content.slug}`;
+      default: return `${baseUrl}/artikel/${content.slug}`;
+    }
   }
 
   // ─── Publishing ────────────────────────────────────────────────
@@ -302,7 +344,8 @@ export class SocialService {
 
       try {
         if (hasSocialPlatforms) {
-          const socialThumb = content.socialThumbnailUrl || content.thumbnailUrl;
+          // Use thumbnailUrl (16:9) for 9:16 video — avoids black bars from 1:1 socialThumbnailUrl
+          const socialThumb = content.thumbnailUrl || content.socialThumbnailUrl;
           if (socialThumb) {
             socialVideoUrl = await this.videoGenerator.generateVideo(socialThumb, content.audioUrl!, content.slug || content.id, '9:16');
             this.logger.log(`🎬 Social video (9:16) generated: ${socialVideoUrl}`);
@@ -399,12 +442,19 @@ export class SocialService {
         }
         try {
           const tags = content.tags?.map((t: any) => t.tag?.name).filter(Boolean) || [];
-          const description = this.captionService.buildCaption(content, account);
+          // YouTube description: deskripsi singkat + link + hashtag (tanpa judul — sudah di title)
+          const ytDescription = [
+            content.description || content.title,
+            '',
+            `🔗 Selengkapnya: ${this.buildContentUrl(content)}`,
+            '',
+            tags.map(t => `#${t.replace(/\s+/g, '')}`).join(' ') + ' #adably #edukasiislami',
+          ].join('\n');
           const ytResult = await this.ytUploadService.uploadVideo(
             account.pageAccessToken, // encrypted refresh token
             ytVideoUrl,
             content.title,
-            description,
+            ytDescription,
             tags,
           );
 
@@ -413,7 +463,7 @@ export class SocialService {
               contentId: content.id,
               socialAccountId: account.id,
               platform: 'YOUTUBE',
-              caption: description,
+              caption: ytDescription,
               imageUrl: ytVideoUrl,
               status: 'PUBLISHED',
               postId: ytResult.videoId,
