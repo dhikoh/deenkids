@@ -371,16 +371,39 @@ Dalil 2:
 ━━━ 🕌 PEMBUKAAN / MUKADIMAH (opening) ━━━
 ⚠️ INI BUKAN BLOK KONTEN. Teks ini akan disimpan di field "Pembukaan (Mukadimah)".
 
-Tulis salam pembuka yang hangat dan relevan dengan topik.
-- Awali dengan "Assalamualaikum warahmatullahi wabarakatuh"
-- Lanjutkan dengan 1-2 kalimat pengantar yang sesuai tema dan usia target.
-- Sapa anak langsung: "Teman-teman...", "Adik-adik..."
+Tulis salam pembuka yang hangat, branded, dan relevan dengan topik.
+Gunakan format ini sebagai TEMPLATE (sesuaikan dengan topik):
+
+"Assalamualaikum warahmatullahi wabarakatuh, sahabat Adably!
+Apa kabar hari ini? Semoga teman-teman semua selalu dalam lindungan Allah ya.
+Hari ini, kita akan [belajar tentang/membahas/bercerita tentang] [topik].
+[1 kalimat penggugah rasa ingin tahu yang relevan dengan judul]"
+
+ATURAN:
+- WAJIB awali dengan "Assalamualaikum warahmatullahi wabarakatuh, sahabat Adably!"
+- Sapa anak dengan hangat: "teman-teman", "sahabat Adably"
+- Berikan 1 kalimat pengantar yang membuat anak PENASARAN tentang topik
+- Nada: hangat, ceria, penuh semangat — seperti kakak yang menyapa adiknya
 
 ━━━ 🤲 PENUTUPAN (closing) ━━━
 ⚠️ INI BUKAN BLOK KONTEN. Teks ini akan disimpan di field "Penutupan".
 
-Tulis penutup yang menginspirasi.
-- Rangkum pelajaran utama dalam 1-2 kalimat.
+Tulis penutup yang menginspirasi DAN mengandung CTA (call-to-action) untuk platform.
+Gunakan format ini sebagai TEMPLATE (sesuaikan dengan topik):
+
+"Nah, itulah [rangkuman topik dalam 1 kalimat].
+[1 kalimat hikmah/motivasi yang menyentuh hati]
+
+Kalau teman-teman suka dengan konten ini, jangan lupa kunjungi channel YouTube kami dan website resmi kami di adably.id untuk mendengarkan lebih banyak kisah, cerita, dan pelajaran Islam yang seru!
+
+Sampai jumpa di konten berikutnya ya, sahabat Adably!
+Wallahu a'lam bishawab.
+Wassalamualaikum warahmatullahi wabarakatuh."
+
+ATURAN:
+- Rangkum pelajaran utama dalam 1-2 kalimat SEBELUM CTA
+- WAJIB sertakan CTA: "jangan lupa kunjungi channel YouTube kami dan website resmi kami di adably.id untuk mendengarkan lebih banyak kisah, cerita, dan pelajaran Islam yang seru!"
+- Gunakan sapaan perpisahan: "Sampai jumpa di konten berikutnya ya, sahabat Adably!"
 - Akhiri dengan "Wallahu a'lam bishawab" dan "Wassalamualaikum warahmatullahi wabarakatuh"
 
 ════════════════════════════════════════
@@ -432,7 +455,7 @@ Usia: 5-7, 7-10
 Tag: sholat, ibadah, anak, wajib
 
 (opening)
-Assalamualaikum warahmatullahi wabarakatuh, teman-teman!
+Assalamualaikum warahmatullahi wabarakatuh, sahabat Adably! Apa kabar hari ini? Semoga teman-teman selalu dalam lindungan Allah ya. Hari ini kita akan belajar tentang sholat...
 
 (quick_answer)
 Sholat adalah kewajiban setiap muslim yang sudah baligh...
@@ -458,7 +481,7 @@ Sumber: Quran Surah Ali Imran ayat 8
 Sumber URL: https://quran.com/3/8
 
 (closing)
-Wallahu a'lam bishawab. Wassalamualaikum warahmatullahi wabarakatuh.
+Nah, itulah pentingnya sholat dalam kehidupan kita. Semoga kita semua bisa istiqomah ya! Kalau teman-teman suka dengan konten ini, jangan lupa kunjungi channel YouTube kami dan website resmi kami di adably.id untuk mendengarkan lebih banyak kisah, cerita, dan pelajaran Islam yang seru! Sampai jumpa di konten berikutnya ya, sahabat Adably! Wallahu a'lam bishawab. Wassalamualaikum warahmatullahi wabarakatuh.
 ---
 ════════════════════════════════════════`;
 
@@ -704,15 +727,39 @@ PANDUAN PENULISAN — GAYA PENCERITA
 ━━━ 🕌 PEMBUKAAN / MUKADIMAH (opening) ━━━
 ⚠️ INI BUKAN BLOK KONTEN. Teks ini disimpan di field "Pembukaan (Mukadimah)".
 
-Tulis salam pembuka yang hangat dan relevan dengan tema kisah.
-- Awali dengan "Assalamualaikum warahmatullahi wabarakatuh"
-- Sapa anak langsung: "Teman-teman...", "Adik-adik..."
+Tulis salam pembuka yang hangat, branded, dan relevan dengan tema kisah.
+Gunakan format ini sebagai TEMPLATE (sesuaikan dengan kisah):
+
+"Assalamualaikum warahmatullahi wabarakatuh, sahabat Adably!
+Apa kabar hari ini? Semoga teman-teman semua selalu dalam lindungan Allah ya.
+Hari ini, kita akan mendengarkan kisah yang [sangat menarik/luar biasa/mengharukan] tentang [topik kisah].
+Siap? Yuk kita mulai!"
+
+ATURAN:
+- WAJIB awali dengan "Assalamualaikum warahmatullahi wabarakatuh, sahabat Adably!"
+- Sapa anak dengan hangat: "teman-teman", "sahabat Adably"
+- Berikan teaser singkat yang membuat anak PENASARAN tentang kisah
+- Nada: hangat, ceria, penuh semangat
 
 ━━━ 🤲 PENUTUPAN (closing) ━━━
 ⚠️ INI BUKAN BLOK KONTEN. Teks ini disimpan di field "Penutupan".
 
-Tulis penutup yang menyentuh dan menginspirasi.
-- Rangkum pelajaran utama dalam 1-2 kalimat.
+Tulis penutup yang menyentuh, menginspirasi, DAN mengandung CTA untuk platform.
+Gunakan format ini sebagai TEMPLATE (sesuaikan dengan kisah):
+
+"Nah, itulah kisah [rangkuman 1 kalimat].
+[1 kalimat hikmah yang menyentuh hati]
+
+Kalau teman-teman suka dengan kisah ini, jangan lupa kunjungi channel YouTube kami dan website resmi kami di adably.id untuk mendengarkan lebih banyak kisah, cerita, dan pelajaran Islam yang seru!
+
+Sampai jumpa di kisah berikutnya ya, sahabat Adably!
+Wallahu a'lam bishawab.
+Wassalamualaikum warahmatullahi wabarakatuh."
+
+ATURAN:
+- Rangkum pelajaran utama kisah dalam 1-2 kalimat SEBELUM CTA
+- WAJIB sertakan CTA: "jangan lupa kunjungi channel YouTube kami dan website resmi kami di adably.id untuk mendengarkan lebih banyak kisah, cerita, dan pelajaran Islam yang seru!"
+- Gunakan sapaan perpisahan: "Sampai jumpa di kisah berikutnya ya, sahabat Adably!"
 - Akhiri dengan "Wallahu a'lam bishawab" dan "Wassalamualaikum warahmatullahi wabarakatuh"
 
 ════════════════════════════════════════
@@ -763,7 +810,7 @@ Usia: 3-10
 Tag: nabi ibrahim, sabar, tawakal, api, mukjizat
 
 (opening)
-Assalamualaikum warahmatullahi wabarakatuh, teman-teman!
+Assalamualaikum warahmatullahi wabarakatuh, sahabat Adably! Apa kabar hari ini? Semoga teman-teman selalu dalam lindungan Allah ya. Hari ini kita akan mendengarkan kisah yang luar biasa tentang keberanian Nabi Ibrahim. Siap? Yuk kita mulai!
 
 (paragraph)
 Langit masih gelap ketika sebuah keputusan mengubah segalanya...
@@ -789,7 +836,7 @@ Sumber: Quran Surah Ali Imran ayat 173
 Sumber URL: https://quran.com/3/173
 
 (closing)
-Wallahu a'lam bishawab. Wassalamualaikum warahmatullahi wabarakatuh.
+Nah, itulah kisah tentang keberanian Nabi Ibrahim yang luar biasa. Betapa kuatnya beliau karena yakin kepada Allah! Kalau teman-teman suka dengan kisah ini, jangan lupa kunjungi channel YouTube kami dan website resmi kami di adably.id untuk mendengarkan lebih banyak kisah, cerita, dan pelajaran Islam yang seru! Sampai jumpa di kisah berikutnya ya, sahabat Adably! Wallahu a'lam bishawab. Wassalamualaikum warahmatullahi wabarakatuh.
 ---
 ════════════════════════════════════════`;
 
@@ -868,6 +915,131 @@ Gunakan STRUKTUR BERPIKIR dari tokoh-tokoh berikut — bukan gaya bahasa atau ke
     } catch {
       return 'SIRAH';
     }
+  }
+
+  // ═══════════════════════════════════════════════
+  // Storyboard Scene Prompt Generator
+  // Converts content script → visual scenes for video
+  // ═══════════════════════════════════════════════
+
+  generateStoryboardScenePrompt(dto: {
+    title: string;
+    script: string;
+    category?: string;
+    aspectRatio?: '16:9' | '9:16' | '1:1';
+    targetScenes?: number;
+  }): string {
+    const { title, script, category, aspectRatio, targetScenes } = dto;
+    const ratio = aspectRatio || '16:9';
+    const sceneCount = targetScenes || 8;
+    const categoryLabel = this.getCategoryLabel(category);
+
+    return `Kamu adalah AI SUTRADARA VISUAL untuk platform edukasi anak Islami "Adably".
+Tugasmu: Konversikan naskah konten teks menjadi BREAKDOWN SCENE VISUAL untuk video storyboard.
+
+══════════════════════════════════════════
+KONTEKS
+══════════════════════════════════════════
+Judul: "${title}"
+Kategori: ${categoryLabel}
+Aspek Rasio: ${ratio}
+Target Jumlah Scene: ${sceneCount} scenes (termasuk opening + closing)
+
+══════════════════════════════════════════
+NASKAH KONTEN (SCRIPT)
+══════════════════════════════════════════
+${script}
+
+══════════════════════════════════════════
+INSTRUKSI KONVERSI SCENE
+══════════════════════════════════════════
+
+ATURAN WAJIB:
+1. Scene PERTAMA (Scene 1) adalah MUKADIMAH / OPENING:
+   - Visual: Latar Islami yang indah (masjid, langit sunrise, taman) dengan teks branding "Adably.id"
+   - Subtitle: "Assalamualaikum warahmatullahi wabarakatuh, sahabat Adably!"
+   - Durasi: 5-7 detik
+   - Transisi: fade
+
+2. Scene TERAKHIR (Scene ${sceneCount}) adalah CLOSING / PENUTUP:
+   - Visual: Latar yang hangat dan damai (sunset, masjid, bintang)
+   - Subtitle harus mengandung CTA:
+     "Jangan lupa kunjungi channel YouTube kami dan website resmi kami di adably.id untuk mendengarkan lebih banyak kisah, cerita, dan pelajaran Islam yang seru! Sampai jumpa di konten berikutnya ya, sahabat Adably! Wassalamualaikum warahmatullahi wabarakatuh."
+   - Durasi: 8-10 detik
+   - Transisi: fade
+
+3. Scene 2 hingga ${sceneCount - 1} adalah ISI KONTEN:
+   - Pecah naskah menjadi ${sceneCount - 2} scene visual yang logis
+   - Setiap scene = 1 momen/konsep/adegan
+   - Subtitle = rangkuman narasi yang dibacakan untuk scene tersebut (maks 2 kalimat)
+
+PANDUAN VISUAL:
+- Gaya: Animasi 3D Pixar/Disney, ramah anak, warna-warni ceria
+- Karakter: FACELESS (tanpa fitur wajah) — sesuai aturan Islami
+- Pencahayaan: Warm lighting, golden hour
+- Setting: Sesuaikan dengan konteks naskah (rumah muslim, masjid, taman, sekolah)
+- DILARANG: Gambar makhluk hidup dengan wajah, konten menakutkan, elemen non-Islami
+
+KONSISTENSI KARAKTER:
+- Jika ada karakter (anak, ayah, ibu), gunakan DESKRIPSI VISUAL IDENTIK di setiap scene:
+  • Anak laki-laki: "anak laki-laki berpeci putih, baju koko hijau"
+  • Anak perempuan: "anak perempuan berhijab pink, gamis putih"
+  • Ayah: "ayah berjenggot, jubah putih, sorban"
+  • Ibu: "ibu berhijab syar'i biru tua, gamis coklat muda"
+- Gunakan deskripsi yang SAMA PERSIS di setiap scene agar konsisten
+
+══════════════════════════════════════════
+FORMAT OUTPUT — WAJIB DIIKUTI
+══════════════════════════════════════════
+
+Output dalam format JSON array. Setiap scene:
+{
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "label": "Opening / Mukadimah",
+      "imagePrompt": "[deskripsi visual lengkap untuk AI image generator, dalam Bahasa Inggris, termasuk style, lighting, composition, NO text/letters]",
+      "subtitle": "[teks narasi yang dibacakan untuk scene ini, dalam Bahasa Indonesia]",
+      "duration": 6,
+      "transition": "fade"
+    },
+    {
+      "sceneNumber": 2,
+      "label": "[nama scene]",
+      "imagePrompt": "[deskripsi visual]",
+      "subtitle": "[narasi]",
+      "duration": 5,
+      "transition": "fade"
+    },
+    ...
+    {
+      "sceneNumber": ${sceneCount},
+      "label": "Closing / Penutup",
+      "imagePrompt": "[deskripsi visual closing]",
+      "subtitle": "Jangan lupa kunjungi channel YouTube kami dan website resmi kami di adably.id untuk mendengarkan lebih banyak kisah, cerita, dan pelajaran Islam yang seru! Sampai jumpa di konten berikutnya ya, sahabat Adably! Wassalamualaikum warahmatullahi wabarakatuh.",
+      "duration": 10,
+      "transition": "fade"
+    }
+  ]
+}
+
+PANDUAN TRANSISI:
+- fade (default, paling aman)
+- dissolve (untuk perpindahan emosional)
+- slideright/slideleft (untuk perpindahan waktu/tempat)
+- zoomin (untuk momen intens/klimaks)
+
+PANDUAN DURASI:
+- Opening: 5-7 detik
+- Scene isi: 4-8 detik (sesuaikan panjang subtitle)
+- Closing: 8-10 detik
+
+⚠️ PENTING:
+- imagePrompt harus dalam Bahasa INGGRIS (untuk AI image generator)
+- imagePrompt WAJIB menyebut "3D Pixar style, warm lighting, faceless characters, child-friendly"
+- subtitle dalam Bahasa INDONESIA
+- Output HANYA JSON — tanpa markdown, tanpa penjelasan
+- Aspek rasio ${ratio} WAJIB disebut dalam setiap imagePrompt`;
   }
 
 }

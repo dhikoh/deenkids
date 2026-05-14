@@ -167,4 +167,29 @@ export class N8nController {
     );
     return { success: true, ...result, message: `Thumbnail ${body.type} berhasil diupload` };
   }
+
+  /**
+   * Generate storyboard scene breakdown prompt.
+   * Converts content text script into visual scenes for video storyboard.
+   */
+  @Post('generate-storyboard-prompt')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Generate storyboard scene prompt from content script' })
+  async generateStoryboardPrompt(@Body() body: {
+    title: string;
+    script: string;
+    category?: string;
+    aspectRatio?: '16:9' | '9:16' | '1:1';
+    targetScenes?: number;
+  }) {
+    if (!body.title?.trim()) {
+      throw new BadRequestException('title wajib diisi');
+    }
+    if (!body.script?.trim()) {
+      throw new BadRequestException('script wajib diisi (naskah konten)');
+    }
+    this.logger.log(`n8n generate-storyboard-prompt: "${body.title}" (${body.targetScenes || 8} scenes)`);
+    const prompt = this.promptService.generateStoryboardScenePrompt(body);
+    return { success: true, prompt };
+  }
 }
