@@ -1033,6 +1033,89 @@ function nodeToSubType(title: string): KisahSubType {
   return 'SIRAH'; // fallback
 }
 
+function generateStoryboardPrompt(
+  script: string,
+  artStyle: string,
+  sbAspectRatio: AspectRatio,
+): string {
+  const arOption = ASPECT_RATIO_OPTIONS.find(a => a.value === sbAspectRatio) || ASPECT_RATIO_OPTIONS[0];
+  return `═══════════════════════════════════════════
+🎬 STORYBOARD PROMPT GENERATOR — Adably.id
+═══════════════════════════════════════════
+
+Kamu adalah STORYBOARD ARTIST dan PROMPT ENGINEER profesional untuk konten edukasi anak Islami.
+Tugasmu: mengubah SCRIPT NARASI AUDIO menjadi serangkaian PROMPT GAMBAR per scene yang KONSISTEN.
+
+══════════════════════════════════════════
+ATURAN UTAMA
+══════════════════════════════════════════
+
+1. ANALISIS script di bawah, tentukan SENDIRI berapa scene yang paling tepat secara visual.
+   - Tidak semua paragraf harus jadi scene — gabungkan yang tidak visual.
+   - Pisahkan momen-momen yang PENTING secara visual (aksi, emosi, perubahan setting).
+   - Jumlah scene BEBAS — AI yang tentukan berdasarkan panjang dan kebutuhan visual script.
+
+2. BUAT CHARACTER SHEET di awal:
+   - Untuk SETIAP tokoh yang muncul, definisikan: usia, pakaian, ciri khas, warna dominan.
+   - Character sheet ini WAJIB di-copy ke setiap scene prompt agar konsisten.
+   - SEMUA karakter manusia WAJIB FACELESS — TIDAK ADA fitur wajah (mata/hidung/mulut).
+   - Karakter digambarkan lewat: postur tubuh, bahasa tubuh, pakaian, dan konteks.
+
+3. ATURAN ISLAMI:
+   - Semua karakter memakai busana Islami/syar'i (hijab, jubah, gamis, kopiah).
+   - Nabi dan Rasul HANYA digambarkan sebagai SILUET BERCAHAYA (nur) — DILARANG KERAS menampilkan bentuk tubuh detail.
+   - DILARANG: menampilkan wajah, simbol non-Islam, konten kekerasan.
+   - Figur suci (Nabi, Malaikat) menggunakan cahaya/siluet saja.
+
+4. STYLE LOCK (gunakan di SETIAP scene prompt):
+   - Gaya Visual: ${artStyle}
+   - Aspek Rasio: ${sbAspectRatio} (${arOption.size})
+   - Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat
+   - FACELESS: Semua karakter tanpa fitur wajah
+
+══════════════════════════════════════════
+SCRIPT NARASI AUDIO (SUMBER)
+══════════════════════════════════════════
+${script}
+
+══════════════════════════════════════════
+FORMAT OUTPUT YANG HARUS DIIKUTI
+══════════════════════════════════════════
+
+📐 STYLE GUIDE (copy ke setiap prompt):
+"[Tuliskan style guide lengkap berdasarkan art style di atas — termasuk warna dominan, pencahayaan, dan aturan faceless]"
+
+👤 CHARACTER SHEET:
+- Tokoh 1: [Nama] — [usia], [pakaian lengkap], [ciri khas: warna jubah/hijab, postur, dll]
+- Tokoh 2: [Nama] — [deskripsi lengkap]
+- ... (semua tokoh yang muncul dalam script)
+
+⚠️ ATURAN: Deskripsi karakter ini WAJIB disalin ke setiap scene prompt agar AI image generator menghasilkan karakter yang KONSISTEN.
+
+═══════════════════════════════════════════
+
+🖼️ SCENE 1 / [total] — [Judul Scene Singkat]
+Narasi: "[kutipan 1-2 kalimat dari script yang mewakili scene ini]"
+Prompt (ID): "[deskripsi visual lengkap dalam Bahasa Indonesia — termasuk character reference, setting, aksi, suasana, pencahayaan, dan style guide]"
+Prompt (EN): "[terjemahan prompt dalam Bahasa Inggris untuk AI image generator — sertakan style, aspect ratio, faceless rule]"
+
+🖼️ SCENE 2 / [total] — [Judul Scene]
+Narasi: "..."
+Prompt (ID): "..."
+Prompt (EN): "..."
+
+... (lanjutkan untuk semua scene)
+
+═══════════════════════════════════════════
+CATATAN PENTING
+═══════════════════════════════════════════
+- Setiap Prompt (EN) harus bisa langsung di-paste ke Gemini, ChatGPT, DALL-E, Midjourney, atau AI image generator MANAPUN.
+- JANGAN gunakan syntax khusus platform (seperti --ar, --v, --style). Gunakan deskripsi natural language.
+- Pastikan transisi antar scene VISUAL MASUK AKAL (tidak loncat setting tanpa alasan).
+- Setiap scene HARUS menyertakan character reference dari CHARACTER SHEET.
+═══════════════════════════════════════════`;
+}
+
 function generateQuizPrompt(
   customTitle: string,
   topic: string,
@@ -1112,7 +1195,7 @@ D) [Pilihan D]
 }
 
 export default function PromptGeneratorPage() {
-  const [mode, setMode] = useState<"CONTENT" | "IMAGE" | "QUIZ">("CONTENT");
+  const [mode, setMode] = useState<"CONTENT" | "IMAGE" | "QUIZ" | "STORYBOARD">("CONTENT");
   const [type, setType] = useState<ContentType>("QNA");
   const [title, setTitle] = useState("");
   const [kisahSubType, setKisahSubType] = useState<KisahSubType>("SIRAH");
@@ -1185,6 +1268,11 @@ export default function PromptGeneratorPage() {
   const [quizIncludeImage, setQuizIncludeImage] = useState(true);
   const [quizImageStyle, setQuizImageStyle] = useState("Animasi 3D (Pixar/Disney)");
 
+  // Storyboard states
+  const [sbScript, setSbScript] = useState("");
+  const [sbArtStyle, setSbArtStyle] = useState("Animasi 3D (Pixar/Disney)");
+  const [sbAspectRatio, setSbAspectRatio] = useState<AspectRatio>("16:9");
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(HISTORY_KEY);
@@ -1205,6 +1293,18 @@ export default function PromptGeneratorPage() {
       setHistory(updated);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
       toast.success("Quiz prompt berhasil di-generate!");
+      return;
+    }
+    if (mode === "STORYBOARD") {
+      if (!sbScript.trim()) return toast.error("Script narasi audio wajib diisi");
+      const prompt = generateStoryboardPrompt(sbScript.trim(), sbArtStyle, sbAspectRatio);
+      setGeneratedPrompt(prompt);
+      const sbTitle = sbScript.trim().substring(0, 50) + (sbScript.trim().length > 50 ? "..." : "");
+      const entry = { title: `🎬 ${sbTitle}`, type: "IMAGE_PROMPT" as ContentType, prompt, date: new Date().toISOString() };
+      const updated = [entry, ...history.filter(h => h.prompt !== prompt)].slice(0, MAX_HISTORY);
+      setHistory(updated);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      toast.success("Storyboard prompt berhasil di-generate!");
       return;
     }
     if (!title.trim()) return toast.error("Judul/topik wajib diisi");
@@ -1296,6 +1396,12 @@ export default function PromptGeneratorPage() {
             className={`flex-1 md:px-5 py-2 text-sm font-bold rounded-lg transition-all ${mode === "QUIZ" ? "bg-white shadow-sm text-purple-700" : "text-slate-500 hover:text-slate-700"}`}
           >
             🧩 Quiz
+          </button>
+          <button 
+            onClick={() => { setMode("STORYBOARD"); setGeneratedPrompt(""); }} 
+            className={`flex-1 md:px-5 py-2 text-sm font-bold rounded-lg transition-all ${mode === "STORYBOARD" ? "bg-white shadow-sm text-purple-700" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            🎬 Storyboard
           </button>
         </div>
       </div>
@@ -1739,6 +1845,70 @@ export default function PromptGeneratorPage() {
                 )}
               </div>
             </>
+          ) : mode === "STORYBOARD" ? (
+            <>
+              {/* Panduan Storyboard */}
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-200 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎬</span>
+                  <div>
+                    <h3 className="font-bold text-amber-800 text-sm">Apa itu Storyboard Prompt?</h3>
+                    <p className="text-xs text-amber-700 mt-1 leading-relaxed">Fitur ini mengubah <strong>script narasi audio</strong> (dari fitur Export Script Audio) menjadi <strong>prompt gambar per scene</strong> yang konsisten. Hasilnya bisa langsung di-paste ke Gemini, ChatGPT, DALL-E, atau AI image generator manapun.</p>
+                    <div className="mt-3 space-y-1">
+                      <p className="text-[11px] text-amber-600 font-bold">✔ AI menentukan pembagian scene otomatis</p>
+                      <p className="text-[11px] text-amber-600 font-bold">✔ Character Sheet untuk konsistensi karakter</p>
+                      <p className="text-[11px] text-amber-600 font-bold">✔ Prompt dwibahasa (ID + EN) untuk fleksibilitas</p>
+                      <p className="text-[11px] text-amber-600 font-bold">✔ Aturan Islami otomatis (faceless, hijab, siluet nabi)</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Script Input */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-2">1. Paste Script Narasi Audio</label>
+                <p className="text-xs text-slate-400 mb-3">Ambil dari: Editor → Export → Script Audio (.txt). Paste seluruh isi script di bawah.</p>
+                <textarea
+                  value={sbScript}
+                  onChange={e => setSbScript(e.target.value)}
+                  rows={10}
+                  className="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-purple-500 focus:ring-purple-500 resize-y font-mono leading-relaxed"
+                  placeholder={`Contoh script narasi audio:\n\nAssalamualaikum warahmatullahi wabarakatuh, teman-teman!\n\nHari ini kita akan mendengar kisah yang sangat menakjubkan...\nNabi Ibrahim berdiri tegak menghadapi api yang menyala-nyala...\n\n(Paste seluruh script audio dari fitur Export)`}
+                />
+                {sbScript.trim() && (
+                  <p className="text-xs text-emerald-600 mt-2 font-medium">✔ {sbScript.trim().split(/\s+/).length} kata terdeteksi</p>
+                )}
+              </div>
+
+              {/* Art Style */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-3">2. Pilih Gaya Visual</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {imageStyles.map(t => (
+                    <button key={t.value} onClick={() => setSbArtStyle(t.value)} className={`p-4 rounded-xl text-left border-2 transition-all ${sbArtStyle === t.value ? "border-purple-500 bg-purple-50 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}>
+                      <span className="text-2xl">{t.icon}</span>
+                      <p className="font-bold text-sm text-slate-800 mt-1">{t.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{t.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Aspect Ratio */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-700 mb-3">3. Aspek Rasio Scene</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {ASPECT_RATIO_OPTIONS.map(ar => (
+                    <button key={ar.value} onClick={() => setSbAspectRatio(ar.value)} className={`p-4 rounded-xl text-left border-2 transition-all ${sbAspectRatio === ar.value ? "border-purple-500 bg-purple-50 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}>
+                      <span className="text-2xl">{ar.icon}</span>
+                      <p className="font-bold text-sm text-slate-800 mt-1">{ar.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{ar.desc}</p>
+                      <p className="text-[10px] text-purple-600 font-bold mt-1">{ar.size} · {ar.value}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
           ) : null}
 
           {/* Generate Button */}
@@ -1795,7 +1965,7 @@ export default function PromptGeneratorPage() {
 
           {/* Guide */}
           <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-5 rounded-2xl border border-purple-100">
-            <h3 className="font-bold text-purple-800 text-sm mb-2">📋 Cara Pakai ({mode === "CONTENT" ? "Teks" : "Thumbnail"})</h3>
+            <h3 className="font-bold text-purple-800 text-sm mb-2">📋 Cara Pakai ({mode === "CONTENT" ? "Teks" : mode === "IMAGE" ? "Thumbnail" : mode === "QUIZ" ? "Quiz" : "Storyboard"})</h3>
             {mode === "CONTENT" ? (
               <ol className="text-xs text-purple-700 space-y-1.5 list-decimal list-inside">
                 <li>Pilih tujuan konten</li>
@@ -1805,6 +1975,18 @@ export default function PromptGeneratorPage() {
                 <li>Klik <strong>Generate Prompt</strong></li>
                 <li>Klik <strong>Salin</strong> → paste ke ChatGPT/Gemini</li>
                 <li>Copy output AI → paste ke <strong>Tulis Konten</strong> di Editor</li>
+              </ol>
+            ) : mode === "STORYBOARD" ? (
+              <ol className="text-xs text-purple-700 space-y-1.5 list-decimal list-inside">
+                <li>Buka konten di <strong>Editor</strong></li>
+                <li>Klik <strong>Export</strong> → pilih <strong>Script Audio (.txt)</strong></li>
+                <li>Buka file .txt, <strong>copy seluruh isi</strong></li>
+                <li>Paste ke kolom script di tab ini</li>
+                <li>Pilih gaya visual & aspek rasio</li>
+                <li>Klik <strong>Generate Prompt</strong></li>
+                <li>Salin prompt → paste ke <strong>Gemini / ChatGPT / DALL-E</strong></li>
+                <li>Generate gambar <strong>per scene</strong></li>
+                <li>Gunakan untuk <strong>video slideshow</strong> atau ilustrasi cerita</li>
               </ol>
             ) : (
               <ol className="text-xs text-purple-700 space-y-1.5 list-decimal list-inside">
