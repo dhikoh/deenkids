@@ -1,5 +1,5 @@
 "use client";
-import { GripVertical, Trash2, Clock, Sparkles, Type, Crop, Plus, Image, Music } from "lucide-react";
+import { GripVertical, Trash2, Clock, Sparkles, Type, Crop, Plus, Image, Music, ChevronDown, ChevronUp } from "lucide-react";
 import { SlideItem, TRANSITIONS } from "./types";
 import { useState, useRef } from "react";
 
@@ -31,6 +31,7 @@ export default function SlideTimeline({
 }: Props) {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
+  const [expandedSlide, setExpandedSlide] = useState<number | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,8 +58,13 @@ export default function SlideTimeline({
     }
   };
 
+  const toggleExpand = (i: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedSlide(expandedSlide === i ? null : i);
+  };
+
   return (
-    <div className="space-y-2">
+    <div>
       {/* Hidden file inputs */}
       <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
       <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioSelect} />
@@ -66,174 +72,207 @@ export default function SlideTimeline({
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-          🎞️ Timeline ({slides.length} slide)
+          🎞️ Timeline
+          <span className="text-[10px] font-normal text-slate-400 ml-1">({slides.length} slide)</span>
         </h3>
+        {slides.length > 0 && (
+          <button
+            onClick={() => imageInputRef.current?.click()}
+            disabled={isProcessing}
+            className="flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700 transition-all disabled:opacity-50"
+          >
+            <Plus size={12} /> Tambah
+          </button>
+        )}
       </div>
 
-      {/* Slides list */}
+      {/* Empty state */}
       {slides.length === 0 ? (
         <button
           onClick={() => imageInputRef.current?.click()}
           disabled={isProcessing}
-          className="w-full py-10 border-2 border-dashed border-violet-300 rounded-xl bg-violet-50/50 hover:bg-violet-100/50 transition-all group disabled:opacity-50"
+          className="w-full py-10 border-2 border-dashed border-violet-300 rounded-xl bg-gradient-to-b from-violet-50 to-purple-50 hover:from-violet-100 hover:to-purple-100 transition-all group disabled:opacity-50"
         >
           <div className="text-center">
-            <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center mx-auto mb-3 group-hover:bg-violet-200 transition-all">
-              <Image size={24} className="text-violet-500" />
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-200 to-purple-200 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform shadow-lg shadow-violet-100">
+              <Image size={24} className="text-violet-600" />
             </div>
-            <p className="text-sm font-bold text-violet-600">Upload Gambar</p>
-            <p className="text-[10px] text-violet-400 mt-1">Klik atau drag gambar ke sini</p>
+            <p className="text-sm font-bold text-violet-700">Upload Gambar</p>
+            <p className="text-[11px] text-violet-400 mt-1">JPG, PNG, WebP — bisa multiple</p>
           </div>
         </button>
       ) : (
-        <>
-          {slides.map((slide, i) => (
-            <div
-              key={slide.id}
-              draggable
-              onDragStart={() => handleDragStart(i)}
-              onDragOver={(e) => handleDragOver(e, i)}
-              onDrop={() => handleDrop(i)}
-              onDragEnd={() => { setDragIdx(null); setDragOver(null); }}
-              onClick={() => onSelect(i)}
-              className={`group relative rounded-xl border-2 p-3 cursor-pointer transition-all ${
-                activeSlide === i
-                  ? "border-violet-400 bg-violet-50/50 shadow-md shadow-violet-100"
-                  : dragOver === i
-                  ? "border-blue-300 bg-blue-50"
-                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                {/* Drag handle */}
-                <div className="pt-1 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500">
-                  <GripVertical size={16} />
-                </div>
+        <div className="space-y-1.5">
+          {slides.map((slide, i) => {
+            const isExpanded = expandedSlide === i;
+            const isActive = activeSlide === i;
 
-                {/* Thumbnail */}
-                <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
-                  <img src={slide.objectUrl} alt={slide.filename} className="w-full h-full object-cover" />
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-slate-700 truncate">Slide {i + 1}</p>
-                  <p className="text-[10px] text-slate-400 truncate">{slide.filename}</p>
-
-                  {/* Duration slider */}
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <Clock size={12} className="text-slate-400 flex-shrink-0" />
-                    <input
-                      type="range" min={1} max={30} step={0.5}
-                      value={slide.duration}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => { e.stopPropagation(); onUpdate(i, { duration: parseFloat(e.target.value) }); }}
-                      className="flex-1 h-1 accent-violet-500"
-                    />
-                    <span className="text-[10px] font-bold text-violet-600 w-8 text-right">{slide.duration}s</span>
+            return (
+              <div
+                key={slide.id}
+                draggable
+                onDragStart={() => handleDragStart(i)}
+                onDragOver={(e) => handleDragOver(e, i)}
+                onDrop={() => handleDrop(i)}
+                onDragEnd={() => { setDragIdx(null); setDragOver(null); }}
+                onClick={() => onSelect(i)}
+                className={`group rounded-xl border transition-all ${
+                  isActive
+                    ? "border-violet-400 bg-violet-50/70 shadow-sm shadow-violet-100 ring-1 ring-violet-200"
+                    : dragOver === i
+                    ? "border-blue-300 bg-blue-50"
+                    : "border-slate-200 bg-white hover:border-slate-300"
+                }`}
+              >
+                {/* Compact row */}
+                <div className="flex items-center gap-2 p-2">
+                  {/* Drag */}
+                  <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 flex-shrink-0">
+                    <GripVertical size={14} />
                   </div>
 
-                  {/* Transition select */}
-                  <div className="flex items-center gap-2 mt-1">
-                    <Sparkles size={12} className="text-slate-400 flex-shrink-0" />
-                    <select
-                      value={slide.transition}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => { e.stopPropagation(); onUpdate(i, { transition: e.target.value }); }}
-                      className="flex-1 text-[10px] border border-slate-200 rounded-md px-1.5 py-0.5 bg-white focus:border-violet-400 outline-none"
+                  {/* Thumbnail */}
+                  <div className="w-12 h-9 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
+                    <img src={slide.objectUrl} alt="" className="w-full h-full object-cover" />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isActive ? "bg-violet-200 text-violet-700" : "bg-slate-100 text-slate-500"}`}>
+                        {i + 1}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-medium">{slide.duration}s</span>
+                      <span className="text-[10px] text-slate-400">·</span>
+                      <span className="text-[10px] text-slate-400 capitalize">{slide.transition}</span>
+                    </div>
+                    {slide.subtitle && (
+                      <p className="text-[10px] text-slate-400 truncate mt-0.5 max-w-[140px]">{slide.subtitle}</p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onCrop(i); }}
+                      className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-violet-100 text-slate-400 hover:text-violet-600 transition-all"
+                      title="Crop"
                     >
-                      {TRANSITIONS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Subtitle input */}
-                  <div className="flex items-center gap-2 mt-1">
-                    <Type size={12} className="text-slate-400 flex-shrink-0" />
-                    <input
-                      type="text"
-                      placeholder="Subtitle teks..."
-                      value={slide.subtitle}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => { e.stopPropagation(); onUpdate(i, { subtitle: e.target.value }); }}
-                      className="flex-1 text-[10px] border border-slate-200 rounded-md px-1.5 py-0.5 bg-white focus:border-violet-400 outline-none placeholder:text-slate-300"
-                    />
+                      <Crop size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRemove(i); }}
+                      className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-rose-100 text-slate-400 hover:text-rose-500 transition-all"
+                      title="Hapus"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => toggleExpand(i, e)}
+                      className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all"
+                      title="Detail"
+                    >
+                      {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                    </button>
                   </div>
                 </div>
 
-                {/* Actions: Crop + Delete */}
-                <div className="flex flex-col gap-1">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onCrop(i); }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-violet-50 text-slate-300 hover:text-violet-500 transition-all"
-                    title="Crop gambar"
-                  >
-                    <Crop size={14} />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onRemove(i); }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all"
-                    title="Hapus slide"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                {/* Expanded details */}
+                {isExpanded && (
+                  <div className="px-3 pb-3 pt-1 border-t border-slate-100 space-y-2 animate-in slide-in-from-top-1 duration-150">
+                    {/* Duration */}
+                    <div className="flex items-center gap-2">
+                      <Clock size={11} className="text-slate-400 flex-shrink-0" />
+                      <input
+                        type="range" min={1} max={30} step={0.5}
+                        value={slide.duration}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => { e.stopPropagation(); onUpdate(i, { duration: parseFloat(e.target.value) }); }}
+                        className="flex-1 h-1 accent-violet-500"
+                      />
+                      <span className="text-[10px] font-bold text-violet-600 w-7 text-right">{slide.duration}s</span>
+                    </div>
+                    {/* Transition */}
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={11} className="text-slate-400 flex-shrink-0" />
+                      <select
+                        value={slide.transition}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => { e.stopPropagation(); onUpdate(i, { transition: e.target.value }); }}
+                        className="flex-1 text-[10px] border border-slate-200 rounded-md px-2 py-1 bg-white focus:border-violet-400 outline-none"
+                      >
+                        {TRANSITIONS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                    {/* Subtitle */}
+                    <div className="flex items-center gap-2">
+                      <Type size={11} className="text-slate-400 flex-shrink-0" />
+                      <input
+                        type="text"
+                        placeholder="Teks subtitle..."
+                        value={slide.subtitle}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => { e.stopPropagation(); onUpdate(i, { subtitle: e.target.value }); }}
+                        className="flex-1 text-[10px] border border-slate-200 rounded-md px-2 py-1 bg-white focus:border-violet-400 outline-none placeholder:text-slate-300"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
-          {/* ➕ Add Slide Button */}
+          {/* Add button (bottom) */}
           <button
             onClick={() => imageInputRef.current?.click()}
             disabled={isProcessing}
-            className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:border-violet-400 hover:bg-violet-50 transition-all group flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-2.5 border border-dashed border-slate-300 rounded-xl bg-slate-50/50 hover:border-violet-400 hover:bg-violet-50 transition-all group flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
-            <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center group-hover:bg-violet-200 transition-all">
-              <Plus size={14} className="text-violet-500" />
-            </div>
-            <span className="text-xs font-bold text-slate-500 group-hover:text-violet-600 transition-all">
+            <Plus size={14} className="text-slate-400 group-hover:text-violet-500 transition-all" />
+            <span className="text-[11px] font-bold text-slate-400 group-hover:text-violet-600 transition-all">
               Tambah Slide
             </span>
           </button>
-        </>
+        </div>
       )}
 
-      {/* ─── Audio Section ─── */}
-      <div className="mt-4 pt-4 border-t border-slate-100">
+      {/* Audio section */}
+      <div className="mt-4 pt-3 border-t border-slate-100">
         {audio ? (
-          <div className="p-3 bg-violet-50 border border-violet-200 rounded-xl">
-            <p className="text-[10px] font-bold text-violet-600 uppercase tracking-wider mb-1">🎵 Audio</p>
-            <p className="text-xs text-slate-700 truncate">{audio.filename}</p>
-            <audio controls className="w-full mt-2 h-8" preload="metadata">
+          <div className="p-2.5 bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] font-bold text-violet-600 uppercase tracking-wider">🎵 Audio</p>
+              <button
+                onClick={onRemoveAudio}
+                className="text-[10px] text-rose-400 hover:text-rose-600 font-bold transition-all"
+              >
+                Hapus
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-600 truncate mb-1.5">{audio.filename}</p>
+            <audio controls className="w-full h-7" preload="metadata" style={{ filter: "hue-rotate(260deg)" }}>
               <source src={audio.objectUrl} />
             </audio>
-            <button
-              onClick={onRemoveAudio}
-              className="text-[10px] text-rose-500 hover:underline mt-1"
-            >
-              Hapus audio
-            </button>
           </div>
         ) : (
           <button
             onClick={() => audioInputRef.current?.click()}
             disabled={isProcessing}
-            className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:border-emerald-400 hover:bg-emerald-50 transition-all group flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-2.5 border border-dashed border-slate-300 rounded-xl bg-slate-50/50 hover:border-emerald-400 hover:bg-emerald-50 transition-all group flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
-            <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-all">
-              <Music size={14} className="text-emerald-500" />
-            </div>
-            <span className="text-xs font-bold text-slate-500 group-hover:text-emerald-600 transition-all">
+            <Music size={14} className="text-slate-400 group-hover:text-emerald-500 transition-all" />
+            <span className="text-[11px] font-bold text-slate-400 group-hover:text-emerald-600 transition-all">
               Tambah Audio
             </span>
           </button>
         )}
       </div>
 
-      {/* ─── Duration Summary ─── */}
+      {/* Duration summary */}
       {slides.length > 0 && (
-        <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
-          <p className="text-[10px] font-bold text-slate-500 uppercase">Total Durasi</p>
-          <p className="text-lg font-bold text-slate-800">{totalDuration.toFixed(1)}s</p>
+        <div className="mt-3 py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+          <span className="text-[10px] font-bold text-slate-400 uppercase">Durasi</span>
+          <span className="text-sm font-bold text-slate-700">{totalDuration.toFixed(1)}s</span>
         </div>
       )}
     </div>
