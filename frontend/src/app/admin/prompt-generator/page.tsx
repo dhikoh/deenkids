@@ -1039,39 +1039,99 @@ function generateStoryboardPrompt(
   sbAspectRatio: AspectRatio,
 ): string {
   const arOption = ASPECT_RATIO_OPTIONS.find(a => a.value === sbAspectRatio) || ASPECT_RATIO_OPTIONS[0];
+
+  // Estimate script length to set minimum scene count
+  const wordCount = script.trim().split(/\s+/).length;
+  const minScenes = wordCount < 300 ? 8 : wordCount < 600 ? 10 : wordCount < 1000 ? 12 : 15;
+
   return `═══════════════════════════════════════════
 🎬 STORYBOARD PROMPT GENERATOR — Adably.id
 ═══════════════════════════════════════════
 
 Kamu adalah STORYBOARD ARTIST dan PROMPT ENGINEER profesional untuk konten edukasi anak Islami.
-Tugasmu: mengubah SCRIPT NARASI AUDIO menjadi serangkaian PROMPT GAMBAR per scene yang KONSISTEN.
+Tugasmu: mengubah SCRIPT NARASI AUDIO menjadi serangkaian PROMPT GAMBAR per scene yang KAYA, DETAIL, dan KONSISTEN.
 
 ══════════════════════════════════════════
-ATURAN UTAMA
+LANGKAH 1 — SEGMENTASI PARAGRAF (WAJIB DILAKUKAN PERTAMA)
 ══════════════════════════════════════════
 
-1. ANALISIS script di bawah, tentukan SENDIRI berapa scene yang paling tepat secara visual.
-   - Tidak semua paragraf harus jadi scene — gabungkan yang tidak visual.
-   - Pisahkan momen-momen yang PENTING secara visual (aksi, emosi, perubahan setting).
-   - Jumlah scene BEBAS — AI yang tentukan berdasarkan panjang dan kebutuhan visual script.
+Script di bawah ini adalah TEKS MENTAH tanpa penanda paragraf.
+Sebelum membuat scene, kamu WAJIB memecah script menjadi PARAGRAF-PARAGRAF berdasarkan kriteria:
 
-2. BUAT CHARACTER SHEET di awal:
-   - Untuk SETIAP tokoh yang muncul, definisikan: usia, pakaian, ciri khas, warna dominan.
-   - Character sheet ini WAJIB di-copy ke setiap scene prompt agar konsisten.
-   - SEMUA karakter manusia WAJIB FACELESS — TIDAK ADA fitur wajah (mata/hidung/mulut).
-   - Karakter digambarkan lewat: postur tubuh, bahasa tubuh, pakaian, dan konteks.
+• Perubahan LOKASI (contoh: dari rumah → masjid → pasar)
+• Perubahan WAKTU (contoh: pagi → malam, hari ini → esok hari)
+• Perubahan EMOSI (contoh: senang → sedih → lega)
+• Perubahan TOKOH yang sedang beraksi (contoh: ayah berbicara → anak berlari)
+• Perubahan AKSI utama (contoh: berdoa → berjalan → bertemu seseorang)
+• Jeda narasi natural (contoh: sebelum/sesudah dialog, sebelum klimaks)
 
-3. ATURAN ISLAMI:
-   - Semua karakter memakai busana Islami/syar'i (hijab, jubah, gamis, kopiah).
-   - Nabi dan Rasul HANYA digambarkan sebagai SILUET BERCAHAYA (nur) — DILARANG KERAS menampilkan bentuk tubuh detail.
-   - DILARANG: menampilkan wajah, simbol non-Islam, konten kekerasan.
-   - Figur suci (Nabi, Malaikat) menggunakan cahaya/siluet saja.
+ATURAN SEGMENTASI:
+- Setiap paragraf hasil segmentasi = MINIMAL 1 scene (boleh 2 jika paragrafnya panjang/kaya visual)
+- DILARANG menggabungkan lebih dari 3 kalimat narasi jadi 1 paragraf tunggal
+- Momen DIAM/REFLEKTIF (tokoh berdoa, merenungi, memandang langit) juga LAYAK jadi scene tersendiri
+- Dialog panjang antar tokoh: pecah per giliran bicara sebagai scene berbeda jika suasana/ekspresi berubah
 
-4. STYLE LOCK (gunakan di SETIAP scene prompt):
-   - Gaya Visual: ${artStyle}
-   - Aspek Rasio: ${sbAspectRatio} (${arOption.size})
-   - Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat
-   - FACELESS: Semua karakter tanpa fitur wajah
+══════════════════════════════════════════
+LANGKAH 2 — ATURAN JUMLAH SCENE
+══════════════════════════════════════════
+
+⚠️ JUMLAH SCENE MINIMUM: ${minScenes} scene
+(Dihitung dari panjang script: ~${wordCount} kata)
+
+Rasio wajib:
+- Script pendek (< 300 kata): MINIMAL 8 scene
+- Script sedang (300–600 kata): MINIMAL 10 scene
+- Script panjang (600–1000 kata): MINIMAL 12 scene
+- Script sangat panjang (> 1000 kata): MINIMAL 15 scene
+
+LEBIH BANYAK scene LEBIH BAIK — setiap momen visual yang bisa digambar HARUS punya scene-nya sendiri.
+Jangan takut membuat terlalu banyak scene — lebih baik KELEBIHAN daripada KEKURANGAN.
+
+Tipe momen yang WAJIB punya scene tersendiri:
+✅ Momen pembuka/pengenalan tokoh (establishing shot)
+✅ Setiap perubahan lokasi/setting
+✅ Setiap dialog penting atau percakapan emosional
+✅ Momen konflik/ujian/tantangan
+✅ Momen klimaks (puncak cerita)
+✅ Momen doa/ibadah
+✅ Momen resolusi/kehangatan
+✅ Momen penutup/ending (closing shot)
+✅ Pemandangan alam/arsitektur yang disebut dalam narasi
+✅ Momen transisi (perjalanan, perubahan waktu)
+
+══════════════════════════════════════════
+LANGKAH 3 — CHARACTER SHEET
+══════════════════════════════════════════
+
+BUAT CHARACTER SHEET di awal:
+- Untuk SETIAP tokoh yang muncul, definisikan secara DETAIL:
+  • Nama & usia
+  • Pakaian lengkap (warna spesifik, motif, bahan)
+  • Ciri khas fisik non-wajah (tinggi badan, postur, gestur khas)
+  • Warna dominan karakter (untuk konsistensi visual)
+  • Aksesoris atau benda yang sering dibawa
+
+- Character sheet ini WAJIB di-COPY LENGKAP ke setiap scene prompt agar konsisten.
+- SEMUA karakter manusia WAJIB FACELESS — TIDAK ADA fitur wajah (mata/hidung/mulut).
+- Karakter HANYA digambarkan lewat: postur tubuh, bahasa tubuh, gestur tangan, pakaian, dan konteks adegan.
+
+══════════════════════════════════════════
+LANGKAH 4 — ATURAN ISLAMI
+══════════════════════════════════════════
+
+- Semua karakter memakai busana Islami/syar'i (hijab, jubah, gamis, kopiah).
+- Nabi dan Rasul HANYA digambarkan sebagai SILUET BERCAHAYA (nur) — DILARANG KERAS menampilkan bentuk tubuh detail.
+- DILARANG: menampilkan wajah, simbol non-Islam, konten kekerasan.
+- Figur suci (Nabi, Malaikat) menggunakan cahaya/siluet saja.
+
+══════════════════════════════════════════
+LANGKAH 5 — STYLE LOCK (gunakan di SETIAP scene)
+══════════════════════════════════════════
+
+- Gaya Visual: ${artStyle}
+- Aspek Rasio: ${sbAspectRatio} (${arOption.size})
+- Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat (warm lighting)
+- FACELESS: Semua karakter tanpa fitur wajah
 
 ══════════════════════════════════════════
 SCRIPT NARASI AUDIO (SUMBER)
@@ -1083,28 +1143,47 @@ FORMAT OUTPUT YANG HARUS DIIKUTI
 ══════════════════════════════════════════
 
 📐 STYLE GUIDE (copy ke setiap prompt):
-"[Tuliskan style guide lengkap berdasarkan art style di atas — termasuk warna dominan, pencahayaan, dan aturan faceless]"
+"[Tuliskan style guide lengkap: gaya ${artStyle}, warna dominan, pencahayaan warm, aturan faceless, aspek rasio ${sbAspectRatio}]"
 
 👤 CHARACTER SHEET:
-- Tokoh 1: [Nama] — [usia], [pakaian lengkap], [ciri khas: warna jubah/hijab, postur, dll]
-- Tokoh 2: [Nama] — [deskripsi lengkap]
-- ... (semua tokoh yang muncul dalam script)
+- Tokoh 1: [Nama] — [usia], [pakaian: warna + jenis + motif], [postur/tinggi], [ciri khas non-wajah], [warna dominan karakter]
+- Tokoh 2: [Nama] — [deskripsi lengkap dengan format sama]
+- ... (SEMUA tokoh yang muncul dalam script, tanpa terkecuali)
 
-⚠️ ATURAN: Deskripsi karakter ini WAJIB disalin ke setiap scene prompt agar AI image generator menghasilkan karakter yang KONSISTEN.
+📊 SEGMENTASI PARAGRAF:
+[Tampilkan daftar paragraf hasil segmentasi — masing-masing dengan nomor dan 1 kalimat ringkasan isinya]
+Contoh:
+- P1: Pengenalan tokoh dan setting awal di rumah
+- P2: Percakapan antara ayah dan anak tentang sholat
+- P3: Perjalanan menuju masjid
+- ...
+
+⚠️ ATURAN: Deskripsi karakter dari CHARACTER SHEET WAJIB disalin LENGKAP ke setiap scene prompt agar AI image generator menghasilkan karakter yang 100% KONSISTEN di semua gambar.
 
 ═══════════════════════════════════════════
 
-🖼️ SCENE 1 / [total] — [Judul Scene Singkat]
-Narasi: "[kutipan 1-2 kalimat dari script yang mewakili scene ini]"
-Prompt (ID): "[deskripsi visual lengkap dalam Bahasa Indonesia — termasuk character reference, setting, aksi, suasana, pencahayaan, dan style guide]"
-Prompt (EN): "[terjemahan prompt dalam Bahasa Inggris untuk AI image generator — sertakan style, aspect ratio, faceless rule]"
+🖼️ SCENE 1 / [total] — [Judul Scene Singkat & Deskriptif]
+Paragraf Sumber: P[nomor]
+Narasi: "[kutipan 1-2 kalimat PERSIS dari script yang mewakili scene ini]"
+Tipe Shot: [Establishing / Medium / Close-up / Wide / Over-the-shoulder / Bird's eye]
+Prompt (ID): "[deskripsi visual SANGAT DETAIL dalam Bahasa Indonesia:
+  1. Setting/latar: lokasi spesifik, waktu (pagi/sore/malam), cuaca, elemen arsitektur/alam
+  2. Karakter: siapa, posisi di frame, postur tubuh, gestur tangan, arah menghadap
+  3. Aksi: apa yang sedang dilakukan, interaksi antar tokoh
+  4. Suasana/mood: pencahayaan (warm/dramatic/soft), warna dominan adegan
+  5. Detail tambahan: benda/objek penting, elemen dekoratif islami
+  6. Character reference LENGKAP dari character sheet
+  7. Style guide reference]"
+Prompt (EN): "[terjemahan LENGKAP ke Bahasa Inggris — siap paste langsung ke AI image generator. Sertakan: art style, aspect ratio ${sbAspectRatio}, faceless rule, semua detail visual]"
 
 🖼️ SCENE 2 / [total] — [Judul Scene]
+Paragraf Sumber: P[nomor]
 Narasi: "..."
+Tipe Shot: [...]
 Prompt (ID): "..."
 Prompt (EN): "..."
 
-... (lanjutkan untuk semua scene)
+... (lanjutkan untuk SEMUA scene — MINIMAL ${minScenes} scene)
 
 ═══════════════════════════════════════════
 CATATAN PENTING
@@ -1112,7 +1191,11 @@ CATATAN PENTING
 - Setiap Prompt (EN) harus bisa langsung di-paste ke Gemini, ChatGPT, DALL-E, Midjourney, atau AI image generator MANAPUN.
 - JANGAN gunakan syntax khusus platform (seperti --ar, --v, --style). Gunakan deskripsi natural language.
 - Pastikan transisi antar scene VISUAL MASUK AKAL (tidak loncat setting tanpa alasan).
-- Setiap scene HARUS menyertakan character reference dari CHARACTER SHEET.
+- Setiap scene HARUS menyertakan character reference LENGKAP dari CHARACTER SHEET.
+- VARIASIKAN tipe shot (jangan semua medium shot — gunakan establishing, close-up, wide, bird's eye).
+- Scene PERTAMA harus selalu ESTABLISHING SHOT (memperkenalkan setting dan tokoh utama).
+- Scene TERAKHIR harus selalu CLOSING SHOT (suasana hangat, penuh harapan, atau reflektif).
+- DILARANG menghasilkan kurang dari ${minScenes} scene — jika kurang, pecah scene yang terlalu padat.
 ═══════════════════════════════════════════`;
 }
 
