@@ -7,6 +7,7 @@ import { EngagementBar } from "@/components/ui/EngagementBar";
 import UnifiedBlockRenderer from "@/components/UnifiedBlockRenderer";
 import AudioPlayerWrapper from "@/components/AudioPlayerWrapper";
 import NarrationAudioPlayer from "@/components/NarrationAudioPlayer";
+import StoryboardVideoPlayer from "@/components/StoryboardVideoPlayer";
 import type { Metadata } from "next";
 import { JsonLd, buildArticleSchema, buildBreadcrumbSchema } from "@/components/seo/JsonLd";
 
@@ -76,11 +77,18 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
       </Link>
 
       <div className="mb-8">
-        {content.thumbnailUrl && (
+        {content.storyboardVideoUrl ? (
+          <StoryboardVideoPlayer
+            storyboardVideoUrl={content.storyboardVideoUrl}
+            audioUrl={content.audioUrl}
+            enableAudio={content.enableAudio}
+            title={content.title}
+          />
+        ) : content.thumbnailUrl ? (
           <div className="w-full aspect-video rounded-2xl overflow-hidden mb-6 shadow-md bg-slate-100">
             <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-contain" />
           </div>
-        )}
+        ) : null}
         <div className="flex items-center gap-2 mb-4">
           <span className="text-xs font-bold px-3 py-1 bg-sky-50 text-sky-700 rounded-full">Artikel</span>
           {content.pov === 'ORTU' && <span className="text-xs font-bold px-3 py-1 bg-teal-50 text-teal-700 border border-teal-200 rounded-full">👨‍👩‍👧 Orang Tua</span>}
