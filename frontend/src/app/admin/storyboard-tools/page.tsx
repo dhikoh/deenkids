@@ -4,7 +4,7 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import {
   Film, Upload, Image, Music, Play, Download, Loader2, RefreshCw,
-  CheckCircle, AlertCircle, UploadCloud,
+  CheckCircle, AlertCircle, UploadCloud, Plus,
 } from "lucide-react";
 import { SlideItem, AudioItem, SubtitleConfig } from "./types";
 
@@ -46,8 +46,6 @@ export default function StoryboardToolsPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   // Refs
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   // Crop state
@@ -61,9 +59,7 @@ export default function StoryboardToolsPage() {
   }, []);
 
   // ─── Image Upload ───
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  const handleImageUpload = (files: FileList) => {
     const newSlides: SlideWithFile[] = [];
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
@@ -73,7 +69,7 @@ export default function StoryboardToolsPage() {
         imageId: "",
         filename: f.name,
         objectUrl: URL.createObjectURL(f),
-        file: f, // preserve original File for upload
+        file: f,
         duration: 5,
         transition: "fade",
         transitionDuration: 0.8,
@@ -82,22 +78,26 @@ export default function StoryboardToolsPage() {
     }
     setSlides(prev => [...prev, ...newSlides]);
     toast.success(`${newSlides.length} gambar ditambahkan`);
-    e.target.value = "";
   };
 
   // ─── Audio Upload ───
-  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f || !f.type.startsWith("audio/")) return;
+  const handleAudioUpload = (f: File) => {
     if (audio?.objectUrl) URL.revokeObjectURL(audio.objectUrl);
     setAudio({
       id: `aud-${Date.now()}`,
       filename: f.name,
       objectUrl: URL.createObjectURL(f),
-      file: f, // preserve original File for upload
+      file: f,
     });
     toast.success("Audio ditambahkan");
-    e.target.value = "";
+  };
+
+  const handleRemoveAudio = () => {
+    if (audio) {
+      URL.revokeObjectURL(audio.objectUrl);
+      setAudio(null);
+      toast.success("Audio dihapus");
+    }
   };
 
   // ─── Slide Operations ───
@@ -270,20 +270,6 @@ export default function StoryboardToolsPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => imageInputRef.current?.click()}
-            disabled={isProcessing}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:border-violet-300 hover:bg-violet-50 transition-all disabled:opacity-50"
-          >
-            <Image size={16} /> Gambar
-          </button>
-          <button
-            onClick={() => audioInputRef.current?.click()}
-            disabled={isProcessing}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:border-violet-300 hover:bg-violet-50 transition-all disabled:opacity-50"
-          >
-            <Music size={16} /> Audio
-          </button>
-          <button
             onClick={handleRender}
             disabled={isProcessing || slides.length === 0}
             className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-violet-200 transition-all disabled:opacity-50"
@@ -293,10 +279,6 @@ export default function StoryboardToolsPage() {
           </button>
         </div>
       </div>
-
-      {/* Hidden inputs */}
-      <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-      <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioUpload} />
 
       {/* Progress bar */}
       {isProcessing && (
@@ -344,35 +326,18 @@ export default function StoryboardToolsPage() {
           <SlideTimeline
             slides={slides}
             activeSlide={activeSlide}
+            isProcessing={isProcessing}
+            audio={audio}
             onSelect={setActiveSlide}
             onReorder={handleReorder}
             onRemove={handleRemoveSlide}
             onUpdate={handleUpdateSlide}
             onCrop={handleCropSlide}
+            onAddImages={handleImageUpload}
+            onAddAudio={handleAudioUpload}
+            onRemoveAudio={handleRemoveAudio}
+            totalDuration={totalDuration}
           />
-          {/* Audio info */}
-          {audio && (
-            <div className="mt-4 p-3 bg-violet-50 border border-violet-200 rounded-xl">
-              <p className="text-[10px] font-bold text-violet-600 uppercase tracking-wider mb-1">🎵 Audio</p>
-              <p className="text-xs text-slate-700 truncate">{audio.filename}</p>
-              <audio controls className="w-full mt-2 h-8" preload="metadata">
-                <source src={audio.objectUrl} />
-              </audio>
-              <button
-                onClick={() => { URL.revokeObjectURL(audio.objectUrl); setAudio(null); }}
-                className="text-[10px] text-rose-500 hover:underline mt-1"
-              >
-                Hapus audio
-              </button>
-            </div>
-          )}
-          {/* Duration summary */}
-          {slides.length > 0 && (
-            <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
-              <p className="text-[10px] font-bold text-slate-500 uppercase">Total Durasi</p>
-              <p className="text-lg font-bold text-slate-800">{totalDuration.toFixed(1)}s</p>
-            </div>
-          )}
         </div>
 
         {/* Center: Preview */}
