@@ -194,6 +194,9 @@ export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose 
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-gradient-to-r from-violet-50 to-purple-50">
           <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
             ✂️ Crop Gambar — {aspectRatio}
+            <span className="text-[10px] font-normal text-slate-400 ml-1">
+              Output: {aspectRatio === "9:16" ? "1080×1920" : aspectRatio === "1:1" ? "1080×1080" : "1920×1080"}px
+            </span>
           </h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all">
             <X size={18} />
@@ -237,6 +240,11 @@ export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose 
               <span className="text-[10px] text-slate-400 flex items-center gap-1 ml-2">
                 <Move size={12} /> Drag untuk geser
               </span>
+              {imgRef.current && (
+                <span className="text-[10px] text-slate-400 ml-2 hidden sm:inline">
+                  Asli: {imgRef.current.naturalWidth}×{imgRef.current.naturalHeight}px
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button onClick={onClose} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition-all">
