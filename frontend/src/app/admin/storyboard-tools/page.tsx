@@ -18,6 +18,7 @@ import SlideTimeline from "./SlideTimeline";
 import RenderSettings from "./RenderSettings";
 import ContentLinker from "./ContentLinker";
 import ImageCropModal from "./ImageCropModal";
+import StoryboardPreview from "./StoryboardPreview";
 import {
   uploadStoryboardAssets, renderStoryboard, getStoryboardStatus,
   downloadStoryboardVideo, uploadStoryboardToStorage, deleteStoryboardAsset,
@@ -342,58 +343,14 @@ export default function StoryboardToolsPage() {
 
         {/* Center: Preview */}
         <div className="lg:col-span-5 xl:col-span-6">
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-1">
-              <p className="text-[10px] text-slate-400 text-center font-medium">Preview</p>
-            </div>
-            <div className="bg-black flex items-center justify-center" style={{
-              aspectRatio: aspectRatio === "16:9" ? "16/9" : aspectRatio === "9:16" ? "9/16" : "1/1",
-              maxHeight: "500px",
-            }}>
-              {slides.length > 0 && slides[activeSlide] ? (
-                <div className="relative w-full h-full">
-                  <img
-                    src={slides[activeSlide].objectUrl}
-                    alt={`Slide ${activeSlide + 1}`}
-                    className="w-full h-full object-contain"
-                  />
-                  {subtitleConfig.enabled && slides[activeSlide].subtitle && (
-                    <div className={`absolute left-0 right-0 text-center px-4 py-2 ${
-                      subtitleConfig.position === "top" ? "top-4" : subtitleConfig.position === "center" ? "top-1/2 -translate-y-1/2" : "bottom-4"
-                    }`}>
-                      <span className={`inline-block px-4 py-2 rounded-lg text-sm font-bold ${
-                        subtitleConfig.bgStyle === "semi-transparent" ? "bg-black/50" : subtitleConfig.bgStyle === "blur" ? "bg-black/30 backdrop-blur-sm" : ""
-                      } ${
-                        subtitleConfig.color === "white" ? "text-white" : subtitleConfig.color === "yellow" ? "text-yellow-400" : "text-black"
-                      }`}>
-                        {slides[activeSlide].subtitle}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-slate-500 text-center p-8">
-                  <Film size={48} className="mx-auto mb-3 text-slate-600" />
-                  <p className="text-sm font-bold">Belum ada slide</p>
-                  <p className="text-xs text-slate-600 mt-1">Klik tombol &quot;Gambar&quot; untuk upload</p>
-                </div>
-              )}
-            </div>
-            {/* Slide navigation */}
-            {slides.length > 1 && (
-              <div className="flex items-center justify-center gap-1 p-3 bg-slate-50">
-                {slides.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveSlide(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      i === activeSlide ? "bg-violet-500 w-6" : "bg-slate-300 hover:bg-slate-400"
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <StoryboardPreview
+            slides={slides}
+            activeSlide={activeSlide}
+            aspectRatio={aspectRatio}
+            subtitleConfig={subtitleConfig}
+            audio={audio}
+            onSlideChange={setActiveSlide}
+          />
         </div>
 
         {/* Right: Settings + Content Link */}
