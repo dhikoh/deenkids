@@ -11,7 +11,7 @@ import { readFile } from 'fs/promises';
 const execFileAsync = promisify(execFile);
 
 // Render queue: only 1 render at a time to protect server
-interface RenderStatus {
+export interface RenderStatus {
   status: 'queued' | 'rendering' | 'done' | 'error';
   progress: number;
   outputPath?: string;

@@ -16,7 +16,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard, RolesGuard } from '../common/guards/roles.guard';
 import { SetMetadata } from '@nestjs/common';
-import { StoryboardService } from './storyboard.service';
+import { StoryboardService, RenderStatus } from './storyboard.service';
 import { Request, Response } from 'express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -179,7 +179,7 @@ export class StoryboardController {
    * Check render progress/status.
    */
   @Get('status/:sessionId')
-  async getStatus(@Param('sessionId') sessionId: string) {
+  async getStatus(@Param('sessionId') sessionId: string): Promise<RenderStatus> {
     return this.storyboardService.getStatus(sessionId);
   }
 
