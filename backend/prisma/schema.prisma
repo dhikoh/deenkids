@@ -143,6 +143,8 @@ model ContentItem {
   deletedAt          DateTime? // Soft delete timestamp, null = active
   previousStatus     String? // Status before deletion, for trash UI display
   socialThumbnailUrl String? // Thumbnail 1:1 untuk IG/FB post
+  storyboardVideoUrl String? // YouTube embed URL dari storyboard video (untuk website)
+  storyboardMp4Url   String? // MinIO URL video storyboard (untuk social publish pipeline)
   socialPublishLogs  SocialPublishLog[]
 
   @@index([authorId, status])

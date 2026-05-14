@@ -1071,3 +1071,92 @@ export async function updatePodcastSettings(token: string, data: Record<string, 
     body: JSON.stringify(data),
   });
 }
+
+// ─── Storyboard Tools API ──────────────────────────────────────────
+
+export async function uploadStoryboardAssets(token: string, files: File[], sessionId?: string): Promise<any> {
+  const formData = new FormData();
+  if (sessionId) formData.append('sessionId', sessionId);
+  for (const file of files) {
+    formData.append('files', file);
+  }
+  const res = await fetch(`${API_BASE_URL}/storyboard/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Upload gagal (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function renderStoryboard(token: string, data: {
+  sessionId: string;
+  slides: Array<{ imageId: string; duration: number; transition: string; transitionDuration?: number; subtitle?: string }>;
+  audioId?: string;
+  aspectRatio: '16:9' | '9:16' | '1:1';
+  fps: number;
+  subtitleConfig?: {
+    enabled: boolean;
+    font: string;
+    fontSize: 'small' | 'medium' | 'large';
+    color: string;
+    position: 'top' | 'center' | 'bottom';
+    bgStyle: 'semi-transparent' | 'none' | 'blur';
+  };
+}) {
+  return apiFetch(`${API_BASE_URL}/storyboard/render`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getStoryboardStatus(token: string, sessionId: string) {
+  return apiFetch(`${API_BASE_URL}/storyboard/status/${sessionId}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function downloadStoryboardVideo(token: string, sessionId: string): Promise<Blob> {
+  const res = await fetch(`${API_BASE_URL}/storyboard/download/${sessionId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Download gagal (${res.status})`);
+  }
+  return res.blob();
+}
+
+export async function uploadStoryboardToStorage(token: string, sessionId: string, slug?: string) {
+  return apiFetch(`${API_BASE_URL}/storyboard/upload-to-storage/${sessionId}`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ slug }),
+  });
+}
+
+export async function linkStoryboardToContent(token: string, contentId: string, videoUrl?: string, mp4Url?: string) {
+  return apiFetch(`${API_BASE_URL}/storyboard/link`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify({ contentId, videoUrl, mp4Url }),
+  });
+}
+
+export async function unlinkStoryboardFromContent(token: string, contentId: string) {
+  return apiFetch(`${API_BASE_URL}/storyboard/unlink`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify({ contentId }),
+  });
+}
+
+export async function getStoryboardContentList(token: string) {
+  return apiFetch(`${API_BASE_URL}/storyboard/content-list`, {
+    headers: authHeaders(token),
+  });
+}

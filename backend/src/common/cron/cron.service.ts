@@ -240,12 +240,13 @@ export class CronService {
     // Cleanup MinIO files before deleting records
     const toDelete = await this.prisma.contentItem.findMany({
       where: { deletedAt: { lt: cutoff, not: null } },
-      select: { audioUrl: true, thumbnailUrl: true, socialThumbnailUrl: true },
+      select: { audioUrl: true, thumbnailUrl: true, socialThumbnailUrl: true, storyboardMp4Url: true },
     });
     for (const item of toDelete) {
       if (item.audioUrl) await this.storageService.deleteFile(item.audioUrl).catch(() => {});
       if (item.thumbnailUrl) await this.storageService.deleteFile(item.thumbnailUrl).catch(() => {});
       if (item.socialThumbnailUrl) await this.storageService.deleteFile(item.socialThumbnailUrl).catch(() => {});
+      if (item.storyboardMp4Url) await this.storageService.deleteFile(item.storyboardMp4Url).catch(() => {});
     }
 
     const result = await this.prisma.contentItem.deleteMany({
@@ -285,7 +286,7 @@ export class CronService {
 
     // 1. Collect all URLs referenced in the database
     const allContent = await this.prisma.contentItem.findMany({
-      select: { audioUrl: true, thumbnailUrl: true, socialThumbnailUrl: true },
+      select: { audioUrl: true, thumbnailUrl: true, socialThumbnailUrl: true, storyboardMp4Url: true },
     });
     const allBanners = await this.prisma.sponsorBanner.findMany({
       select: { imageUrl: true },
@@ -300,6 +301,7 @@ export class CronService {
       if (c.audioUrl) referencedUrls.add(c.audioUrl);
       if (c.thumbnailUrl) referencedUrls.add(c.thumbnailUrl);
       if (c.socialThumbnailUrl) referencedUrls.add(c.socialThumbnailUrl);
+      if (c.storyboardMp4Url) referencedUrls.add(c.storyboardMp4Url);
     }
     for (const b of allBanners) {
       if (b.imageUrl) referencedUrls.add(b.imageUrl);
@@ -310,7 +312,7 @@ export class CronService {
 
     // 2. List all files in storage prefixes
     let totalOrphans = 0;
-    for (const prefix of ['audio/', 'content/', 'banners/', 'donations/']) {
+    for (const prefix of ['audio/', 'content/', 'banners/', 'donations/', 'storyboard-video/']) {
       try {
         const files = await this.storageService.listFiles(prefix);
         for (const file of files) {
@@ -387,6 +389,38 @@ export class CronService {
       }
     } catch (err) {
       this.logger.warn(`⚠️ Video temp cleanup failed: ${err.message}`);
+    }
+  }
+
+  // ─── Storyboard Temp Cleanup ───────────────────────────────────────
+  @Cron('0 */6 * * *') // Every 6 hours
+  async cleanupStoryboardTempFiles() {
+    const os = require('os');
+    const tmpDir = os.tmpdir();
+    const cutoff = Date.now() - 2 * 60 * 60 * 1000; // 2 hours ago
+    let cleaned = 0;
+
+    try {
+      const entries = fs.readdirSync(tmpDir).filter(f => f.startsWith('adably-storyboard-'));
+      for (const entry of entries) {
+        const fullPath = join(tmpDir, entry);
+        try {
+          const stat = fs.statSync(fullPath);
+          if (stat.mtimeMs < cutoff) {
+            if (stat.isDirectory()) {
+              fs.rmSync(fullPath, { recursive: true, force: true });
+            } else {
+              fs.unlinkSync(fullPath);
+            }
+            cleaned++;
+          }
+        } catch {}
+      }
+      if (cleaned > 0) {
+        this.logger.log(`🎬 Cleaned up ${cleaned} storyboard temp dirs from ${tmpDir}`);
+      }
+    } catch (err) {
+      this.logger.warn(`⚠️ Storyboard temp cleanup failed: ${err.message}`);
     }
   }
 }

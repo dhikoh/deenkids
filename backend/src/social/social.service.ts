@@ -342,11 +342,17 @@ export class SocialService {
 
       try {
         if (hasSocialPlatforms) {
-          // Use socialThumbnailUrl (1:1) for IG/FB/TikTok — designed for social media
-          const socialThumb = content.socialThumbnailUrl || content.thumbnailUrl;
-          if (socialThumb) {
-            socialVideoUrl = await this.videoGenerator.generateVideo(socialThumb, content.audioUrl!, content.slug || content.id, '9:16');
-            this.logger.log(`🎬 Social video (9:16) generated: ${socialVideoUrl}`);
+          // Prefer storyboard video (multi-image with transitions) over static image+audio
+          if (content.storyboardMp4Url) {
+            socialVideoUrl = content.storyboardMp4Url;
+            this.logger.log(`🎬 Using storyboard video for social: ${socialVideoUrl}`);
+          } else {
+            // Fallback: generate static image + audio video
+            const socialThumb = content.socialThumbnailUrl || content.thumbnailUrl;
+            if (socialThumb) {
+              socialVideoUrl = await this.videoGenerator.generateVideo(socialThumb, content.audioUrl!, content.slug || content.id, '9:16');
+              this.logger.log(`🎬 Social video (9:16) generated: ${socialVideoUrl}`);
+            }
           }
         }
       } catch (err) {
@@ -355,10 +361,16 @@ export class SocialService {
 
       try {
         if (hasYouTube) {
-          const ytThumb = content.thumbnailUrl;
-          if (ytThumb) {
-            ytVideoUrl = await this.videoGenerator.generateVideo(ytThumb, content.audioUrl!, `${content.slug || content.id}_yt`, '16:9');
-            this.logger.log(`🎬 YouTube video (16:9) generated: ${ytVideoUrl}`);
+          // Prefer storyboard video for YouTube too
+          if (content.storyboardMp4Url) {
+            ytVideoUrl = content.storyboardMp4Url;
+            this.logger.log(`🎬 Using storyboard video for YouTube: ${ytVideoUrl}`);
+          } else {
+            const ytThumb = content.thumbnailUrl;
+            if (ytThumb) {
+              ytVideoUrl = await this.videoGenerator.generateVideo(ytThumb, content.audioUrl!, `${content.slug || content.id}_yt`, '16:9');
+              this.logger.log(`🎬 YouTube video (16:9) generated: ${ytVideoUrl}`);
+            }
           }
         }
       } catch (err) {
