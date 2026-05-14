@@ -239,4 +239,17 @@ export class StoryboardController {
   async getContentList() {
     return this.storyboardService.getPublishedContentList();
   }
+
+  /**
+   * Delete a specific uploaded asset from a session.
+   * Used when user removes a slide after uploading.
+   */
+  @Post('delete-asset')
+  async deleteAsset(
+    @Body() body: { sessionId: string; fileId: string },
+  ) {
+    if (!body.sessionId) throw new BadRequestException('sessionId wajib diisi');
+    if (!body.fileId) throw new BadRequestException('fileId wajib diisi');
+    return this.storyboardService.deleteSessionAsset(body.sessionId, body.fileId);
+  }
 }

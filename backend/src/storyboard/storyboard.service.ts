@@ -5,7 +5,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { readFile } from 'fs/promises';
 
 const execFileAsync = promisify(execFile);
@@ -543,5 +543,36 @@ export class StoryboardService {
       take: 200,
     });
     return items;
+  }
+
+  /**
+   * Delete a specific file from a session directory.
+   */
+  deleteSessionAsset(sessionId: string, fileId: string) {
+    const sessionDir = join(tmpdir(), `adably-storyboard-${sessionId}`);
+    if (!existsSync(sessionDir)) {
+      throw new BadRequestException('Session tidak ditemukan');
+    }
+
+    // Security: prevent path traversal
+    const sanitizedId = fileId.replace(/[^a-zA-Z0-9._-]/g, '');
+    const filePath = join(sessionDir, sanitizedId);
+
+    if (!filePath.startsWith(sessionDir)) {
+      throw new BadRequestException('Invalid file path');
+    }
+
+    if (!existsSync(filePath)) {
+      throw new BadRequestException('File tidak ditemukan di session');
+    }
+
+    try {
+      unlinkSync(filePath);
+      this.logger.log(`Deleted asset ${sanitizedId} from session ${sessionId}`);
+      return { success: true, deleted: sanitizedId };
+    } catch (err) {
+      this.logger.error(`Failed to delete asset: ${err.message}`);
+      throw new BadRequestException('Gagal menghapus file');
+    }
   }
 }

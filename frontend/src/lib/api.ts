@@ -1160,3 +1160,11 @@ export async function getStoryboardContentList(token: string) {
     headers: authHeaders(token),
   });
 }
+
+export async function deleteStoryboardAsset(token: string, sessionId: string, fileId: string) {
+  return apiFetch(`${API_BASE_URL}/storyboard/delete-asset`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ sessionId, fileId }),
+  });
+}

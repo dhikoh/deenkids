@@ -1,7 +1,7 @@
 "use client";
-import { GripVertical, Trash2, Clock, Sparkles, Type } from "lucide-react";
+import { GripVertical, Trash2, Clock, Sparkles, Type, Crop } from "lucide-react";
 import { SlideItem, TRANSITIONS } from "./types";
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 interface Props {
   slides: SlideItem[];
@@ -10,9 +10,10 @@ interface Props {
   onReorder: (from: number, to: number) => void;
   onRemove: (i: number) => void;
   onUpdate: (i: number, patch: Partial<SlideItem>) => void;
+  onCrop: (i: number) => void;
 }
 
-export default function SlideTimeline({ slides, activeSlide, onSelect, onReorder, onRemove, onUpdate }: Props) {
+export default function SlideTimeline({ slides, activeSlide, onSelect, onReorder, onRemove, onUpdate, onCrop }: Props) {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
 
@@ -105,13 +106,23 @@ export default function SlideTimeline({ slides, activeSlide, onSelect, onReorder
               </div>
             </div>
 
-            {/* Delete */}
-            <button
-              onClick={(e) => { e.stopPropagation(); onRemove(i); }}
-              className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all"
-            >
-              <Trash2 size={14} />
-            </button>
+            {/* Actions: Crop + Delete */}
+            <div className="flex flex-col gap-1">
+              <button
+                onClick={(e) => { e.stopPropagation(); onCrop(i); }}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-violet-50 text-slate-300 hover:text-violet-500 transition-all"
+                title="Crop gambar"
+              >
+                <Crop size={14} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onRemove(i); }}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all"
+                title="Hapus slide"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
         </div>
       ))}

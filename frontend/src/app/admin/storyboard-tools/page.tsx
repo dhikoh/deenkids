@@ -17,9 +17,10 @@ interface AudioWithFile extends AudioItem {
 import SlideTimeline from "./SlideTimeline";
 import RenderSettings from "./RenderSettings";
 import ContentLinker from "./ContentLinker";
+import ImageCropModal from "./ImageCropModal";
 import {
   uploadStoryboardAssets, renderStoryboard, getStoryboardStatus,
-  downloadStoryboardVideo, uploadStoryboardToStorage,
+  downloadStoryboardVideo, uploadStoryboardToStorage, deleteStoryboardAsset,
 } from "@/lib/api";
 
 type RenderState = "idle" | "uploading" | "rendering" | "done" | "error";
@@ -48,6 +49,9 @@ export default function StoryboardToolsPage() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Crop state
+  const [cropSlideIdx, setCropSlideIdx] = useState<number | null>(null);
 
   // Cleanup poll on unmount
   useEffect(() => {
@@ -106,14 +110,45 @@ export default function StoryboardToolsPage() {
     });
   };
 
-  const handleRemoveSlide = (i: number) => {
-    URL.revokeObjectURL(slides[i].objectUrl);
+  const handleRemoveSlide = async (i: number) => {
+    const slide = slides[i];
+    URL.revokeObjectURL(slide.objectUrl);
+
+    // If session exists and slide has a server-side imageId, delete from server
+    if (sessionId && slide.imageId) {
+      const token = Cookies.get("_at") || "";
+      try {
+        await deleteStoryboardAsset(token, sessionId, slide.imageId);
+      } catch {
+        // Continue even if server delete fails — local state is primary
+      }
+    }
+
     setSlides(prev => prev.filter((_, idx) => idx !== i));
     if (activeSlide >= slides.length - 1) setActiveSlide(Math.max(0, slides.length - 2));
+    toast.success("Slide dihapus");
   };
 
   const handleUpdateSlide = (i: number, patch: Partial<SlideItem>) => {
     setSlides(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s));
+  };
+
+  // ─── Crop ───
+  const handleCropSlide = (i: number) => {
+    setCropSlideIdx(i);
+  };
+
+  const handleCropApply = (croppedFile: File, croppedUrl: string) => {
+    if (cropSlideIdx === null) return;
+    const oldUrl = slides[cropSlideIdx].objectUrl;
+    URL.revokeObjectURL(oldUrl);
+    setSlides(prev => prev.map((s, idx) =>
+      idx === cropSlideIdx
+        ? { ...s, file: croppedFile, objectUrl: croppedUrl, filename: croppedFile.name, imageId: "" }
+        : s
+    ));
+    setCropSlideIdx(null);
+    toast.success("Crop diterapkan! Re-upload saat render.");
   };
 
   // ─── Render Pipeline ───
@@ -313,6 +348,7 @@ export default function StoryboardToolsPage() {
             onReorder={handleReorder}
             onRemove={handleRemoveSlide}
             onUpdate={handleUpdateSlide}
+            onCrop={handleCropSlide}
           />
           {/* Audio info */}
           {audio && (
@@ -412,6 +448,16 @@ export default function StoryboardToolsPage() {
           </div>
         </div>
       </div>
+
+      {/* Crop Modal */}
+      {cropSlideIdx !== null && slides[cropSlideIdx] && (
+        <ImageCropModal
+          imageUrl={slides[cropSlideIdx].objectUrl}
+          aspectRatio={aspectRatio}
+          onCrop={handleCropApply}
+          onClose={() => setCropSlideIdx(null)}
+        />
+      )}
     </div>
   );
 }
