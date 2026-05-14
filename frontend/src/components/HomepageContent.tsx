@@ -280,20 +280,14 @@ export default function HomepageContent({ initialNodes }: HomepageContentProps) 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {kisahNodes.slice(0, 6).map((node: any, index: number) => (
                 <Link href={`/kisah/${node.slug}`} key={node.id} className="group">
-                  <div className="relative h-full bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden p-7 rounded-3xl border border-amber-200 shadow-sm transition-all duration-500 hover:shadow-xl hover:-translate-y-1 hover:border-amber-400">
+                  <div className="relative h-full bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden p-5 rounded-3xl border border-amber-200 shadow-sm transition-all duration-500 hover:shadow-xl hover:-translate-y-1 hover:border-amber-400">
                     <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-40 ${index % 2 === 0 ? 'bg-amber-400' : 'bg-orange-400'}`} />
-                    <div className="relative z-10">
-                      <div className="h-12 w-12 rounded-2xl flex items-center justify-center mb-5 shadow-sm bg-gradient-to-br from-amber-100 to-orange-200 text-amber-700 border border-amber-300">
-                        {node.icon ? <span className="text-xl">{node.icon}</span> : <Scroll className="h-6 w-6" />}
+                    <div className="relative z-10 flex items-center gap-4">
+                      <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm bg-gradient-to-br from-amber-100 to-orange-200 text-amber-700 border border-amber-300">
+                        {node.icon ? <span className="text-lg">{node.icon}</span> : <Scroll className="h-5 w-5" />}
                       </div>
-                      <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-amber-700 transition-colors">{node.title}</h3>
-                      <p className="text-slate-600 text-sm leading-relaxed">{node.description || 'Koleksi kisah islami untuk anak.'}</p>
-                      {node.contentCount != null && (
-                        <p className="text-xs font-bold text-amber-600 mt-3">{node.contentCount} kisah tersedia</p>
-                      )}
-                      <div className="mt-5 flex items-center text-sm font-bold text-amber-600 group-hover:text-amber-700 transition-colors">
-                        Baca Kisah <ArrowRight className="h-4 w-4 ml-1 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                      </div>
+                      <h3 className="text-lg font-bold text-slate-800 group-hover:text-amber-700 transition-colors flex-1">{node.title}</h3>
+                      <ArrowRight className="h-4 w-4 text-amber-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all shrink-0" />
                     </div>
                   </div>
                 </Link>
