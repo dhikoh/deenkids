@@ -982,6 +982,7 @@ function generateImagePrompt(
   includeText: boolean,
   aspectRatio: AspectRatio = "16:9",
   category: string = "",
+  includeCategory: boolean = true,
 ): string {
   const arOption = ASPECT_RATIO_OPTIONS.find(a => a.value === aspectRatio) || ASPECT_RATIO_OPTIONS[0];
   const arLabel = aspectRatio === "16:9" ? "Widescreen 16:9" : aspectRatio === "1:1" ? "Square 1:1 (1080×1080)" : "Portrait 4:5 (1080×1350)";
@@ -1005,9 +1006,16 @@ function generateImagePrompt(
   const engActivity = extras.activity.trim() ? `, performing: ${extras.activity.trim()}` : "";
   const engSetting = extras.setting.trim() ? `, set in: ${extras.setting.trim()}` : "";
   const engColors = extras.colorPalette.trim() ? `, dominant colors: ${extras.colorPalette.trim()}` : "";
-  const categoryLabel = getCategoryLabel(category);
-  prompt += `\n- BRANDING (sudut KIRI ATAS gambar, disusun vertikal dari atas ke bawah):\n  Baris 1: "${categoryLabel}" — font sama seperti judul, ukuran 50% dari ukuran judul, semi-transparan (opacity 50-70%)\n  Baris 2: "Adably.id" — font sama seperti judul, ukuran 50% dari ukuran judul, semi-transparan (opacity 50-70%)\n  Baris 3: "Platform Edukasi Anak Islami" — ukuran lebih kecil dari Adably.id (sekitar 30-40% dari judul), semi-transparan\n  Warna: putih dengan shadow halus agar terbaca di semua latar belakang.`;
-  prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${style}. ${charSpec.en}${engActivity}${engSetting}${engColors}. Warm lighting, vibrant child-friendly colors. Resolution: ${arOption.size}. ${includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, negative space for manual text."} Top-left corner branding: '${categoryLabel}' + 'Adably.id' + 'Platform Edukasi Anak Islami' in white semi-transparent text with subtle shadow. ${arOption.arFlag}"`;
+  const categoryLabel = includeCategory ? getCategoryLabel(category) : "";
+  if (includeCategory && categoryLabel) {
+    prompt += `\n- BRANDING (sudut KIRI ATAS gambar, disusun vertikal dari atas ke bawah):\n  Baris 1: "${categoryLabel}" — font sama seperti judul, ukuran 50% dari ukuran judul, semi-transparan (opacity 50-70%)\n  Baris 2: "Adably.id" — font sama seperti judul, ukuran 50% dari ukuran judul, semi-transparan (opacity 50-70%)\n  Baris 3: "Platform Edukasi Anak Islami" — ukuran lebih kecil dari Adably.id (sekitar 30-40% dari judul), semi-transparan\n  Warna: putih dengan shadow halus agar terbaca di semua latar belakang.`;
+  } else {
+    prompt += `\n- BRANDING (sudut KIRI ATAS gambar, disusun vertikal dari atas ke bawah):\n  Baris 1: "Adably.id" — font sama seperti judul, ukuran 50% dari ukuran judul, semi-transparan (opacity 50-70%)\n  Baris 2: "Platform Edukasi Anak Islami" — ukuran lebih kecil dari Adably.id (sekitar 30-40% dari judul), semi-transparan\n  Warna: putih dengan shadow halus agar terbaca di semua latar belakang.`;
+  }
+  const brandingEn = includeCategory && categoryLabel
+    ? `Top-left corner branding: '${categoryLabel}' + 'Adably.id' + 'Platform Edukasi Anak Islami' in white semi-transparent text with subtle shadow.`
+    : `Top-left corner branding: 'Adably.id' + 'Platform Edukasi Anak Islami' in white semi-transparent text with subtle shadow.`;
+  prompt += `\n\n(English reference for AI engine):\n"Islamic kids education thumbnail: ${title}. Style: ${style}. ${charSpec.en}${engActivity}${engSetting}${engColors}. Warm lighting, vibrant child-friendly colors. Resolution: ${arOption.size}. ${includeText ? `Include text "${title}"` : "NO TEXT, NO LETTERS, negative space for manual text."} ${brandingEn} ${arOption.arFlag}"`;
   return prompt;
 }
 
@@ -1330,7 +1338,8 @@ export default function PromptGeneratorPage() {
   const [includeText, setIncludeText] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [imageExtras, setImageExtras] = useState({ expression: "", activity: "", setting: "", colorPalette: "" });
-  const [thumbCategory, setThumbCategory] = useState<string>("");
+  const [thumbCategory, setThumbCategory] = useState<string>("QNA");
+  const [includeCategoryLabel, setIncludeCategoryLabel] = useState(true);
 
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [copied, setCopied] = useState(false);
@@ -1396,7 +1405,7 @@ export default function PromptGeneratorPage() {
     if (mode === "CONTENT") {
       prompt = generatePrompt(type, title.trim(), ages, options, kisahSubType, selectedThinkers, artikelPov);
     } else {
-      prompt = generateImagePrompt(title.trim(), imageStyle, scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, imageExtras, includeText, aspectRatio, thumbCategory);
+      prompt = generateImagePrompt(title.trim(), imageStyle, scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, imageExtras, includeText, aspectRatio, thumbCategory, includeCategoryLabel);
       historyType = "IMAGE_PROMPT";
     }
     setGeneratedPrompt(prompt);
@@ -1728,24 +1737,7 @@ export default function PromptGeneratorPage() {
                 )}
               </div>
 
-              {/* Kategori Konten (untuk branding thumbnail) */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <label className="block text-sm font-bold text-slate-700 mb-3">1c. Kategori Konten <span className="text-xs font-normal text-slate-400">(label di thumbnail)</span></label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    { value: "QNA", label: "Tanya Jawab", icon: "❓", color: "amber" },
-                    { value: "KISAH", label: "Kisah Islami", icon: "📖", color: "orange" },
-                    { value: "PEMBELAJARAN", label: "Pembelajaran", icon: "📚", color: "emerald" },
-                    { value: "ARTIKEL", label: "Artikel", icon: "📝", color: "sky" },
-                  ].map(cat => (
-                    <button key={cat.value} onClick={() => setThumbCategory(cat.value)} className={`p-3 rounded-xl text-center border-2 transition-all ${thumbCategory === cat.value ? `border-${cat.color}-500 bg-${cat.color}-50 shadow-sm` : "border-slate-200 hover:border-slate-300"}`}>
-                      <span className="text-xl">{cat.icon}</span>
-                      <p className="font-bold text-xs text-slate-800 mt-1">{cat.label}</p>
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-slate-400 mt-2">Label kategori akan muncul di sudut kiri atas thumbnail bersama branding Adably.</p>
-              </div>
+              {/* Kategori Konten section removed — moved to Konteks Tambahan toggle */}
 
               {/* Judul */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -1835,6 +1827,33 @@ export default function PromptGeneratorPage() {
                       <p className="text-xs mt-0.5 opacity-80">Catatan: AI sering salah ejaan. Direkomendasikan OFF jika ingin tambah teks manual via Canva.</p>
                     </div>
                   </label>
+                  {/* Label Kategori Toggle */}
+                  <div className={`rounded-xl border transition-all ${includeCategoryLabel ? "border-emerald-200 bg-emerald-50" : "border-slate-200"}`}>
+                    <label className={`flex items-start gap-3 p-3 cursor-pointer text-sm font-medium transition-all ${includeCategoryLabel ? "text-emerald-800" : "text-slate-600"}`}>
+                      <input type="checkbox" checked={includeCategoryLabel} onChange={e => setIncludeCategoryLabel(e.target.checked)} className="w-4 h-4 mt-0.5 text-emerald-600 rounded" />
+                      <div>
+                        <p className="font-bold">Sertakan Label Kategori di Thumbnail</p>
+                        <p className="text-xs mt-0.5 opacity-80">Label kategori konten akan ditampilkan di branding (sudut kiri atas gambar).</p>
+                      </div>
+                    </label>
+                    {includeCategoryLabel && (
+                      <div className="px-3 pb-3 pt-0">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {[
+                            { value: "QNA", label: "Tanya Jawab", icon: "❓" },
+                            { value: "KISAH", label: "Kisah Islami", icon: "📖" },
+                            { value: "PEMBELAJARAN", label: "Pembelajaran", icon: "📚" },
+                            { value: "ARTIKEL", label: "Artikel", icon: "📝" },
+                          ].map(cat => (
+                            <button key={cat.value} onClick={() => setThumbCategory(cat.value)} className={`py-2 px-1 rounded-lg text-center border transition-all text-xs font-bold ${thumbCategory === cat.value ? "border-emerald-400 bg-emerald-100 text-emerald-800 shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}>
+                              <span className="text-base">{cat.icon}</span>
+                              <p className="mt-0.5">{cat.label}</p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   {scenePreset !== "TANPA_MAKHLUK" && scenePreset !== "NABI_SAHABAT" && (
                     <div>
                       <label className="block text-xs font-bold text-slate-600 mb-1">😊 Ekspresi / Suasana Hati</label>
