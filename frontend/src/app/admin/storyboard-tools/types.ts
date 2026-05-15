@@ -70,4 +70,4 @@ export const ASPECT_RATIOS = [
 /** Allowed MIME types for media upload */
 export const ACCEPTED_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 export const ACCEPTED_VIDEO_MIMES = ['video/mp4', 'video/webm'];
-export const ACCEPTED_MEDIA_TYPES = `${ACCEPTED_IMAGE_MIMES.map(m => '.' + m.split('/')[1]).join(',')},video/mp4,video/webm`;
+export const ACCEPTED_MEDIA_TYPES = [...ACCEPTED_IMAGE_MIMES, ...ACCEPTED_VIDEO_MIMES].join(',');
