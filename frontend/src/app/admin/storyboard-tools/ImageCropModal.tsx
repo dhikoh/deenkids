@@ -141,22 +141,28 @@ export default function ImageCropModal({ imageUrl, aspectRatio, originalMimeType
   }, [dragging, handleMouseMove, handleMouseUp]);
 
   // Touch drag handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    e.preventDefault();
     const t = e.touches[0];
     setDragging(true);
     setDragStart({ x: t.clientX - offsetX, y: t.clientY - offsetY });
-  };
+  }, [offsetX, offsetY]);
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!dragging) return;
+    e.preventDefault();
     const t = e.touches[0];
     setOffsetX(t.clientX - dragStart.x);
     setOffsetY(t.clientY - dragStart.y);
-  };
+  }, [dragging, dragStart]);
+
+  const handleTouchEnd = useCallback(() => {
+    setDragging(false);
+  }, []);
 
   // Zoom
-  const zoomIn = () => setScale(s => Math.min(s * 1.15, 5));
-  const zoomOut = () => setScale(s => Math.max(s / 1.15, 0.1));
+  const zoomIn = useCallback(() => setScale(s => Math.min(s * 1.15, 5)), []);
+  const zoomOut = useCallback(() => setScale(s => Math.max(s / 1.15, 0.1)), []);
   const resetZoom = () => {
     if (!imgRef.current) return;
     const img = imgRef.current;
@@ -168,12 +174,28 @@ export default function ImageCropModal({ imageUrl, aspectRatio, originalMimeType
     setOffsetY((CROP_H - img.height * fitScale) / 2);
   };
 
-  // Scroll zoom
-  const handleWheel = (e: React.WheelEvent) => {
+  // Scroll zoom (native handler to avoid passive listener issue)
+  const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
-    if (e.deltaY < 0) zoomIn();
-    else zoomOut();
-  };
+    if (e.deltaY < 0) setScale(s => Math.min(s * 1.15, 5));
+    else setScale(s => Math.max(s / 1.15, 0.1));
+  }, []);
+
+  // Attach touch/wheel listeners with { passive: false } to allow preventDefault
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    return () => {
+      canvas.removeEventListener('wheel', handleWheel);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
   /**
    * Compute export dimensions at NATIVE resolution.
@@ -288,10 +310,6 @@ export default function ImageCropModal({ imageUrl, aspectRatio, originalMimeType
               width={CROP_W}
               height={CROP_H}
               onMouseDown={handleMouseDown}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={() => setDragging(false)}
-              onWheel={handleWheel}
               className="cursor-grab active:cursor-grabbing rounded-lg"
               style={{ maxWidth: "100%", maxHeight: "400px" }}
             />

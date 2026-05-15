@@ -25,37 +25,76 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    const token = Cookies.get('_at');
-    if (!token) return;
+    const initialToken = Cookies.get('_at');
+    if (!initialToken) return;
 
     let active = true;
+    let sessionDead = false; // prevents infinite 401 spam
+
+    /**
+     * Helper: fetch with auto-refresh.
+     * Reads FRESH token from cookie each call (not the stale captured one).
+     * On 401, tries silent refresh once before giving up.
+     */
+    const freshFetch = async (url: string): Promise<Response | null> => {
+      const token = Cookies.get('_at');
+      if (!token) return null;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status !== 401) return res;
+
+      // Token expired — try silent refresh using refresh token
+      const rt = Cookies.get('_rt');
+      if (!rt) return null;
+      try {
+        const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: rt }),
+        });
+        if (!refreshRes.ok) return null; // refresh failed
+        const data = await refreshRes.json();
+        if (data.accessToken) {
+          Cookies.set('_at', data.accessToken, { expires: 1/12, path: '/', secure: window.location.protocol === 'https:', sameSite: 'lax' });
+        }
+        if (data.refreshToken) {
+          Cookies.set('_rt', data.refreshToken, { expires: 7, path: '/', secure: window.location.protocol === 'https:', sameSite: 'lax' });
+        }
+        // Retry the original request with the new token
+        const retryRes = await fetch(url, { headers: { Authorization: `Bearer ${data.accessToken}` } });
+        return retryRes.ok ? retryRes : null;
+      } catch {
+        return null;
+      }
+    };
+
     const poll = async () => {
+      if (!active || sessionDead) return;
       // Pause polling when tab is not visible
       if (document.visibilityState === 'hidden') return;
 
       try {
-        const notifRes = await fetch(`${API_BASE_URL}/admin/notifications/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
-        if (notifRes.status === 401) { handleLogout(); return; }
+        const notifRes = await freshFetch(`${API_BASE_URL}/admin/notifications/unread-count`);
+        if (!notifRes) { sessionDead = true; setShowLogoutConfirm(true); return; }
         if (notifRes.ok) { const r = await notifRes.json(); if (active) setUnreadNotif(r.count || 0); }
       } catch {}
       try {
-        const msgRes = await fetch(`${API_BASE_URL}/admin/messages/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
-        if (msgRes.status === 401) { handleLogout(); return; }
+        const msgRes = await freshFetch(`${API_BASE_URL}/admin/messages/unread-count`);
+        if (!msgRes) return; // already handled above
         if (msgRes.ok) { const r = await msgRes.json(); if (active) setUnreadMsg(r.count || 0); }
       } catch {}
       // Error report count (SuperAdmin only)
       try {
-        const errRes = await fetch(`${API_BASE_URL}/admin/error-reports/stats`, { headers: { Authorization: `Bearer ${token}` } });
-        if (errRes.ok) { const r = await errRes.json(); if (active) setErrorCount(r.unresolved || 0); }
+        const errRes = await freshFetch(`${API_BASE_URL}/admin/error-reports/stats`);
+        if (errRes?.ok) { const r = await errRes.json(); if (active) setErrorCount(r.unresolved || 0); }
       } catch {}
     };
 
     // Poll on tab becoming visible again
-    const handleVisibility = () => { if (document.visibilityState === 'visible') poll(); };
+    const handleVisibility = () => { if (document.visibilityState === 'visible' && !sessionDead) poll(); };
     document.addEventListener('visibilitychange', handleVisibility);
 
     // Listen for inbox mutations to update badge immediately
-    const handleNotifChanged = () => poll();
+    const handleNotifChanged = () => { if (!sessionDead) poll(); };
     window.addEventListener('notification-changed', handleNotifChanged);
 
     poll();
