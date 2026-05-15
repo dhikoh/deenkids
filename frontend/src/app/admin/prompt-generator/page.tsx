@@ -9,8 +9,36 @@ import { fetchEditorNodes } from "@/lib/api";
 
 type ContentType = "QNA" | "PEMBELAJARAN" | "ARTIKEL" | "KISAH" | "IMAGE_PROMPT";
 type KisahSubType = "SIRAH" | "QASHASH" | "TELADAN" | "CERITA_FIKSI";
-type ScenePreset = "KELUARGA" | "NABI_SAHABAT" | "KELOMPOK_ANAK" | "TUNGGAL" | "TANPA_MAKHLUK";
+type ScenePreset = "KELUARGA" | "NABI_SAHABAT" | "KELOMPOK_ANAK" | "TUNGGAL" | "TANPA_MAKHLUK" | "ALLAH" | "MALAIKAT";
 type SingleCharType = "ayah" | "ibu" | "anakLaki" | "anakPerempuan";
+
+/** Prophet names with Arabic calligraphy for NABI_SAHABAT preset */
+const PROPHET_NAMES: { id: string; name: string; arabic: string }[] = [
+  { id: "generic", name: "Nabi (umum)", arabic: "" },
+  { id: "muhammad", name: "Nabi Muhammad", arabic: "مُحَمَّد ﷺ" },
+  { id: "ibrahim", name: "Nabi Ibrahim", arabic: "إِبْرَاهِيم" },
+  { id: "musa", name: "Nabi Musa", arabic: "مُوسَى" },
+  { id: "isa", name: "Nabi Isa", arabic: "عِيسَى" },
+  { id: "nuh", name: "Nabi Nuh", arabic: "نُوح" },
+  { id: "yusuf", name: "Nabi Yusuf", arabic: "يُوسُف" },
+  { id: "adam", name: "Nabi Adam", arabic: "آدَم" },
+  { id: "ismail", name: "Nabi Ismail", arabic: "إِسْمَاعِيل" },
+  { id: "sulaiman", name: "Nabi Sulaiman", arabic: "سُلَيْمَان" },
+  { id: "daud", name: "Nabi Daud", arabic: "دَاوُد" },
+  { id: "ayyub", name: "Nabi Ayyub", arabic: "أَيُّوب" },
+  { id: "yunus", name: "Nabi Yunus", arabic: "يُونُس" },
+  { id: "zakaria", name: "Nabi Zakaria", arabic: "زَكَرِيَّا" },
+  { id: "yahya", name: "Nabi Yahya", arabic: "يَحْيَى" },
+  { id: "idris", name: "Nabi Idris", arabic: "إِدْرِيس" },
+  { id: "hud", name: "Nabi Hud", arabic: "هُود" },
+  { id: "shaleh", name: "Nabi Shaleh", arabic: "صَالِح" },
+  { id: "luth", name: "Nabi Luth", arabic: "لُوط" },
+  { id: "syuaib", name: "Nabi Syu'aib", arabic: "شُعَيْب" },
+  { id: "harun", name: "Nabi Harun", arabic: "هَارُون" },
+  { id: "ilyas", name: "Nabi Ilyas", arabic: "إِلْيَاس" },
+  { id: "ilyasa", name: "Nabi Ilyasa", arabic: "الْيَسَع" },
+  { id: "dzulkifli", name: "Nabi Dzulkifli", arabic: "ذُو الْكِفْل" },
+];
 type AspectRatio = "16:9" | "1:1" | "4:5";
 
 const ASPECT_RATIO_OPTIONS: { value: AspectRatio; label: string; icon: string; desc: string; size: string; arFlag: string }[] = [
@@ -922,6 +950,8 @@ function buildCharacterSpec(
   childCount: number,
   childGender: "laki" | "perempuan" | "campur",
   singleChar: SingleCharType,
+  prophetNameId: string = "generic",
+  prophetArabicCalligraphy: boolean = false,
 ): { id: string; en: string } {
   const faceless = "WAJIB FACELESS — TIDAK ADA fitur wajah (mata/hidung/mulut) — wajah harus kosong/blank";
   const facelessEn = "STRICTLY FACELESS — NO facial features (no eyes, no nose, no mouth) — completely blank faces";
@@ -931,12 +961,32 @@ function buildCharacterSpec(
       en: "No living beings. Focus on Islamic architecture, natural scenery, Islamic objects (Quran, prayer beads, lantern), or geometric Islamic art patterns.",
     };
   }
+  // ═══ ALLAH — TIDAK BOLEH digambarkan dalam bentuk apapun ═══
+  if (scenePreset === "ALLAH") {
+    return {
+      id: "DILARANG KERAS menggambarkan Allah dalam bentuk apapun — TIDAK ADA representasi fisik, siluet, bayangan, atau simbol yang mewakili Allah. Fokus HANYA pada: keagungan ciptaan Allah (langit berbintang, gunung megah, lautan luas, taman indah), cahaya nur ilahi yang memancar dari atas, kaligrafi arab yang indah (lafadz Allah/ayat Al-Quran), pola geometri islami yang kompleks, atau suasana sakral penuh ketenangan.",
+      en: "STRICTLY FORBIDDEN to depict Allah in ANY form — NO physical representation, silhouette, shadow, or symbol representing Allah whatsoever. Focus ONLY on: the magnificence of Allah's creation (vast starry sky, majestic mountains, expansive oceans, beautiful gardens), divine ethereal light (nur) radiating from above, beautiful Arabic calligraphy (lafadz Allah or Quranic verses), intricate Islamic geometric patterns, or a sacred serene atmosphere of reverence.",
+    };
+  }
+  // ═══ MALAIKAT — Representasi abstrak saja ═══
+  if (scenePreset === "MALAIKAT") {
+    return {
+      id: "Malaikat direpresentasikan secara ABSTRAK saja — DILARANG menggambarkan sebagai manusia bersayap atau makhluk dengan fitur wajah/tubuh. Representasi yang diizinkan: cahaya putih/emas bersinar yang memancar, sayap abstrak dari partikel cahaya (bukan sayap realistis), siluet bercahaya tanpa detail wajah/tubuh, aura suci berwarna putih keemasan, atau efek cahaya ilahi yang turun dari langit. Suasana sakral, tenang, dan penuh keagungan.",
+      en: "Angels must be represented ABSTRACTLY ONLY — STRICTLY FORBIDDEN to depict as winged humans or any creature with facial/body features. Allowed representations: radiating white/golden luminous light, abstract wings made of light particles (NOT realistic wings), glowing silhouettes without face/body detail, sacred white-golden aura, or divine light beams descending from the sky. Sacred, peaceful, majestic atmosphere.",
+    };
+  }
+  // ═══ NABI_SAHABAT — Siluet bercahaya + nama Arab opsional ═══
   if (scenePreset === "NABI_SAHABAT") {
     const comp = prophetCompanion ? " Di sampingnya, seorang sahabat FACELESS berjenggot dalam pakaian islami (jubah)." : "";
     const compEn = prophetCompanion ? " Beside the Prophet, a single FACELESS bearded male companion in traditional Islamic garb (jubah, turban)." : "";
+    const prophet = PROPHET_NAMES.find(p => p.id === prophetNameId) || PROPHET_NAMES[0];
+    const nameSpecId = prophet.id !== 'generic' ? ` Ini adalah representasi ${prophet.name}.` : '';
+    const nameSpecEn = prophet.id !== 'generic' ? ` This represents ${prophet.name}.` : '';
+    const arabicId = (prophet.arabic && prophetArabicCalligraphy) ? ` Di dalam/sekitar cahaya nur, tampilkan kaligrafi arab nama "${prophet.arabic}" yang bersinar lembut — terintegrasi dengan cahaya, bukan teks terpisah.` : '';
+    const arabicEn = (prophet.arabic && prophetArabicCalligraphy) ? ` Within/around the luminous light, display beautiful Arabic calligraphy of "${prophet.arabic}" glowing softly — integrated into the light, not separate text.` : '';
     return {
-      id: `Representasikan Nabi sebagai SILUET BERCAHAYA saja — dikelilingi nur/cahaya emas lembut yang memancar. DILARANG KERAS: fitur wajah, detail tubuh, bentuk manusia realistis. Hanya siluet jubah putih bersinar. Cahaya nur HARUS mendominasi gambar.${comp}`,
-      en: `Represent the Prophet as a LUMINOUS SILHOUETTE ONLY surrounded by soft golden radiant aura (nur/light). STRICTLY FORBIDDEN: facial features, body details, realistic human form. Only a glowing white-clothed outline. The nur light must dominate.${compEn}`,
+      id: `Representasikan Nabi sebagai SILUET BERCAHAYA saja — dikelilingi nur/cahaya emas lembut yang memancar. DILARANG KERAS: fitur wajah, detail tubuh, bentuk manusia realistis. Hanya siluet jubah putih bersinar. Cahaya nur HARUS mendominasi gambar.${nameSpecId}${arabicId}${comp}`,
+      en: `Represent the Prophet as a LUMINOUS SILHOUETTE ONLY surrounded by soft golden radiant aura (nur/light). STRICTLY FORBIDDEN: facial features, body details, realistic human form. Only a glowing white-clothed outline. The nur light must dominate.${nameSpecEn}${arabicEn}${compEn}`,
     };
   }
   if (scenePreset === "TUNGGAL") {
@@ -983,11 +1033,13 @@ function generateImagePrompt(
   aspectRatio: AspectRatio = "16:9",
   category: string = "",
   includeCategory: boolean = true,
+  prophetNameId: string = "generic",
+  prophetArabicCalligraphy: boolean = false,
 ): string {
   const arOption = ASPECT_RATIO_OPTIONS.find(a => a.value === aspectRatio) || ASPECT_RATIO_OPTIONS[0];
   const arLabel = aspectRatio === "16:9" ? "Widescreen 16:9" : aspectRatio === "1:1" ? "Square 1:1 (1080×1080)" : "Portrait 4:5 (1080×1350)";
-  const charSpec = buildCharacterSpec(scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar);
-  const hasLiving = scenePreset !== "TANPA_MAKHLUK";
+  const charSpec = buildCharacterSpec(scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, prophetNameId, prophetArabicCalligraphy);
+  const hasLiving = !(["TANPA_MAKHLUK", "ALLAH", "MALAIKAT"] as string[]).includes(scenePreset);
   let prompt = `Tolong buatkan gambar (image generation) untuk thumbnail konten edukasi anak Islami.\n\nKonteks Judul: "${title}"\n\nSpesifikasi Wajib:\n- Gaya Visual: ${style}\n- Nuansa: Ramah anak, warna-warni ceria, pencahayaan hangat (warm lighting)\n- Aspek Rasio: ${arLabel} (Sangat Penting!)\n- Resolusi Target: ${arOption.size}\n- ${charSpec.id}`;
   if (hasLiving && scenePreset !== "NABI_SAHABAT" && extras.expression.trim()) {
     prompt += `\n- Ekspresi/Suasana Hati: ${extras.expression.trim()} (gambarkan lewat bahasa tubuh & postur — BUKAN wajah).`;
@@ -1332,6 +1384,8 @@ export default function PromptGeneratorPage() {
   const [scenePreset, setScenePreset] = useState<ScenePreset>("KELUARGA");
   const [familyChars, setFamilyChars] = useState({ ayah: true, ibu: true, anakLaki: false, anakPerempuan: false });
   const [prophetCompanion, setProphetCompanion] = useState(false);
+  const [prophetName, setProphetName] = useState<string>("generic");
+  const [showArabicName, setShowArabicName] = useState(false);
   const [childCount, setChildCount] = useState(2);
   const [childGender, setChildGender] = useState<"laki" | "perempuan" | "campur">("campur");
   const [singleChar, setSingleChar] = useState<SingleCharType>("anakLaki");
@@ -1405,7 +1459,7 @@ export default function PromptGeneratorPage() {
     if (mode === "CONTENT") {
       prompt = generatePrompt(type, title.trim(), ages, options, kisahSubType, selectedThinkers, artikelPov);
     } else {
-      prompt = generateImagePrompt(title.trim(), imageStyle, scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, imageExtras, includeText, aspectRatio, thumbCategory, includeCategoryLabel);
+      prompt = generateImagePrompt(title.trim(), imageStyle, scenePreset, familyChars, prophetCompanion, childCount, childGender, singleChar, imageExtras, includeText, aspectRatio, thumbCategory, includeCategoryLabel, prophetName, showArabicName);
       historyType = "IMAGE_PROMPT";
     }
     setGeneratedPrompt(prompt);
@@ -1749,12 +1803,14 @@ export default function PromptGeneratorPage() {
               {/* Scene Preset */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <label className="block text-sm font-bold text-slate-700 mb-3">3. Pilih Preset Adegan</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {([
                     { value: "KELUARGA", icon: "👨‍👩‍👧", label: "Keluarga", desc: "Pilih karakter keluarga" },
                     { value: "NABI_SAHABAT", icon: "🌟", label: "Nabi & Sahabat", desc: "Siluet nur + sahabat" },
                     { value: "KELOMPOK_ANAK", icon: "👦", label: "Kelompok Anak", desc: "1-4 anak muslim" },
                     { value: "TUNGGAL", icon: "👤", label: "Karakter Tunggal", desc: "Satu figur saja" },
+                    { value: "ALLAH", icon: "✨", label: "Allah", desc: "Nur, ciptaan, kaligrafi" },
+                    { value: "MALAIKAT", icon: "🕊️", label: "Malaikat", desc: "Cahaya abstrak" },
                     { value: "TANPA_MAKHLUK", icon: "🌿", label: "Tanpa Makhluk", desc: "Objek & lingkungan" },
                   ] as {value: ScenePreset; icon: string; label: string; desc: string}[]).map(sp => (
                     <button key={sp.value} onClick={() => setScenePreset(sp.value)} className={`p-4 rounded-xl text-left border-2 transition-all ${scenePreset === sp.value ? "border-purple-500 bg-purple-50 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}>
@@ -1767,10 +1823,47 @@ export default function PromptGeneratorPage() {
 
                 {/* Conditional sub-options */}
                 <div className="mt-4">
+                  {scenePreset === "ALLAH" && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2">
+                      <p className="text-xs font-bold text-emerald-800 flex items-center gap-1">🕌 Representasi Allah</p>
+                      <p className="text-xs text-emerald-700">Allah <strong>TIDAK BOLEH</strong> digambarkan dalam bentuk apapun — tidak ada representasi fisik, siluet, bayangan, atau simbol. Gambar akan fokus pada keagungan ciptaan-Nya, kaligrafi arab, dan pola geometri islami.</p>
+                    </div>
+                  )}
+                  {scenePreset === "MALAIKAT" && (
+                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 space-y-2">
+                      <p className="text-xs font-bold text-sky-800 flex items-center gap-1">🕊️ Representasi Malaikat</p>
+                      <p className="text-xs text-sky-700">Malaikat direpresentasikan secara <strong>ABSTRAK</strong> saja — cahaya bersinar, sayap dari partikel cahaya, atau aura suci. <strong>TIDAK BOLEH</strong> digambarkan sebagai manusia bersayap atau makhluk dengan fitur wajah/tubuh.</p>
+                    </div>
+                  )}
                   {scenePreset === "NABI_SAHABAT" && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
                       <p className="text-xs font-bold text-amber-800 flex items-center gap-1">⚠️ Representasi Nabi</p>
                       <p className="text-xs text-amber-700">Nabi digambarkan sebagai SILUET BERCAHAYA (nur) saja — tanpa fitur wajah atau detail fisik. Periksa hasil gambar sebelum digunakan.</p>
+                      {/* Prophet name selector */}
+                      <div>
+                        <p className="text-xs font-bold text-amber-800 mb-1.5">Pilih Nabi:</p>
+                        <select
+                          value={prophetName}
+                          onChange={e => setProphetName(e.target.value)}
+                          className="w-full border border-amber-300 rounded-lg p-2 text-sm bg-white focus:border-amber-500 focus:ring-amber-500"
+                        >
+                          {PROPHET_NAMES.map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}{p.arabic ? ` — ${p.arabic}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {/* Arabic calligraphy toggle */}
+                      {prophetName !== "generic" && (
+                        <label className="flex items-center gap-2 text-sm font-medium text-amber-800 cursor-pointer bg-amber-100/50 rounded-lg p-2.5">
+                          <input type="checkbox" checked={showArabicName} onChange={e => setShowArabicName(e.target.checked)} className="w-4 h-4 text-amber-600 rounded" />
+                          <div>
+                            <p>Tampilkan kaligrafi arab dalam cahaya</p>
+                            <p className="text-[10px] text-amber-600 font-normal">Nama "{PROPHET_NAMES.find(p => p.id === prophetName)?.arabic}" akan tampil terintegrasi dalam nur/cahaya</p>
+                          </div>
+                        </label>
+                      )}
                       <label className="flex items-center gap-2 text-sm font-medium text-amber-800 cursor-pointer">
                         <input type="checkbox" checked={prophetCompanion} onChange={e => setProphetCompanion(e.target.checked)} className="w-4 h-4 text-amber-600 rounded" />
                         Tambahkan sahabat (faceless) di sampingnya
