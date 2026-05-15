@@ -6,7 +6,7 @@ import {
   Film, Upload, Image, Music, Play, Download, Loader2, RefreshCw,
   CheckCircle, AlertCircle, UploadCloud, Plus,
 } from "lucide-react";
-import { SlideItem, AudioItem, SubtitleConfig } from "./types";
+import { SlideItem, AudioItem, SubtitleConfig, MediaType } from "./types";
 
 interface SlideWithFile extends SlideItem {
   file: File;
@@ -25,6 +25,49 @@ import {
 } from "@/lib/api";
 
 type RenderState = "idle" | "uploading" | "rendering" | "done" | "error";
+
+/** Extract video duration and thumbnail from a video file */
+function extractVideoMeta(file: File): Promise<{ duration: number; thumbnailUrl: string }> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+
+    const objectUrl = URL.createObjectURL(file);
+    video.src = objectUrl;
+
+    video.onloadedmetadata = () => {
+      const duration = video.duration || 5;
+      // Seek to 0.5s (or 0 if very short) for thumbnail
+      video.currentTime = Math.min(0.5, duration / 2);
+    };
+
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 240;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const thumbnailUrl = canvas.toDataURL("image/jpeg", 0.7);
+          resolve({ duration: video.duration || 5, thumbnailUrl });
+        } else {
+          resolve({ duration: video.duration || 5, thumbnailUrl: "" });
+        }
+      } catch {
+        resolve({ duration: video.duration || 5, thumbnailUrl: "" });
+      }
+      URL.revokeObjectURL(objectUrl);
+    };
+
+    video.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve({ duration: 5, thumbnailUrl: "" });
+    };
+  });
+}
 
 export default function StoryboardToolsPage() {
   // ─── State ───
@@ -62,26 +105,74 @@ export default function StoryboardToolsPage() {
     };
   }, []);
 
-  // ─── Image Upload ───
-  const handleImageUpload = (files: FileList) => {
+  // ─── Media Upload (images + videos) ───
+  const handleMediaUpload = async (files: FileList) => {
     const newSlides: SlideWithFile[] = [];
+    const videoPromises: Promise<void>[] = [];
+
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
-      if (!f.type.startsWith("image/")) continue;
-      newSlides.push({
-        id: `img-${Date.now()}-${i}`,
-        imageId: "",
-        filename: f.name,
-        objectUrl: URL.createObjectURL(f),
-        file: f,
-        duration: 5,
-        transition: "fade",
-        transitionDuration: 0.8,
-        subtitle: "",
-      });
+      const isVideo = f.type.startsWith("video/");
+      const isImage = f.type.startsWith("image/");
+
+      if (!isVideo && !isImage) continue;
+
+      if (isVideo) {
+        // Process video asynchronously (extract duration + thumbnail)
+        const idx = newSlides.length;
+        const objectUrl = URL.createObjectURL(f);
+        newSlides.push({
+          id: `vid-${Date.now()}-${i}`,
+          imageId: "",
+          filename: f.name,
+          objectUrl,
+          file: f,
+          duration: 5, // Placeholder — will be updated after probe
+          transition: "fade",
+          transitionDuration: 0.8,
+          subtitle: "",
+          mediaType: "video",
+          videoDuration: undefined,
+          videoThumbnailUrl: undefined,
+        });
+
+        videoPromises.push(
+          extractVideoMeta(f).then(meta => {
+            newSlides[idx].duration = Math.round(meta.duration * 10) / 10;
+            newSlides[idx].videoDuration = meta.duration;
+            newSlides[idx].videoThumbnailUrl = meta.thumbnailUrl || undefined;
+          }),
+        );
+      } else {
+        // Image: immediate
+        newSlides.push({
+          id: `img-${Date.now()}-${i}`,
+          imageId: "",
+          filename: f.name,
+          objectUrl: URL.createObjectURL(f),
+          file: f,
+          duration: 5,
+          transition: "fade",
+          transitionDuration: 0.8,
+          subtitle: "",
+          mediaType: "image",
+        });
+      }
     }
+
+    // Wait for all video probes to complete
+    if (videoPromises.length > 0) {
+      await Promise.all(videoPromises);
+    }
+
+    const imgCount = newSlides.filter(s => s.mediaType === "image").length;
+    const vidCount = newSlides.filter(s => s.mediaType === "video").length;
+    const parts: string[] = [];
+    if (imgCount > 0) parts.push(`${imgCount} gambar`);
+    if (vidCount > 0) parts.push(`${vidCount} video`);
+
     setSlides(prev => [...prev, ...newSlides]);
-    toast.success(`${newSlides.length} gambar ditambahkan`);
+    toast.success(`${parts.join(" + ")} ditambahkan`);
   };
 
   // ─── Audio Upload ───
@@ -117,6 +208,9 @@ export default function StoryboardToolsPage() {
   const handleRemoveSlide = async (i: number) => {
     const slide = slides[i];
     URL.revokeObjectURL(slide.objectUrl);
+    if (slide.videoThumbnailUrl) {
+      // videoThumbnailUrl is a data URL, no need to revoke
+    }
 
     // If session exists and slide has a server-side imageId, delete from server
     if (sessionId && slide.imageId) {
@@ -137,8 +231,13 @@ export default function StoryboardToolsPage() {
     setSlides(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s));
   };
 
-  // ─── Crop ───
+  // ─── Crop (image only) ───
   const handleCropSlide = (i: number) => {
+    // Prevent cropping video slides
+    if (slides[i]?.mediaType === "video") {
+      toast.error("Crop tidak tersedia untuk video");
+      return;
+    }
     setCropSlideIdx(i);
   };
 
@@ -168,7 +267,7 @@ export default function StoryboardToolsPage() {
 
   // ─── Render Pipeline ───
   const handleRender = async () => {
-    if (slides.length === 0) { toast.error("Tambahkan minimal 1 gambar"); return; }
+    if (slides.length === 0) { toast.error("Tambahkan minimal 1 gambar/video"); return; }
     const token = Cookies.get("_at") || "";
 
     try {
@@ -187,14 +286,28 @@ export default function StoryboardToolsPage() {
       const sid = uploadResult.sessionId;
       setSessionId(sid);
 
-      // Map uploaded image IDs back to slides
-      const uploadedSlides = slides.map((s, i) => ({
-        imageId: uploadResult.images[i]?.id || s.imageId,
-        duration: s.duration,
-        transition: s.transition,
-        transitionDuration: s.transitionDuration,
-        subtitle: s.subtitle || undefined,
-      }));
+      // Map uploaded file IDs back to slides
+      // Server returns separate images[] and videos[] arrays — we need to match by order
+      let imgIdx = 0;
+      let vidIdx = 0;
+      const uploadedSlides = slides.map((s) => {
+        let fileId: string;
+        if (s.mediaType === "video") {
+          fileId = uploadResult.videos?.[vidIdx]?.id || s.imageId;
+          vidIdx++;
+        } else {
+          fileId = uploadResult.images?.[imgIdx]?.id || s.imageId;
+          imgIdx++;
+        }
+        return {
+          imageId: fileId,
+          duration: s.duration,
+          transition: s.transition,
+          transitionDuration: s.transitionDuration,
+          subtitle: s.subtitle || undefined,
+          mediaType: s.mediaType || "image" as MediaType,
+        };
+      });
 
       // Phase 2: Render
       setRenderState("rendering");
@@ -263,7 +376,7 @@ export default function StoryboardToolsPage() {
     const token = Cookies.get("_at") || "";
     try {
       toast.loading("Uploading to storage...", { id: "upload-st" });
-      const result = await uploadStoryboardToStorage(token, sessionId);
+      await uploadStoryboardToStorage(token, sessionId);
       toast.success("Video di-upload ke storage!", { id: "upload-st" });
     } catch (err: any) {
       toast.error(err.message || "Upload gagal", { id: "upload-st" });
@@ -281,7 +394,7 @@ export default function StoryboardToolsPage() {
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <Film className="h-6 w-6 text-violet-600" /> Storyboard Tools
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">Buat video slideshow dari gambar + audio dengan transisi premium</p>
+          <p className="text-slate-500 mt-1 text-sm">Buat video dari gambar + video klip + audio dengan transisi premium</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -348,7 +461,7 @@ export default function StoryboardToolsPage() {
             onRemove={handleRemoveSlide}
             onUpdate={handleUpdateSlide}
             onCrop={handleCropSlide}
-            onAddImages={handleImageUpload}
+            onAddMedia={handleMediaUpload}
             onAddAudio={handleAudioUpload}
             onRemoveAudio={handleRemoveAudio}
             onPreviewTransition={handlePreviewTransition}
@@ -388,8 +501,8 @@ export default function StoryboardToolsPage() {
         </div>
       </div>
 
-      {/* Crop Modal */}
-      {cropSlideIdx !== null && slides[cropSlideIdx] && (
+      {/* Crop Modal — only for image slides */}
+      {cropSlideIdx !== null && slides[cropSlideIdx] && slides[cropSlideIdx].mediaType !== "video" && (
         <ImageCropModal
           imageUrl={slides[cropSlideIdx].objectUrl}
           aspectRatio={aspectRatio}

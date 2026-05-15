@@ -44,6 +44,28 @@ const TRANSITIONS = [
   'wipeleft', 'wiperight', 'dissolve', 'pixelize', 'zoomin', 'none',
 ];
 
+// File extensions recognized as video
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
+
+/** Slide input for render pipeline */
+interface SlideInput {
+  imageId: string;
+  duration: number;
+  transition: string;
+  transitionDuration?: number;
+  subtitle?: string;
+  mediaType?: 'image' | 'video';
+}
+
+/** Internal slide after clamping and validation */
+interface ProcessedSlide extends SlideInput {
+  transition: string;
+  transitionDuration: number;
+  mediaType: 'image' | 'video';
+  /** Actual duration (for video: probed, for image: user-set) */
+  resolvedDuration: number;
+}
+
 @Injectable()
 export class StoryboardService {
   private readonly logger = new Logger(StoryboardService.name);
@@ -57,16 +79,11 @@ export class StoryboardService {
 
   /**
    * Render storyboard slides + audio into MP4 video using FFmpeg.
+   * Supports mixed image + video slide inputs.
    */
   async renderVideo(config: {
     sessionId: string;
-    slides: Array<{
-      imageId: string;
-      duration: number;
-      transition: string;
-      transitionDuration?: number;
-      subtitle?: string;
-    }>;
+    slides: SlideInput[];
     audioId?: string;
     aspectRatio: '16:9' | '9:16' | '1:1';
     fps: number;
@@ -120,18 +137,42 @@ export class StoryboardService {
   }
 
   /**
+   * Detect media type from file extension.
+   */
+  private detectMediaType(filename: string): 'image' | 'video' {
+    const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+    return VIDEO_EXTENSIONS.includes(ext) ? 'video' : 'image';
+  }
+
+  /**
+   * Probe video duration using ffprobe.
+   * Returns duration in seconds. Falls back to 5s if probe fails.
+   */
+  private async probeVideoDuration(filePath: string): Promise<number> {
+    try {
+      const { stdout } = await execFileAsync('ffprobe', [
+        '-v', 'error',
+        '-show_entries', 'format=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        filePath,
+      ], { timeout: 15000 });
+      const dur = parseFloat(stdout.trim());
+      if (isNaN(dur) || dur <= 0) return 5;
+      return dur;
+    } catch (err) {
+      this.logger.warn(`⚠️ ffprobe failed for ${filePath}: ${err.message}, using fallback 5s`);
+      return 5;
+    }
+  }
+
+  /**
    * Execute FFmpeg render process.
+   * Handles mixed image + video slide inputs.
    */
   private async executeRender(
     sessionDir: string,
     sessionId: string,
-    slides: Array<{
-      imageId: string;
-      duration: number;
-      transition: string;
-      transitionDuration?: number;
-      subtitle?: string;
-    }>,
+    slides: SlideInput[],
     audioId: string | undefined,
     aspectRatio: '16:9' | '9:16' | '1:1',
     fps: number,
@@ -150,29 +191,49 @@ export class StoryboardService {
       // Determine dimensions
       const dimensions = this.getDimensions(aspectRatio);
 
-      // Validate all slide images exist
+      // Validate all slide files exist and detect media types
       for (const slide of slides) {
-        const imgPath = join(sessionDir, slide.imageId);
-        if (!existsSync(imgPath)) {
-          throw new Error(`Gambar ${slide.imageId} tidak ditemukan di session`);
+        const filePath = join(sessionDir, slide.imageId);
+        if (!existsSync(filePath)) {
+          throw new Error(`File ${slide.imageId} tidak ditemukan di session`);
         }
       }
 
-      // Clamp durations
-      const clampedSlides = slides.map(s => ({
-        ...s,
-        duration: Math.max(1, Math.min(30, s.duration)),
-        transition: TRANSITIONS.includes(s.transition) ? s.transition : 'fade',
-        transitionDuration: Math.max(0.3, Math.min(2, s.transitionDuration || 0.8)),
-      }));
+      this.updateProgress(sessionId, 5);
 
-      this.updateProgress(sessionId, 10);
+      // Process slides: clamp, detect types, probe video durations
+      const processedSlides: ProcessedSlide[] = [];
+      for (const s of slides) {
+        const filePath = join(sessionDir, s.imageId);
+        // Determine media type: prefer client-provided, fallback to extension detection
+        const mediaType = s.mediaType || this.detectMediaType(s.imageId);
+
+        let resolvedDuration: number;
+        if (mediaType === 'video') {
+          // Probe actual video duration
+          resolvedDuration = await this.probeVideoDuration(filePath);
+        } else {
+          // Image: clamp user-provided duration
+          resolvedDuration = Math.max(1, Math.min(30, s.duration));
+        }
+
+        processedSlides.push({
+          ...s,
+          duration: resolvedDuration,
+          transition: TRANSITIONS.includes(s.transition) ? s.transition : 'fade',
+          transitionDuration: Math.max(0.3, Math.min(2, s.transitionDuration || 0.8)),
+          mediaType,
+          resolvedDuration,
+        });
+      }
+
+      this.updateProgress(sessionId, 15);
 
       // Generate subtitle file (SRT) if enabled
       let srtPath: string | undefined;
       if (subtitleConfig?.enabled) {
         srtPath = join(sessionDir, 'subtitles.srt');
-        this.generateSrtFile(srtPath, clampedSlides);
+        this.generateSrtFile(srtPath, processedSlides);
       }
 
       this.updateProgress(sessionId, 20);
@@ -180,7 +241,7 @@ export class StoryboardService {
       // Build FFmpeg command
       const ffmpegArgs = this.buildFfmpegArgs(
         sessionDir,
-        clampedSlides,
+        processedSlides,
         audioId ? join(sessionDir, audioId) : undefined,
         outputPath,
         dimensions,
@@ -191,8 +252,12 @@ export class StoryboardService {
 
       this.updateProgress(sessionId, 30);
 
+      // Log media composition
+      const imgCount = processedSlides.filter(s => s.mediaType === 'image').length;
+      const vidCount = processedSlides.filter(s => s.mediaType === 'video').length;
+
       // Execute FFmpeg
-      this.logger.log(`🎬 FFmpeg render starting: ${clampedSlides.length} slides, ${aspectRatio}, ${fps}fps`);
+      this.logger.log(`🎬 FFmpeg render starting: ${processedSlides.length} slides (${imgCount} img, ${vidCount} vid), ${aspectRatio}, ${fps}fps`);
 
       await execFileAsync('ffmpeg', ffmpegArgs, {
         timeout: 900000, // 15 min timeout
@@ -219,17 +284,11 @@ export class StoryboardService {
   }
 
   /**
-   * Build FFmpeg arguments for multi-image slideshow with transitions.
+   * Build FFmpeg arguments for mixed image + video slideshow with transitions.
    */
   private buildFfmpegArgs(
     sessionDir: string,
-    slides: Array<{
-      imageId: string;
-      duration: number;
-      transition: string;
-      transitionDuration: number;
-      subtitle?: string;
-    }>,
+    slides: ProcessedSlide[],
     audioPath: string | undefined,
     outputPath: string,
     dimensions: { width: number; height: number },
@@ -247,9 +306,16 @@ export class StoryboardService {
     const { width, height } = dimensions;
     const args: string[] = [];
 
-    // Input images
+    // Input files — different args for images vs videos
     for (const slide of slides) {
-      args.push('-loop', '1', '-t', String(slide.duration), '-i', join(sessionDir, slide.imageId));
+      if (slide.mediaType === 'video') {
+        // Video input: no loop, use native duration
+        // -an to strip audio from video clips (global audio only)
+        args.push('-an', '-i', join(sessionDir, slide.imageId));
+      } else {
+        // Image input: loop for specified duration
+        args.push('-loop', '1', '-t', String(slide.resolvedDuration), '-i', join(sessionDir, slide.imageId));
+      }
     }
 
     // Input audio (if provided)
@@ -261,9 +327,15 @@ export class StoryboardService {
     const filterParts: string[] = [];
     const scaleFilter = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=${fps},format=yuv420p`;
 
-    // Scale each input
+    // Scale each input and trim video slides to their resolved duration
     for (let i = 0; i < slides.length; i++) {
-      filterParts.push(`[${i}:v]${scaleFilter}[v${i}]`);
+      if (slides[i].mediaType === 'video') {
+        // Video: scale + trim to resolved duration to ensure precise timeline
+        filterParts.push(`[${i}:v]${scaleFilter},trim=duration=${slides[i].resolvedDuration.toFixed(2)},setpts=PTS-STARTPTS[v${i}]`);
+      } else {
+        // Image: just scale (duration is set via -t input flag)
+        filterParts.push(`[${i}:v]${scaleFilter}[v${i}]`);
+      }
     }
 
     // Apply xfade transitions between consecutive slides
@@ -275,7 +347,7 @@ export class StoryboardService {
       let cumulativeOffset = 0;
 
       for (let i = 1; i < slides.length; i++) {
-        const prevDuration = slides[i - 1].duration;
+        const prevDuration = slides[i - 1].resolvedDuration;
         const transition = slides[i].transition;
         const transDur = slides[i].transitionDuration;
         const outLabel = i === slides.length - 1 ? 'vout' : `vt${i}`;
@@ -341,7 +413,7 @@ export class StoryboardService {
    */
   private generateSrtFile(
     srtPath: string,
-    slides: Array<{ duration: number; subtitle?: string; transitionDuration: number }>,
+    slides: Array<{ resolvedDuration: number; subtitle?: string; transitionDuration: number }>,
   ) {
     const srtLines: string[] = [];
     let currentTime = 0;
@@ -350,7 +422,7 @@ export class StoryboardService {
     for (const slide of slides) {
       if (slide.subtitle && slide.subtitle.trim()) {
         const startTime = this.formatSrtTime(currentTime);
-        const endTime = this.formatSrtTime(currentTime + slide.duration);
+        const endTime = this.formatSrtTime(currentTime + slide.resolvedDuration);
 
         srtLines.push(
           String(index),
@@ -361,7 +433,7 @@ export class StoryboardService {
         index++;
       }
       // Move time forward (account for transition overlap with next slide)
-      currentTime += slide.duration - (slide.transitionDuration || 0);
+      currentTime += slide.resolvedDuration - (slide.transitionDuration || 0);
     }
 
     writeFileSync(srtPath, srtLines.join('\n'), 'utf-8');

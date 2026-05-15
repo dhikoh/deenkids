@@ -1,9 +1,9 @@
 "use client";
 import {
   GripVertical, Trash2, Clock, Sparkles, Type, Crop, Plus, Image, Music,
-  ChevronDown, ChevronUp, ArrowUp, ArrowDown, Play,
+  ChevronDown, ChevronUp, ArrowUp, ArrowDown, Play, Film,
 } from "lucide-react";
-import { SlideItem, TRANSITIONS } from "./types";
+import { SlideItem, TRANSITIONS, ACCEPTED_MEDIA_TYPES } from "./types";
 import { useState, useRef } from "react";
 
 interface AudioInfo {
@@ -21,7 +21,7 @@ interface Props {
   onRemove: (i: number) => void;
   onUpdate: (i: number, patch: Partial<SlideItem>) => void;
   onCrop: (i: number) => void;
-  onAddImages: (files: FileList) => void;
+  onAddMedia: (files: FileList) => void;
   onAddAudio: (file: File) => void;
   onRemoveAudio: () => void;
   onPreviewTransition: (i: number) => void;
@@ -31,12 +31,12 @@ interface Props {
 export default function SlideTimeline({
   slides, activeSlide, isProcessing, audio,
   onSelect, onReorder, onRemove, onUpdate, onCrop,
-  onAddImages, onAddAudio, onRemoveAudio, onPreviewTransition, totalDuration,
+  onAddMedia, onAddAudio, onRemoveAudio, onPreviewTransition, totalDuration,
 }: Props) {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
   const [expandedSlide, setExpandedSlide] = useState<number | null>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragStart = (i: number) => setDragIdx(i);
@@ -47,9 +47,9 @@ export default function SlideTimeline({
     setDragOver(null);
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      onAddImages(e.target.files);
+      onAddMedia(e.target.files);
       e.target.value = "";
     }
   };
@@ -79,7 +79,7 @@ export default function SlideTimeline({
   return (
     <div>
       {/* Hidden file inputs */}
-      <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
+      <input ref={mediaInputRef} type="file" accept={ACCEPTED_MEDIA_TYPES} multiple className="hidden" onChange={handleMediaSelect} />
       <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioSelect} />
 
       {/* Header */}
@@ -90,7 +90,7 @@ export default function SlideTimeline({
         </h3>
         {slides.length > 0 && (
           <button
-            onClick={() => imageInputRef.current?.click()}
+            onClick={() => mediaInputRef.current?.click()}
             disabled={isProcessing}
             className="flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700 transition-all disabled:opacity-50"
           >
@@ -102,7 +102,7 @@ export default function SlideTimeline({
       {/* Empty state */}
       {slides.length === 0 ? (
         <button
-          onClick={() => imageInputRef.current?.click()}
+          onClick={() => mediaInputRef.current?.click()}
           disabled={isProcessing}
           className="w-full py-10 border-2 border-dashed border-violet-300 rounded-xl bg-gradient-to-b from-violet-50 to-purple-50 hover:from-violet-100 hover:to-purple-100 transition-all group disabled:opacity-50"
         >
@@ -110,8 +110,8 @@ export default function SlideTimeline({
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-200 to-purple-200 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform shadow-lg shadow-violet-100">
               <Image size={24} className="text-violet-600" />
             </div>
-            <p className="text-sm font-bold text-violet-700">Upload Gambar</p>
-            <p className="text-[11px] text-violet-400 mt-1">JPG, PNG, WebP — bisa multiple</p>
+            <p className="text-sm font-bold text-violet-700">Upload Gambar / Video</p>
+            <p className="text-[11px] text-violet-400 mt-1">JPG, PNG, WebP, MP4, WebM — bisa multiple</p>
           </div>
         </button>
       ) : (
@@ -122,6 +122,7 @@ export default function SlideTimeline({
             const isFirst = i === 0;
             const isLast = i === slides.length - 1;
             const transitionLabel = TRANSITIONS.find(t => t.id === slide.transition)?.name || slide.transition;
+            const isVideo = slide.mediaType === 'video';
 
             return (
               <div
@@ -168,8 +169,14 @@ export default function SlideTimeline({
                   </div>
 
                   {/* Thumbnail */}
-                  <div className="w-12 h-9 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
-                    <img src={slide.objectUrl} alt="" className="w-full h-full object-cover" />
+                  <div className="w-12 h-9 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200 relative">
+                    <img src={isVideo ? (slide.videoThumbnailUrl || slide.objectUrl) : slide.objectUrl} alt="" className="w-full h-full object-cover" />
+                    {/* Video badge overlay */}
+                    {isVideo && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <Film size={14} className="text-white drop-shadow" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Info */}
@@ -178,7 +185,12 @@ export default function SlideTimeline({
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isActive ? "bg-violet-200 text-violet-700" : "bg-slate-100 text-slate-500"}`}>
                         {i + 1}
                       </span>
-                      <span className="text-[10px] text-slate-500 font-medium">{slide.duration}s</span>
+                      {isVideo && (
+                        <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-600">
+                          🎬 Video
+                        </span>
+                      )}
+                      <span className="text-[10px] text-slate-500 font-medium">{slide.duration.toFixed(1)}s</span>
                       <span className="text-[10px] text-slate-400">·</span>
                       <span className="text-[10px] text-slate-400 capitalize">{transitionLabel}</span>
                     </div>
@@ -189,13 +201,16 @@ export default function SlideTimeline({
 
                   {/* Actions */}
                   <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onCrop(i); }}
-                      className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-violet-100 text-slate-400 hover:text-violet-600 transition-all"
-                      title="Crop"
-                    >
-                      <Crop size={12} />
-                    </button>
+                    {/* Crop button — only for images */}
+                    {!isVideo && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onCrop(i); }}
+                        className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-violet-100 text-slate-400 hover:text-violet-600 transition-all"
+                        title="Crop"
+                      >
+                        <Crop size={12} />
+                      </button>
+                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); onRemove(i); }}
                       className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-rose-100 text-slate-400 hover:text-rose-500 transition-all"
@@ -216,17 +231,26 @@ export default function SlideTimeline({
                 {/* Expanded details */}
                 {isExpanded && (
                   <div className="px-3 pb-3 pt-1 border-t border-slate-100 space-y-2 animate-in slide-in-from-top-1 duration-150">
-                    {/* Duration */}
+                    {/* Duration — slider for images, read-only label for videos */}
                     <div className="flex items-center gap-2">
                       <Clock size={11} className="text-slate-400 flex-shrink-0" />
-                      <input
-                        type="range" min={1} max={30} step={0.5}
-                        value={slide.duration}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => { e.stopPropagation(); onUpdate(i, { duration: parseFloat(e.target.value) }); }}
-                        className="flex-1 h-1 accent-violet-500"
-                      />
-                      <span className="text-[10px] font-bold text-violet-600 w-7 text-right">{slide.duration}s</span>
+                      {isVideo ? (
+                        <>
+                          <p className="flex-1 text-[10px] text-slate-500">Durasi asli video (tidak bisa diubah)</p>
+                          <span className="text-[10px] font-bold text-blue-600 w-7 text-right">{slide.duration.toFixed(1)}s</span>
+                        </>
+                      ) : (
+                        <>
+                          <input
+                            type="range" min={1} max={30} step={0.5}
+                            value={slide.duration}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => { e.stopPropagation(); onUpdate(i, { duration: parseFloat(e.target.value) }); }}
+                            className="flex-1 h-1 accent-violet-500"
+                          />
+                          <span className="text-[10px] font-bold text-violet-600 w-7 text-right">{slide.duration}s</span>
+                        </>
+                      )}
                     </div>
                     {/* Transition + Preview button */}
                     <div className="flex items-center gap-2">
@@ -271,7 +295,7 @@ export default function SlideTimeline({
 
           {/* Add button (bottom) */}
           <button
-            onClick={() => imageInputRef.current?.click()}
+            onClick={() => mediaInputRef.current?.click()}
             disabled={isProcessing}
             className="w-full py-2.5 border border-dashed border-slate-300 rounded-xl bg-slate-50/50 hover:border-violet-400 hover:bg-violet-50 transition-all group flex items-center justify-center gap-1.5 disabled:opacity-50"
           >

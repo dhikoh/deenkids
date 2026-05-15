@@ -271,6 +271,40 @@ export default function StoryboardPreview({
   const currentSlide = slides[currentSlideIdx];
   const nextSlide = isTransitioning && currentSlideIdx + 1 < slides.length ? slides[currentSlideIdx + 1] : null;
   const transition = currentSlide?.transition || "fade";
+
+  /** Render slide media element (img or video) */
+  const renderSlideMedia = (
+    slide: SlideItem,
+    alt: string,
+    className: string,
+    style: React.CSSProperties,
+    key: string,
+  ) => {
+    if (slide.mediaType === 'video') {
+      return (
+        <video
+          key={key}
+          src={slide.objectUrl}
+          poster={slide.videoThumbnailUrl || undefined}
+          className={className}
+          style={style}
+          muted
+          playsInline
+          autoPlay={playing || previewingTransition}
+          loop={false}
+        />
+      );
+    }
+    return (
+      <img
+        key={key}
+        src={slide.objectUrl}
+        alt={alt}
+        className={className}
+        style={style}
+      />
+    );
+  };
   const progressPct = (currentTime / totalDuration) * 100;
 
   return (
@@ -286,20 +320,20 @@ export default function StoryboardPreview({
         {slides.length > 0 && currentSlide ? (
           <>
             {/* Primary slide */}
-            <img
-              src={currentSlide.objectUrl}
-              alt={`Slide ${currentSlideIdx + 1}`}
-              className="absolute inset-0 w-full h-full object-cover"
-              style={isTransitioning ? getTransitionStyle(transition, transitionProgress, true) : { opacity: 1 }}
-            />
+            {renderSlideMedia(
+              currentSlide,
+              `Slide ${currentSlideIdx + 1}`,
+              "absolute inset-0 w-full h-full object-cover",
+              isTransitioning ? getTransitionStyle(transition, transitionProgress, true) : { opacity: 1 },
+              `primary-${currentSlideIdx}`,
+            )}
             {/* Secondary slide (transition) */}
-            {isTransitioning && nextSlide && (
-              <img
-                src={nextSlide.objectUrl}
-                alt={`Slide ${currentSlideIdx + 2}`}
-                className="absolute inset-0 w-full h-full object-cover"
-                style={getTransitionStyle(transition, transitionProgress, false)}
-              />
+            {isTransitioning && nextSlide && renderSlideMedia(
+              nextSlide,
+              `Slide ${currentSlideIdx + 2}`,
+              "absolute inset-0 w-full h-full object-cover",
+              getTransitionStyle(transition, transitionProgress, false),
+              `secondary-${currentSlideIdx + 1}`,
             )}
             {/* Subtitle */}
             {subtitleConfig.enabled && currentSlide.subtitle && (
@@ -345,7 +379,7 @@ export default function StoryboardPreview({
               <Play size={32} className="text-slate-600 ml-1" />
             </div>
             <p className="text-sm font-bold text-slate-400">Belum ada slide</p>
-            <p className="text-xs text-slate-600 mt-1">Tambahkan gambar di panel Timeline</p>
+            <p className="text-xs text-slate-600 mt-1">Tambahkan gambar atau video di panel Timeline</p>
           </div>
         )}
       </div>

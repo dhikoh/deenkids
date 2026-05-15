@@ -26,6 +26,12 @@ import { randomUUID } from 'crypto';
 
 const Roles = (...roles: string[]) => SetMetadata('roles', roles);
 
+// MIME type constants
+const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const VIDEO_MIMES = ['video/mp4', 'video/webm'];
+const AUDIO_MIMES = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac'];
+const ALLOWED_MIMES = [...IMAGE_MIMES, ...VIDEO_MIMES, ...AUDIO_MIMES];
+
 // Multer config: save uploads to a unique temp directory per session
 const storyboardStorage = diskStorage({
   destination: (req: any, _file, cb) => {
@@ -55,20 +61,16 @@ export class StoryboardController {
   constructor(private readonly storyboardService: StoryboardService) {}
 
   /**
-   * Upload images + audio for storyboard editing.
-   * Accepts up to 51 files (50 images + 1 audio).
+   * Upload images, videos, and audio for storyboard editing.
+   * Accepts up to 55 files (50 images/videos + 1 audio + buffer).
    */
   @Post('upload')
   @UseInterceptors(
-    FilesInterceptor('files', 51, {
+    FilesInterceptor('files', 55, {
       storage: storyboardStorage,
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB per file
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB per file (video can be large)
       fileFilter: (_req, file, cb) => {
-        const allowedMimes = [
-          'image/jpeg', 'image/png', 'image/webp', 'image/gif',
-          'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac',
-        ];
-        if (allowedMimes.includes(file.mimetype)) {
+        if (ALLOWED_MIMES.includes(file.mimetype)) {
           cb(null, true);
         } else {
           cb(new BadRequestException(`File type ${file.mimetype} tidak diizinkan`), false);
@@ -88,33 +90,47 @@ export class StoryboardController {
     const sessionDir = req._storyboardDir;
 
     const images: any[] = [];
+    const videos: any[] = [];
     let audio: any = null;
 
     for (const file of files) {
-      if (file.mimetype.startsWith('audio/')) {
+      if (AUDIO_MIMES.includes(file.mimetype)) {
         audio = {
           id: file.filename,
           filename: file.originalname,
           path: file.path,
           size: file.size,
         };
+      } else if (VIDEO_MIMES.includes(file.mimetype)) {
+        videos.push({
+          id: file.filename,
+          filename: file.originalname,
+          path: file.path,
+          size: file.size,
+          mediaType: 'video' as const,
+          order: images.length + videos.length,
+        });
       } else {
         images.push({
           id: file.filename,
           filename: file.originalname,
           path: file.path,
           size: file.size,
-          order: images.length,
+          mediaType: 'image' as const,
+          order: images.length + videos.length,
         });
       }
     }
 
-    this.logger.log(`📤 Storyboard upload: ${images.length} images, ${audio ? '1 audio' : 'no audio'} (session: ${sessionId})`);
+    this.logger.log(
+      `📤 Storyboard upload: ${images.length} images, ${videos.length} videos, ${audio ? '1 audio' : 'no audio'} (session: ${sessionId})`,
+    );
 
     return {
       sessionId,
       sessionDir,
       images,
+      videos,
       audio,
       expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours
     };
@@ -122,6 +138,7 @@ export class StoryboardController {
 
   /**
    * Render storyboard to MP4 using FFmpeg.
+   * Supports mixed image + video slides.
    */
   @Post('render')
   async renderVideo(
@@ -133,6 +150,7 @@ export class StoryboardController {
         transition: string;
         transitionDuration?: number;
         subtitle?: string;
+        mediaType?: 'image' | 'video';
       }>;
       audioId?: string;
       aspectRatio: '16:9' | '9:16' | '1:1';
@@ -161,7 +179,18 @@ export class StoryboardController {
       throw new BadRequestException('Aspek rasio tidak valid');
     }
 
-    this.logger.log(`🎬 Render request: ${body.slides.length} slides, ${body.aspectRatio}, ${fps}fps (session: ${body.sessionId})`);
+    const mediaTypes = body.slides.reduce(
+      (acc, s) => {
+        if (s.mediaType === 'video') acc.video++;
+        else acc.image++;
+        return acc;
+      },
+      { image: 0, video: 0 },
+    );
+
+    this.logger.log(
+      `🎬 Render request: ${body.slides.length} slides (${mediaTypes.image} img, ${mediaTypes.video} vid), ${body.aspectRatio}, ${fps}fps (session: ${body.sessionId})`,
+    );
 
     const result = await this.storyboardService.renderVideo({
       sessionId: body.sessionId,

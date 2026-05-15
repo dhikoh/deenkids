@@ -1094,7 +1094,7 @@ export async function uploadStoryboardAssets(token: string, files: File[], sessi
 
 export async function renderStoryboard(token: string, data: {
   sessionId: string;
-  slides: Array<{ imageId: string; duration: number; transition: string; transitionDuration?: number; subtitle?: string }>;
+  slides: Array<{ imageId: string; duration: number; transition: string; transitionDuration?: number; subtitle?: string; mediaType?: 'image' | 'video' }>;
   audioId?: string;
   aspectRatio: '16:9' | '9:16' | '1:1';
   fps: number;
