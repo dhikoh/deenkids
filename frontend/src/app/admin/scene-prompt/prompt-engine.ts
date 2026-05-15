@@ -276,12 +276,16 @@ export function generateImagePrompt(
   // ═══ 1. ADABLY ISLAMIC SAFETY HEADER ═══
   parts.push('Islamic children education illustration for Adably platform.');
 
-  // ═══ 2. SCENE INTERPRETATION (core visual description) ═══
-  // This INTERPRETS the narration — does NOT pass through raw text
-  const visualScene = interpretNarrationToVisual(scene.narration, scene.contentType);
-  parts.push(visualScene);
+  // ═══ 2. SCENE CONTEXT (the actual paragraph topic) ═══
+  // This tells the AI WHAT the scene is about — the specific topic/subject
+  parts.push(`SCENE CONTEXT — this illustration is about: "${scene.narration.trim()}"`);
 
-  // ═══ 3. CHARACTER DESCRIPTIONS (consistency across scenes) ═══
+  // ═══ 3. VISUAL INTERPRETATION (HOW to draw it) ═══
+  // This interprets the narration into safe visual direction
+  const visualScene = interpretNarrationToVisual(scene.narration, scene.contentType);
+  parts.push(`VISUAL DIRECTION: ${visualScene}`);
+
+  // ═══ 4. CHARACTER DESCRIPTIONS (consistency across scenes) ═══
   const involvedChars = characters.filter(c => scene.characterIds.includes(c.id));
   if (involvedChars.length > 0) {
     const charDesc = involvedChars
@@ -290,26 +294,26 @@ export function generateImagePrompt(
     parts.push(charDesc);
   }
 
-  // ═══ 4. LOCATION ═══
+  // ═══ 5. LOCATION ═══
   const loc = LOCATION_PRESETS.find(l => l.id === scene.location);
   if (loc) parts.push(loc.prompt);
 
-  // ═══ 5. CAMERA ANGLE ═══
+  // ═══ 6. CAMERA ANGLE ═══
   const cam = CAMERA_PRESETS.find(c => c.id === scene.camera);
   if (cam) parts.push(cam.prompt);
 
-  // ═══ 6. MOOD ═══
+  // ═══ 7. MOOD ═══
   const mood = MOOD_PRESETS.find(m => m.id === scene.mood);
   if (mood) parts.push(mood.prompt);
 
-  // ═══ 7. TIME OF DAY ═══
+  // ═══ 8. TIME OF DAY ═══
   const time = TIME_PRESETS.find(t => t.id === scene.timeOfDay);
   if (time) parts.push(time.prompt);
 
-  // ═══ 8. VISUAL STYLE ═══
+  // ═══ 9. VISUAL STYLE ═══
   parts.push(`Art style: ${style.artStyle}. ${style.rendering}. ${style.colorMood}.`);
 
-  // ═══ 9. ASPECT RATIO ═══
+  // ═══ 10. ASPECT RATIO ═══
   const arMap: Record<string, string> = {
     '16:9': 'Horizontal landscape composition --ar 16:9',
     '9:16': 'Vertical portrait composition --ar 9:16',
@@ -317,16 +321,16 @@ export function generateImagePrompt(
   };
   parts.push(arMap[aspectRatio] || arMap['16:9']);
 
-  // ═══ 10. CONTINUITY (multi-scene) ═══
+  // ═══ 11. CONTINUITY (multi-scene) ═══
   if (totalScenes > 1 && sceneIndex > 0) {
-    parts.push('CONTINUITY: Maintain exact same characters, same art style, same color palette, and same visual consistency as previous scenes.');
+    parts.push(`CONTINUITY: This is scene ${sceneIndex + 1} of ${totalScenes}. Maintain exact same characters, same art style, same color palette, and same visual consistency as previous scenes.`);
   }
 
-  // ═══ 11. FACELESS ENFORCEMENT (always last — highest priority) ═══
+  // ═══ 12. FACELESS ENFORCEMENT (always — highest priority) ═══
   parts.push(FACELESS_RULE_EN);
   parts.push(ISLAMIC_DRESS_RULE);
 
-  // ═══ 12. PROPHET/ALLAH SAFETY ENFORCEMENT ═══
+  // ═══ 13. PROPHET/ALLAH SAFETY ENFORCEMENT ═══
   if (hasProphet) {
     parts.push('CRITICAL SAFETY: Prophets must be represented ONLY as luminous silhouettes surrounded by golden light (nur). STRICTLY FORBIDDEN: any facial features, body details, or realistic human form for any prophet. Only glowing white-robed outline.');
   }
@@ -334,7 +338,7 @@ export function generateImagePrompt(
     parts.push('CRITICAL SAFETY: Allah must NEVER be depicted in any form whatsoever. Show only the magnificence of His creation (nature, sky, light) or Islamic calligraphy/geometric art. Absolutely NO anthropomorphic representation.');
   }
 
-  // ═══ 13. QUALITY ═══
+  // ═══ 14. QUALITY ═══
   parts.push('Highly detailed, professional quality, child-friendly warm colors, no scary elements.');
 
   return parts.filter(Boolean).join('. ');
@@ -355,7 +359,10 @@ export function generateAnimationPrompt(
   const hasProphet = mentionsProphet(scene.narration);
   const hasAllah = mentionsAllah(scene.narration);
 
-  // 1. Primary motion description
+  // 1. Scene context — what this animation is about
+  parts.push(`Animate a scene about: "${scene.narration.trim()}"`);
+
+  // 2. Primary motion description
   if (motion) {
     parts.push(motion.prompt);
   }
