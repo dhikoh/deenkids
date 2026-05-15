@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image, AlertTriangle, Trash2, BookOpen, Share2, Upload, BarChart3, Headphones, Film } from "lucide-react";
+import { LayoutDashboard, PenLine, CheckCircle, Settings, Users, LogOut, ChevronLeft, FileText, FolderTree, Gift, Bell, MessageSquare, DollarSign, Trophy, Wallet, UserCircle, Menu, X, Database, Wand2, Image, AlertTriangle, Trash2, BookOpen, Share2, Upload, BarChart3, Headphones, Film, Clapperboard } from "lucide-react";
 import Cookies from "js-cookie";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -154,6 +154,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       { name: "Kelola Struktur Kisah", icon: <BookOpen size={20} />, href: "/admin/kisah-structure", show: isAdminOrSuper },
       { name: "Manajemen User", icon: <Users size={20} />, href: "/admin/users", show: isAdminOrSuper },
       { name: "Prompt Generator", icon: <Wand2 size={20} />, href: "/admin/prompt-generator", show: isAdminOrSuper },
+      { name: "Scene Prompt Studio", icon: <Clapperboard size={20} />, href: "/admin/scene-prompt", show: isAdminOrSuper },
       { name: "Import Konten AI", icon: <Upload size={20} />, href: "/admin/import-content", show: isSuperAdmin },
       { name: "Storyboard Tools", icon: <Film size={20} />, href: "/admin/storyboard-tools", show: isSuperAdmin },
     ]},
