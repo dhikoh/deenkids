@@ -271,7 +271,7 @@ export default function StoryboardToolsPage() {
     const token = Cookies.get("_at") || "";
 
     try {
-      // Phase 1: Upload
+      // Phase 1: Upload (progress bar 0–50%)
       setRenderState("uploading");
       setProgress(0);
       setErrorMsg("");
@@ -282,9 +282,16 @@ export default function StoryboardToolsPage() {
         allFiles.push(audio.file);
       }
 
-      const uploadResult = await uploadStoryboardAssets(token, allFiles, sessionId || undefined);
+      const uploadResult = await uploadStoryboardAssets(
+        token,
+        allFiles,
+        sessionId || undefined,
+        // Real-time upload progress: 0–50% of total progress bar
+        (uploadPercent) => setProgress(Math.round(uploadPercent * 0.5)),
+      );
       const sid = uploadResult.sessionId;
       setSessionId(sid);
+      setProgress(50); // Upload complete = 50%
 
       // Map uploaded file IDs back to slides
       // Server returns separate images[] and videos[] arrays — we need to match by order
@@ -309,9 +316,8 @@ export default function StoryboardToolsPage() {
         };
       });
 
-      // Phase 2: Render
+      // Phase 2: Render (progress bar 50–100%)
       setRenderState("rendering");
-      setProgress(10);
 
       await renderStoryboard(token, {
         sessionId: sid,
@@ -322,11 +328,14 @@ export default function StoryboardToolsPage() {
         subtitleConfig: subtitleConfig.enabled ? subtitleConfig : undefined,
       });
 
-      // Phase 3: Poll status
+      // Phase 3: Poll status — read FRESH token each cycle to survive token rotation
       pollRef.current = setInterval(async () => {
         try {
-          const status = await getStoryboardStatus(token, sid);
-          setProgress(status.progress || 0);
+          const freshToken = Cookies.get("_at") || token;
+          const status = await getStoryboardStatus(freshToken, sid);
+          // Map backend progress (0–100) to our progress bar (50–100)
+          const renderProgress = Math.round(50 + (status.progress || 0) * 0.5);
+          setProgress(Math.min(renderProgress, 99)); // cap at 99 until truly done
           if (status.status === "done") {
             clearInterval(pollRef.current!);
             pollRef.current = null;

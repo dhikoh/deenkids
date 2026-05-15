@@ -1,11 +1,11 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../common/storage/storage.service';
-import { execFile } from 'child_process';
+import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync, utimesSync } from 'fs';
 import { readFile } from 'fs/promises';
 
 const execFileAsync = promisify(execFile);
@@ -185,8 +185,16 @@ export class StoryboardService {
       bgStyle: 'semi-transparent' | 'none' | 'blur';
     },
   ) {
+    const lockFile = join(sessionDir, '.rendering');
     try {
       const outputPath = join(sessionDir, 'output.mp4');
+
+      // Create lock file to protect session from cron cleanup during render
+      writeFileSync(lockFile, new Date().toISOString());
+
+      // Touch session dir mtime to prevent premature cron cleanup
+      const now = new Date();
+      utimesSync(sessionDir, now, now);
 
       // Determine dimensions
       const dimensions = this.getDimensions(aspectRatio);
@@ -256,15 +264,59 @@ export class StoryboardService {
       const imgCount = processedSlides.filter(s => s.mediaType === 'image').length;
       const vidCount = processedSlides.filter(s => s.mediaType === 'video').length;
 
-      // Execute FFmpeg
-      this.logger.log(`🎬 FFmpeg render starting: ${processedSlides.length} slides (${imgCount} img, ${vidCount} vid), ${aspectRatio}, ${fps}fps`);
+      // Calculate total expected duration for progress tracking
+      const totalDuration = processedSlides.reduce((sum, s) => sum + s.resolvedDuration, 0);
 
-      await execFileAsync('ffmpeg', ffmpegArgs, {
-        timeout: 900000, // 15 min timeout
-        maxBuffer: 50 * 1024 * 1024, // 50MB buffer
+      // Execute FFmpeg via spawn for realtime progress tracking
+      this.logger.log(`🎬 FFmpeg render starting: ${processedSlides.length} slides (${imgCount} img, ${vidCount} vid), ${aspectRatio}, ${fps}fps, ~${totalDuration.toFixed(1)}s total`);
+
+      await new Promise<void>((resolve, reject) => {
+        const ffmpeg = spawn('ffmpeg', ffmpegArgs, {
+          stdio: ['pipe', 'pipe', 'pipe'],
+        });
+
+        // 15 min kill timer
+        const killTimer = setTimeout(() => {
+          ffmpeg.kill('SIGKILL');
+          reject(new Error('FFmpeg timeout (15 menit)'));
+        }, 900000);
+
+        let stderrBuffer = '';
+
+        // Parse FFmpeg stderr for progress (time=HH:MM:SS.ms)
+        ffmpeg.stderr?.on('data', (chunk: Buffer) => {
+          stderrBuffer += chunk.toString();
+          // Parse latest time= value from FFmpeg output
+          const timeMatch = stderrBuffer.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/g);
+          if (timeMatch && totalDuration > 0) {
+            const latest = timeMatch[timeMatch.length - 1];
+            const parts = latest.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+            if (parts) {
+              const secs = parseInt(parts[1]) * 3600 + parseInt(parts[2]) * 60 + parseInt(parts[3]) + parseInt(parts[4]) / 100;
+              // Map to 30–95% range (30% = prep done, 95% = encode done, 100% = verify done)
+              const pct = Math.min(95, Math.round(30 + (secs / totalDuration) * 65));
+              this.updateProgress(sessionId, pct);
+            }
+          }
+          // Keep buffer from growing indefinitely
+          if (stderrBuffer.length > 8192) {
+            stderrBuffer = stderrBuffer.slice(-4096);
+          }
+        });
+
+        ffmpeg.on('close', (code) => {
+          clearTimeout(killTimer);
+          if (code === 0) resolve();
+          else reject(new Error(`FFmpeg exit code ${code}`));
+        });
+
+        ffmpeg.on('error', (err) => {
+          clearTimeout(killTimer);
+          reject(err);
+        });
       });
 
-      this.updateProgress(sessionId, 90);
+      this.updateProgress(sessionId, 97);
 
       // Verify output exists
       if (!existsSync(outputPath)) {
@@ -280,6 +332,8 @@ export class StoryboardService {
       this.logger.log(`✅ Render complete: ${outputPath}`);
     } finally {
       this.isRendering = false;
+      // Remove lock file so cron can eventually clean up this session
+      try { if (existsSync(lockFile)) unlinkSync(lockFile); } catch {}
     }
   }
 

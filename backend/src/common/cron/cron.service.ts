@@ -397,8 +397,9 @@ export class CronService {
   async cleanupStoryboardTempFiles() {
     const os = require('os');
     const tmpDir = os.tmpdir();
-    const cutoff = Date.now() - 2 * 60 * 60 * 1000; // 2 hours ago
+    const cutoff = Date.now() - 6 * 60 * 60 * 1000; // 6 hours ago (extended from 2h for long editing sessions)
     let cleaned = 0;
+    let skipped = 0;
 
     try {
       const entries = fs.readdirSync(tmpDir).filter(f => f.startsWith('adably-storyboard-'));
@@ -406,6 +407,13 @@ export class CronService {
         const fullPath = join(tmpDir, entry);
         try {
           const stat = fs.statSync(fullPath);
+
+          // Skip if a .rendering lock file exists (session is actively rendering)
+          if (stat.isDirectory() && fs.existsSync(join(fullPath, '.rendering'))) {
+            skipped++;
+            continue;
+          }
+
           if (stat.mtimeMs < cutoff) {
             if (stat.isDirectory()) {
               fs.rmSync(fullPath, { recursive: true, force: true });
@@ -416,8 +424,8 @@ export class CronService {
           }
         } catch {}
       }
-      if (cleaned > 0) {
-        this.logger.log(`🎬 Cleaned up ${cleaned} storyboard temp dirs from ${tmpDir}`);
+      if (cleaned > 0 || skipped > 0) {
+        this.logger.log(`🎬 Storyboard cleanup: ${cleaned} removed, ${skipped} active sessions skipped`);
       }
     } catch (err) {
       this.logger.warn(`⚠️ Storyboard temp cleanup failed: ${err.message}`);

@@ -8,7 +8,7 @@ let refreshPromise: Promise<boolean> | null = null;
  * Attempt token refresh by sending _rt (JS-accessible refresh token) via POST body.
  * On success, updates both _at and _rt cookies for subsequent requests.
  */
-async function tryRefreshToken(): Promise<string | false> {
+export async function tryRefreshToken(): Promise<string | false> {
   // Deduplicate concurrent refresh calls
   if (isRefreshing && refreshPromise) return refreshPromise as any;
   isRefreshing = true;
@@ -1074,22 +1074,73 @@ export async function updatePodcastSettings(token: string, data: Record<string, 
 
 // ─── Storyboard Tools API ──────────────────────────────────────────
 
-export async function uploadStoryboardAssets(token: string, files: File[], sessionId?: string): Promise<any> {
+/**
+ * Upload storyboard assets with real-time progress tracking.
+ * Uses XMLHttpRequest instead of fetch() to enable upload progress events.
+ * Reads fresh token from cookie to avoid stale-token 401 during long uploads.
+ */
+export async function uploadStoryboardAssets(
+  _token: string,
+  files: File[],
+  sessionId?: string,
+  onProgress?: (percent: number) => void,
+): Promise<any> {
   const formData = new FormData();
   if (sessionId) formData.append('sessionId', sessionId);
   for (const file of files) {
     formData.append('files', file);
   }
-  const res = await fetch(`${API_BASE_URL}/storyboard/upload`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
+
+  // Read FRESH token from cookie (not the stale param which may have expired)
+  const Cookies = (await import('js-cookie')).default;
+  let freshToken = Cookies.get('_at') || _token;
+
+  return new Promise(async (resolve, reject) => {
+    const doUpload = (token: string) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE_URL}/storyboard/upload`);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+      // Track upload progress
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            onProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        });
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch { resolve({}); }
+        } else if (xhr.status === 401) {
+          // Token expired mid-upload — try silent refresh then retry ONCE
+          tryRefreshToken().then((newToken) => {
+            if (newToken) {
+              doUpload(newToken); // retry with refreshed token
+            } else {
+              reject(new Error('Sesi habis, silakan login kembali'));
+            }
+          });
+        } else {
+          try {
+            const err = JSON.parse(xhr.responseText);
+            reject(new Error(err.message || `Upload gagal (${xhr.status})`));
+          } catch {
+            reject(new Error(`Upload gagal (${xhr.status})`));
+          }
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Upload gagal — periksa koneksi internet'));
+      xhr.ontimeout = () => reject(new Error('Upload timeout — file terlalu besar atau koneksi lambat'));
+      xhr.timeout = 300000; // 5 min timeout for large files
+      xhr.send(formData);
+    };
+
+    doUpload(freshToken);
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Upload gagal (${res.status})`);
-  }
-  return res.json();
 }
 
 export async function renderStoryboard(token: string, data: {
@@ -1120,10 +1171,24 @@ export async function getStoryboardStatus(token: string, sessionId: string) {
   });
 }
 
-export async function downloadStoryboardVideo(token: string, sessionId: string): Promise<Blob> {
-  const res = await fetch(`${API_BASE_URL}/storyboard/download/${sessionId}`, {
+export async function downloadStoryboardVideo(_token: string, sessionId: string): Promise<Blob> {
+  const Cookies = (await import('js-cookie')).default;
+  let token = Cookies.get('_at') || _token;
+
+  let res = await fetch(`${API_BASE_URL}/storyboard/download/${sessionId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+
+  // Auto-retry on 401 with refreshed token
+  if (res.status === 401) {
+    const newToken = await tryRefreshToken();
+    if (newToken) {
+      res = await fetch(`${API_BASE_URL}/storyboard/download/${sessionId}`, {
+        headers: { Authorization: `Bearer ${newToken}` },
+      });
+    }
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `Download gagal (${res.status})`);
