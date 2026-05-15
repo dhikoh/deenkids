@@ -52,6 +52,9 @@ export default function StoryboardToolsPage() {
   // Crop state
   const [cropSlideIdx, setCropSlideIdx] = useState<number | null>(null);
 
+  // Transition preview state
+  const [previewTransitionIdx, setPreviewTransitionIdx] = useState<number | null>(null);
+
   // Cleanup poll on unmount
   useEffect(() => {
     return () => {
@@ -150,6 +153,17 @@ export default function StoryboardToolsPage() {
     ));
     setCropSlideIdx(null);
     toast.success("Crop diterapkan! Re-upload saat render.");
+  };
+
+  // ─── Transition Preview ───
+  const handlePreviewTransition = (slideIdx: number) => {
+    // Trigger a new preview (use a unique key to force re-trigger even for same index)
+    setPreviewTransitionIdx(null);
+    requestAnimationFrame(() => setPreviewTransitionIdx(slideIdx));
+  };
+
+  const handlePreviewTransitionDone = () => {
+    setPreviewTransitionIdx(null);
   };
 
   // ─── Render Pipeline ───
@@ -337,6 +351,7 @@ export default function StoryboardToolsPage() {
             onAddImages={handleImageUpload}
             onAddAudio={handleAudioUpload}
             onRemoveAudio={handleRemoveAudio}
+            onPreviewTransition={handlePreviewTransition}
             totalDuration={totalDuration}
           />
         </div>
@@ -350,6 +365,8 @@ export default function StoryboardToolsPage() {
             subtitleConfig={subtitleConfig}
             audio={audio}
             onSlideChange={setActiveSlide}
+            previewTransitionIdx={previewTransitionIdx}
+            onPreviewTransitionDone={handlePreviewTransitionDone}
           />
         </div>
 
@@ -376,6 +393,7 @@ export default function StoryboardToolsPage() {
         <ImageCropModal
           imageUrl={slides[cropSlideIdx].objectUrl}
           aspectRatio={aspectRatio}
+          originalMimeType={slides[cropSlideIdx].file.type}
           onCrop={handleCropApply}
           onClose={() => setCropSlideIdx(null)}
         />

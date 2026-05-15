@@ -1,10 +1,12 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Check, RotateCcw, ZoomIn, ZoomOut, Move } from "lucide-react";
+import { X, Check, RotateCcw, ZoomIn, ZoomOut, Move, AlertTriangle } from "lucide-react";
 
 interface Props {
   imageUrl: string;
   aspectRatio: string; // "16:9" | "9:16" | "1:1"
+  /** Original MIME type of the file (e.g. "image/jpeg", "image/png", "image/webp") */
+  originalMimeType?: string;
   onCrop: (croppedFile: File, croppedUrl: string) => void;
   onClose: () => void;
 }
@@ -15,7 +17,17 @@ function getAspectValue(ratio: string): number {
   return 1;
 }
 
-export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose }: Props) {
+/** Map MIME type to canvas-compatible format */
+function getExportFormat(mime?: string): { type: string; ext: string; quality: number } {
+  if (mime === "image/webp") return { type: "image/webp", ext: "webp", quality: 1.0 };
+  if (mime === "image/png") return { type: "image/png", ext: "png", quality: 1.0 }; // PNG ignores quality param
+  // Default: JPEG at maximum quality
+  return { type: "image/jpeg", ext: "jpg", quality: 1.0 };
+}
+
+const MAX_EXPORT_DIM = 3840; // Cap at 4K to prevent excessive file size
+
+export default function ImageCropModal({ imageUrl, aspectRatio, originalMimeType, onCrop, onClose }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,8 +38,10 @@ export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose 
   const [offsetY, setOffsetY] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [outputInfo, setOutputInfo] = useState("");
 
   const ar = getAspectValue(aspectRatio);
+  const exportFmt = getExportFormat(originalMimeType);
 
   // Crop area dimensions (fixed in the preview)
   const CROP_W = aspectRatio === "9:16" ? 270 : aspectRatio === "1:1" ? 400 : 480;
@@ -35,7 +49,7 @@ export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose 
 
   // Load image
   useEffect(() => {
-    const img = new Image();
+    const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
       imgRef.current = img;
@@ -50,6 +64,14 @@ export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose 
     };
     img.src = imageUrl;
   }, [imageUrl, CROP_W, CROP_H]);
+
+  // Compute output resolution info
+  useEffect(() => {
+    if (!imgLoaded || !imgRef.current) return;
+    const { outW, outH } = computeExportDimensions();
+    setOutputInfo(`${outW}×${outH}px (${exportFmt.ext.toUpperCase()})`);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imgLoaded, scale, offsetX, offsetY, CROP_W, CROP_H]);
 
   // Draw preview
   useEffect(() => {
@@ -153,11 +175,53 @@ export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose 
     else zoomOut();
   };
 
-  // Apply crop
+  /**
+   * Compute export dimensions at NATIVE resolution.
+   * Maps the preview crop area back to original image coordinates,
+   * then exports at native resolution (capped at 4K).
+   */
+  const computeExportDimensions = () => {
+    if (!imgRef.current) return { outW: 0, outH: 0, srcX: 0, srcY: 0, srcW: 0, srcH: 0 };
+    const img = imgRef.current;
+
+    // In the preview canvas, the image is drawn at:
+    //   x: offsetX, y: offsetY, width: img.width * scale, height: img.height * scale
+    // The crop area is the entire canvas (0,0 → CROP_W, CROP_H)
+    //
+    // To find the crop region in original image coordinates:
+    //   srcX = -offsetX / scale
+    //   srcY = -offsetY / scale
+    //   srcW = CROP_W / scale
+    //   srcH = CROP_H / scale
+
+    const srcX = -offsetX / scale;
+    const srcY = -offsetY / scale;
+    const srcW = CROP_W / scale;
+    const srcH = CROP_H / scale;
+
+    // Output at native crop resolution, capped at MAX_EXPORT_DIM
+    let outW = Math.round(srcW);
+    let outH = Math.round(srcH);
+
+    // Cap to prevent absurdly large exports
+    if (outW > MAX_EXPORT_DIM || outH > MAX_EXPORT_DIM) {
+      const downscale = MAX_EXPORT_DIM / Math.max(outW, outH);
+      outW = Math.round(outW * downscale);
+      outH = Math.round(outH * downscale);
+    }
+
+    // Ensure minimum size (at least 100px)
+    outW = Math.max(100, outW);
+    outH = Math.max(100, outH);
+
+    return { outW, outH, srcX, srcY, srcW, srcH };
+  };
+
+  // Apply crop — exports at NATIVE resolution, preserving original format
   const applyCrop = () => {
     if (!imgRef.current) return;
-    const outW = aspectRatio === "9:16" ? 1080 : aspectRatio === "1:1" ? 1080 : 1920;
-    const outH = Math.round(outW / ar);
+    const img = imgRef.current;
+    const { outW, outH, srcX, srcY, srcW, srcH } = computeExportDimensions();
 
     const exportCanvas = document.createElement("canvas");
     exportCanvas.width = outW;
@@ -165,26 +229,34 @@ export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose 
     const ctx = exportCanvas.getContext("2d");
     if (!ctx) return;
 
-    // Scale factor from preview to export
-    const exportScale = outW / CROP_W;
-    const img = imgRef.current;
+    // Use high-quality image smoothing
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
+    // Fill background (for any out-of-bounds areas)
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, outW, outH);
+
+    // Draw the crop region from the original image directly
+    // drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
     ctx.drawImage(
       img,
-      offsetX * exportScale,
-      offsetY * exportScale,
-      img.width * scale * exportScale,
-      img.height * scale * exportScale,
+      Math.max(0, srcX),      // source x (clamped)
+      Math.max(0, srcY),      // source y (clamped)
+      Math.min(srcW, img.naturalWidth - Math.max(0, srcX)),   // source width
+      Math.min(srcH, img.naturalHeight - Math.max(0, srcY)),  // source height
+      srcX < 0 ? (-srcX / srcW) * outW : 0,   // dest x offset for out-of-bounds
+      srcY < 0 ? (-srcY / srcH) * outH : 0,   // dest y offset for out-of-bounds
+      srcX < 0 ? outW * (1 + srcX / srcW) : outW,  // dest width
+      srcY < 0 ? outH * (1 + srcY / srcH) : outH,  // dest height
     );
 
     exportCanvas.toBlob((blob) => {
       if (!blob) return;
-      const file = new File([blob], `cropped-${Date.now()}.png`, { type: "image/png" });
+      const file = new File([blob], `cropped-${Date.now()}.${exportFmt.ext}`, { type: exportFmt.type });
       const url = URL.createObjectURL(blob);
       onCrop(file, url);
-    }, "image/png", 0.95);
+    }, exportFmt.type, exportFmt.quality);
   };
 
   return (
@@ -194,13 +266,18 @@ export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose 
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-gradient-to-r from-violet-50 to-purple-50">
           <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
             ✂️ Crop Gambar — {aspectRatio}
-            <span className="text-[10px] font-normal text-slate-400 ml-1">
-              Output: {aspectRatio === "9:16" ? "1080×1920" : aspectRatio === "1:1" ? "1080×1080" : "1920×1080"}px
-            </span>
           </h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all">
             <X size={18} />
           </button>
+        </div>
+
+        {/* Quality info banner */}
+        <div className="px-5 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
+          <span className="text-[10px] font-bold text-emerald-700">🔒 Kualitas Penuh</span>
+          <span className="text-[10px] text-emerald-600">
+            Export di resolusi asli • Format: {exportFmt.ext.toUpperCase()} • Quality: {exportFmt.quality === 1.0 ? "Lossless/Max" : `${exportFmt.quality * 100}%`}
+          </span>
         </div>
 
         {/* Canvas area */}
@@ -240,11 +317,6 @@ export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose 
               <span className="text-[10px] text-slate-400 flex items-center gap-1 ml-2">
                 <Move size={12} /> Drag untuk geser
               </span>
-              {imgRef.current && (
-                <span className="text-[10px] text-slate-400 ml-2 hidden sm:inline">
-                  Asli: {imgRef.current.naturalWidth}×{imgRef.current.naturalHeight}px
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-2">
               <button onClick={onClose} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition-all">
@@ -254,6 +326,15 @@ export default function ImageCropModal({ imageUrl, aspectRatio, onCrop, onClose 
                 <Check size={14} /> Terapkan Crop
               </button>
             </div>
+          </div>
+          {/* Resolution info */}
+          <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+            <span>
+              {imgRef.current && `Asli: ${imgRef.current.naturalWidth}×${imgRef.current.naturalHeight}px`}
+            </span>
+            <span className="font-bold text-violet-500">
+              Output: {outputInfo}
+            </span>
           </div>
         </div>
       </div>

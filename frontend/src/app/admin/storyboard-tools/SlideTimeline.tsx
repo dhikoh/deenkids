@@ -1,5 +1,8 @@
 "use client";
-import { GripVertical, Trash2, Clock, Sparkles, Type, Crop, Plus, Image, Music, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  GripVertical, Trash2, Clock, Sparkles, Type, Crop, Plus, Image, Music,
+  ChevronDown, ChevronUp, ArrowUp, ArrowDown, Play,
+} from "lucide-react";
 import { SlideItem, TRANSITIONS } from "./types";
 import { useState, useRef } from "react";
 
@@ -21,13 +24,14 @@ interface Props {
   onAddImages: (files: FileList) => void;
   onAddAudio: (file: File) => void;
   onRemoveAudio: () => void;
+  onPreviewTransition: (i: number) => void;
   totalDuration: number;
 }
 
 export default function SlideTimeline({
   slides, activeSlide, isProcessing, audio,
   onSelect, onReorder, onRemove, onUpdate, onCrop,
-  onAddImages, onAddAudio, onRemoveAudio, totalDuration,
+  onAddImages, onAddAudio, onRemoveAudio, onPreviewTransition, totalDuration,
 }: Props) {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
@@ -61,6 +65,15 @@ export default function SlideTimeline({
   const toggleExpand = (i: number, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpandedSlide(expandedSlide === i ? null : i);
+  };
+
+  const moveSlide = (i: number, dir: -1 | 1, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const target = i + dir;
+    if (target < 0 || target >= slides.length) return;
+    onReorder(i, target);
+    // Keep the moved slide selected
+    onSelect(target);
   };
 
   return (
@@ -106,6 +119,9 @@ export default function SlideTimeline({
           {slides.map((slide, i) => {
             const isExpanded = expandedSlide === i;
             const isActive = activeSlide === i;
+            const isFirst = i === 0;
+            const isLast = i === slides.length - 1;
+            const transitionLabel = TRANSITIONS.find(t => t.id === slide.transition)?.name || slide.transition;
 
             return (
               <div
@@ -126,9 +142,29 @@ export default function SlideTimeline({
               >
                 {/* Compact row */}
                 <div className="flex items-center gap-2 p-2">
-                  {/* Drag */}
-                  <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 flex-shrink-0">
-                    <GripVertical size={14} />
+                  {/* Reorder buttons (↑↓) */}
+                  <div className="flex flex-col gap-0 flex-shrink-0">
+                    <button
+                      onClick={(e) => moveSlide(i, -1, e)}
+                      disabled={isFirst || isProcessing}
+                      className="p-0.5 rounded hover:bg-violet-100 text-slate-300 hover:text-violet-600 transition-all disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-slate-300"
+                      title="Geser ke atas"
+                    >
+                      <ArrowUp size={11} />
+                    </button>
+                    <button
+                      onClick={(e) => moveSlide(i, 1, e)}
+                      disabled={isLast || isProcessing}
+                      className="p-0.5 rounded hover:bg-violet-100 text-slate-300 hover:text-violet-600 transition-all disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-slate-300"
+                      title="Geser ke bawah"
+                    >
+                      <ArrowDown size={11} />
+                    </button>
+                  </div>
+
+                  {/* Drag handle */}
+                  <div className="cursor-grab active:cursor-grabbing text-slate-200 hover:text-slate-400 flex-shrink-0 hidden sm:block" title="Drag untuk reorder">
+                    <GripVertical size={12} />
                   </div>
 
                   {/* Thumbnail */}
@@ -144,7 +180,7 @@ export default function SlideTimeline({
                       </span>
                       <span className="text-[10px] text-slate-500 font-medium">{slide.duration}s</span>
                       <span className="text-[10px] text-slate-400">·</span>
-                      <span className="text-[10px] text-slate-400 capitalize">{slide.transition}</span>
+                      <span className="text-[10px] text-slate-400 capitalize">{transitionLabel}</span>
                     </div>
                     {slide.subtitle && (
                       <p className="text-[10px] text-slate-400 truncate mt-0.5 max-w-[140px]">{slide.subtitle}</p>
@@ -192,7 +228,7 @@ export default function SlideTimeline({
                       />
                       <span className="text-[10px] font-bold text-violet-600 w-7 text-right">{slide.duration}s</span>
                     </div>
-                    {/* Transition */}
+                    {/* Transition + Preview button */}
                     <div className="flex items-center gap-2">
                       <Sparkles size={11} className="text-slate-400 flex-shrink-0" />
                       <select
@@ -203,6 +239,17 @@ export default function SlideTimeline({
                       >
                         {TRANSITIONS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                       </select>
+                      {/* Preview transition button */}
+                      {!isLast && slide.transition !== "none" && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onPreviewTransition(i); }}
+                          disabled={isProcessing}
+                          className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-violet-600 bg-violet-50 border border-violet-200 rounded-md hover:bg-violet-100 hover:border-violet-300 transition-all disabled:opacity-50"
+                          title="Preview transisi ke slide berikutnya"
+                        >
+                          <Play size={9} /> Lihat
+                        </button>
+                      )}
                     </div>
                     {/* Subtitle */}
                     <div className="flex items-center gap-2">

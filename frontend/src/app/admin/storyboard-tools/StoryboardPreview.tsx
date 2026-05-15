@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Maximize2 } from "lucide-react";
-import { SlideItem, SubtitleConfig } from "./types";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
+import { SlideItem, SubtitleConfig, TRANSITIONS } from "./types";
 
 interface AudioInfo {
   filename: string;
@@ -15,6 +15,9 @@ interface Props {
   subtitleConfig: SubtitleConfig;
   audio: AudioInfo | null;
   onSlideChange: (i: number) => void;
+  /** When set, auto-plays a transition preview from this slide to the next */
+  previewTransitionIdx: number | null;
+  onPreviewTransitionDone: () => void;
 }
 
 interface SlideTimecode {
@@ -26,6 +29,7 @@ interface SlideTimecode {
 
 export default function StoryboardPreview({
   slides, activeSlide, aspectRatio, subtitleConfig, audio, onSlideChange,
+  previewTransitionIdx, onPreviewTransitionDone,
 }: Props) {
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -35,6 +39,12 @@ export default function StoryboardPreview({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [hoveringTimeline, setHoveringTimeline] = useState(false);
   const [hoverTime, setHoverTime] = useState(0);
+
+  // Transition preview state
+  const [previewingTransition, setPreviewingTransition] = useState(false);
+  const [previewTransName, setPreviewTransName] = useState("");
+  const previewRafRef = useRef<number | null>(null);
+  const previewStartRef = useRef<number>(0);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -92,6 +102,10 @@ export default function StoryboardPreview({
 
   const togglePlay = () => {
     if (slides.length === 0) return;
+    // Stop any transition preview
+    if (previewingTransition) {
+      stopTransitionPreview();
+    }
     if (playing) {
       setPlaying(false);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -117,9 +131,97 @@ export default function StoryboardPreview({
     }
   }, [animate, playing]);
 
+  // ─── Transition Preview ───
+  const stopTransitionPreview = useCallback(() => {
+    if (previewRafRef.current) {
+      cancelAnimationFrame(previewRafRef.current);
+      previewRafRef.current = null;
+    }
+    setPreviewingTransition(false);
+    setPreviewTransName("");
+    setIsTransitioning(false);
+    setTransitionProgress(0);
+  }, []);
+
+  useEffect(() => {
+    if (previewTransitionIdx === null || previewTransitionIdx >= slides.length - 1) return;
+    if (playing) {
+      // Stop normal playback first
+      setPlaying(false);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (audioRef.current) audioRef.current.pause();
+    }
+
+    const slide = slides[previewTransitionIdx];
+    const nextSlide = slides[previewTransitionIdx + 1];
+    if (!slide || !nextSlide) return;
+
+    const transName = TRANSITIONS.find(t => t.id === slide.transition)?.name || slide.transition;
+    setPreviewTransName(transName);
+    setCurrentSlideIdx(previewTransitionIdx);
+    setPreviewingTransition(true);
+
+    // Phase 1: show current slide for 0.5s, then transition, then show next for 0.5s
+    const holdBefore = 500; // ms
+    const transDurMs = (slide.transitionDuration || 0.8) * 1000;
+    const holdAfter = 500; // ms
+    const totalMs = holdBefore + transDurMs + holdAfter;
+
+    previewStartRef.current = performance.now();
+
+    const animatePreview = () => {
+      const elapsed = performance.now() - previewStartRef.current;
+
+      if (elapsed >= totalMs) {
+        // Done
+        setIsTransitioning(false);
+        setTransitionProgress(0);
+        setCurrentSlideIdx(previewTransitionIdx + 1);
+        stopTransitionPreview();
+        onPreviewTransitionDone();
+        return;
+      }
+
+      if (elapsed < holdBefore) {
+        // Still holding on current slide
+        setIsTransitioning(false);
+        setTransitionProgress(0);
+        setCurrentSlideIdx(previewTransitionIdx);
+      } else if (elapsed < holdBefore + transDurMs) {
+        // In transition
+        const p = (elapsed - holdBefore) / transDurMs;
+        setIsTransitioning(true);
+        setTransitionProgress(Math.min(1, p));
+        setCurrentSlideIdx(previewTransitionIdx);
+      } else {
+        // Hold on next slide
+        setIsTransitioning(false);
+        setTransitionProgress(0);
+        setCurrentSlideIdx(previewTransitionIdx + 1);
+      }
+
+      previewRafRef.current = requestAnimationFrame(animatePreview);
+    };
+
+    previewRafRef.current = requestAnimationFrame(animatePreview);
+
+    return () => {
+      if (previewRafRef.current) cancelAnimationFrame(previewRafRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewTransitionIdx]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (previewRafRef.current) cancelAnimationFrame(previewRafRef.current);
+    };
+  }, []);
+
   // Click on timeline to seek
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!timelineRef.current) return;
+    if (previewingTransition) stopTransitionPreview();
     const rect = timelineRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const t = x * totalDuration;
@@ -143,6 +245,7 @@ export default function StoryboardPreview({
   };
 
   const skipTo = (dir: -1 | 1) => {
+    if (previewingTransition) stopTransitionPreview();
     const newIdx = Math.max(0, Math.min(slides.length - 1, currentSlideIdx + dir));
     const tc = timecodes[newIdx];
     if (tc) seekTo(tc.startTime);
@@ -167,7 +270,7 @@ export default function StoryboardPreview({
 
   const currentSlide = slides[currentSlideIdx];
   const nextSlide = isTransitioning && currentSlideIdx + 1 < slides.length ? slides[currentSlideIdx + 1] : null;
-  const transition = nextSlide?.transition || "fade";
+  const transition = currentSlide?.transition || "fade";
   const progressPct = (currentTime / totalDuration) * 100;
 
   return (
@@ -216,12 +319,18 @@ export default function StoryboardPreview({
             <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-lg z-10">
               {currentSlideIdx + 1} / {slides.length}
             </div>
+            {/* Transition name overlay (shown during transition preview and normal playback) */}
+            {isTransitioning && (
+              <div className="absolute top-3 left-3 bg-violet-600/80 backdrop-blur-sm text-white text-[11px] font-bold px-3 py-1 rounded-lg z-10 flex items-center gap-1.5 animate-pulse">
+                🎬 {previewingTransition ? previewTransName : (TRANSITIONS.find(t => t.id === transition)?.name || transition)}
+              </div>
+            )}
             {/* Click to play/pause overlay */}
             <button
               onClick={togglePlay}
               className="absolute inset-0 z-[5] cursor-pointer group"
             >
-              {!playing && (
+              {!playing && !previewingTransition && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                     <Play size={28} className="text-white ml-1" />
@@ -275,16 +384,20 @@ export default function StoryboardPreview({
             })}
 
             {/* Progress fill */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 left-0 h-1.5 bg-gradient-to-r from-violet-500 to-purple-400 rounded-full group-hover:h-2.5 transition-all"
-              style={{ width: `${progressPct}%` }}
-            />
+            {!previewingTransition && (
+              <div
+                className="absolute top-1/2 -translate-y-1/2 left-0 h-1.5 bg-gradient-to-r from-violet-500 to-purple-400 rounded-full group-hover:h-2.5 transition-all"
+                style={{ width: `${progressPct}%` }}
+              />
+            )}
 
             {/* Playhead */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg shadow-black/30 border-2 border-violet-400 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              style={{ left: `${progressPct}%` }}
-            />
+            {!previewingTransition && (
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg shadow-black/30 border-2 border-violet-400 -ml-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                style={{ left: `${progressPct}%` }}
+              />
+            )}
 
             {/* Hover tooltip */}
             {hoveringTimeline && (
