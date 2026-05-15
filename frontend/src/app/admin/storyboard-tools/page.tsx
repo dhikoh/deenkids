@@ -1,10 +1,10 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import {
   Film, Upload, Image, Music, Play, Download, Loader2, RefreshCw,
-  CheckCircle, AlertCircle, UploadCloud, Plus,
+  CheckCircle, AlertCircle, UploadCloud, Plus, Save, Trash2, FolderOpen,
 } from "lucide-react";
 import { SlideItem, AudioItem, SubtitleConfig, MediaType } from "./types";
 
@@ -25,6 +25,40 @@ import {
 } from "@/lib/api";
 
 type RenderState = "idle" | "uploading" | "rendering" | "done" | "error";
+
+// ─── Draft System (LocalStorage) ───
+const DRAFT_KEY = 'adably-storyboard-draft';
+
+interface StoryboardDraft {
+  slides: Array<{
+    id: string;
+    filename: string;
+    duration: number;
+    transition: string;
+    transitionDuration: number;
+    subtitle: string;
+    mediaType: MediaType;
+    videoDuration?: number;
+  }>;
+  audio: { filename: string; duration?: number } | null;
+  fps: number;
+  aspectRatio: string;
+  subtitleConfig: SubtitleConfig;
+  savedAt: string; // ISO timestamp
+}
+
+function saveDraft(draft: StoryboardDraft) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch {}
+}
+function loadDraft(): StoryboardDraft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch {}
+}
 
 /** Extract video duration and thumbnail from a video file */
 function extractVideoMeta(file: File): Promise<{ duration: number; thumbnailUrl: string }> {
@@ -98,12 +132,76 @@ export default function StoryboardToolsPage() {
   // Transition preview state
   const [previewTransitionIdx, setPreviewTransitionIdx] = useState<number | null>(null);
 
+  // Draft recovery state
+  const [pendingDraft, setPendingDraft] = useState<StoryboardDraft | null>(null);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+
   // Cleanup poll on unmount
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
+
+  // ─── Load draft on mount ───
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft && draft.slides.length > 0) {
+      setPendingDraft(draft);
+    }
+  }, []);
+
+  // ─── Auto-save draft on changes (debounced 1s) ───
+  const saveDraftDebounced = useCallback(() => {
+    if (slides.length === 0 && !audio) {
+      clearDraft();
+      setDraftSavedAt(null);
+      return;
+    }
+    const draft: StoryboardDraft = {
+      slides: slides.map(s => ({
+        id: s.id,
+        filename: s.filename,
+        duration: s.duration,
+        transition: s.transition,
+        transitionDuration: s.transitionDuration,
+        subtitle: s.subtitle,
+        mediaType: s.mediaType,
+        videoDuration: s.videoDuration,
+      })),
+      audio: audio ? { filename: audio.filename, duration: audio.duration } : null,
+      fps,
+      aspectRatio,
+      subtitleConfig,
+      savedAt: new Date().toISOString(),
+    };
+    saveDraft(draft);
+    setDraftSavedAt(draft.savedAt);
+  }, [slides, audio, fps, aspectRatio, subtitleConfig]);
+
+  useEffect(() => {
+    const timer = setTimeout(saveDraftDebounced, 1000);
+    return () => clearTimeout(timer);
+  }, [saveDraftDebounced]);
+
+  // ─── Restore draft metadata (files need re-attach) ───
+  const handleRestoreDraft = () => {
+    if (!pendingDraft) return;
+    // Restore render config
+    setFps(pendingDraft.fps);
+    setAspectRatio(pendingDraft.aspectRatio);
+    setSubtitleConfig(pendingDraft.subtitleConfig);
+    // Restore slide metadata as placeholder slides (no files yet)
+    // User needs to re-upload files — we show filename hints
+    setPendingDraft(null);
+    toast.success(`Draft dipulihkan! Upload ulang ${pendingDraft.slides.length} file media.`, { duration: 5000 });
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setPendingDraft(null);
+    toast("Draft dihapus", { icon: "🗑️" });
+  };
 
   // ─── Media Upload (images + videos) ───
   const handleMediaUpload = async (files: FileList) => {
@@ -341,6 +439,8 @@ export default function StoryboardToolsPage() {
             pollRef.current = null;
             setRenderState("done");
             setProgress(100);
+            clearDraft(); // Draft no longer needed after successful render
+            setDraftSavedAt(null);
             toast.success("🎬 Video selesai di-render!");
           } else if (status.status === "error") {
             clearInterval(pollRef.current!);
@@ -406,6 +506,11 @@ export default function StoryboardToolsPage() {
           <p className="text-slate-500 mt-1 text-sm">Buat video dari gambar + video klip + audio dengan transisi premium</p>
         </div>
         <div className="flex items-center gap-2">
+          {draftSavedAt && (
+            <span className="text-xs text-slate-400 flex items-center gap-1">
+              <Save size={12} /> Draft tersimpan {new Date(draftSavedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
           <button
             onClick={handleRender}
             disabled={isProcessing || slides.length === 0}
@@ -416,6 +521,30 @@ export default function StoryboardToolsPage() {
           </button>
         </div>
       </div>
+
+      {/* Draft recovery banner */}
+      {pendingDraft && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FolderOpen size={18} className="text-amber-600" />
+            <div>
+              <span className="text-sm font-bold text-amber-800">Draft ditemukan!</span>
+              <span className="text-xs text-amber-600 ml-2">
+                {pendingDraft.slides.length} slide · {pendingDraft.aspectRatio} · {pendingDraft.fps}fps
+                · disimpan {new Date(pendingDraft.savedAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleRestoreDraft} className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-all">
+              <RefreshCw size={12} /> Pulihkan Pengaturan
+            </button>
+            <button onClick={handleDiscardDraft} className="flex items-center gap-1 px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-300 transition-all">
+              <Trash2 size={12} /> Buang
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Progress bar */}
       {isProcessing && (
