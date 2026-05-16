@@ -32,6 +32,8 @@ export interface SceneItem {
   animationPrompt: string;
   /** Characters involved (references to CharacterCard IDs) */
   characterIds: string[];
+  /** If true, characters face away from camera (optional extra safety) */
+  backToCamera?: boolean;
 }
 
 /** Content type auto-detection or manual override */
@@ -154,7 +156,7 @@ export const COLOR_MOODS = [
 // ─── Scene Presets ─────────────────────────────────────────────
 
 export const CAMERA_PRESETS = [
-  { id: 'close-up', label: 'Close-up', desc: 'Wajah karakter', prompt: 'close-up shot focusing on character face and expression' },
+  { id: 'close-up', label: 'Close-up', desc: 'Detail tangan/badan', prompt: 'close-up shot focusing on character hands, upper body, and posture details' },
   { id: 'medium-shot', label: 'Medium Shot', desc: 'Setengah badan', prompt: 'medium shot showing character from waist up' },
   { id: 'wide-shot', label: 'Wide Shot', desc: 'Landscape', prompt: 'wide establishing shot showing full environment and characters' },
   { id: 'birds-eye', label: "Bird's Eye", desc: 'Dari atas', prompt: "bird's eye view looking down at the scene" },
@@ -181,6 +183,10 @@ export const LOCATION_PRESETS = [
   { id: 'kamar', label: 'Kamar Anak', prompt: "inside a child's cozy bedroom with toys, books, and soft lighting" },
   { id: 'taman', label: 'Taman/Playground', prompt: 'in a beautiful garden park with flowers, playground, and blue sky' },
   { id: 'gurun', label: 'Gurun/Padang Pasir', prompt: 'in a vast Arabian desert landscape with golden sand dunes and dramatic sky' },
+  { id: 'luar-angkasa', label: 'Luar Angkasa/Kosmik', prompt: 'in the vast cosmic expanse of outer space with nebulae, stars, planets, and divine ethereal light' },
+  { id: 'kota-kuno', label: 'Kota Kuno', prompt: 'in an ancient Middle Eastern city with mud-brick buildings, narrow streets, and traditional Islamic architecture' },
+  { id: 'medan-perang', label: 'Medan Perang', prompt: 'on an open battlefield landscape with dust clouds, distant hills, and dramatic sky' },
+  { id: 'pantai', label: 'Pantai/Laut', prompt: 'on a beautiful coastal setting with ocean waves, sandy beach, and vast horizon' },
 ];
 
 export const TIME_PRESETS = [

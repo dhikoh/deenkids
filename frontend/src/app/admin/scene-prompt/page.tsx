@@ -9,7 +9,7 @@ import {
   VISUAL_STYLE_PRESETS, ART_STYLES, RENDERINGS, COLOR_MOODS,
   SCENE_ASPECT_RATIOS, PLATFORM_TARGETS,
 } from "./types";
-import { detectContentType, splitIntoScenes, generateAllPrompts } from "./prompt-engine";
+import { detectContentType, splitIntoScenes, generateAllPrompts, detectSceneCategory, autoDetectPresets } from "./prompt-engine";
 import SceneInput from "./SceneInput";
 import PromptOutput from "./PromptOutput";
 
@@ -32,6 +32,7 @@ export default function ScenePromptStudioPage() {
   const [aspectRatio, setAspectRatio] = useState("16:9");
   const [platformId, setPlatformId] = useState("runway");
   const [showSettings, setShowSettings] = useState(false);
+  const [backToCamera, setBackToCamera] = useState(false);
 
   const isCustom = visualPresetId === "custom";
 
@@ -50,18 +51,21 @@ export default function ScenePromptStudioPage() {
 
     const newScenes: SceneItem[] = paragraphs.map((text, i) => {
       const contentType = detectContentType(text);
+      const category = detectSceneCategory(text);
+      const presets = autoDetectPresets(text, category);
       return {
         id: `scene-${Date.now()}-${i}`,
         narration: text,
         contentType,
-        camera: "medium-shot",
-        mood: "damai",
-        location: "rumah",
-        timeOfDay: "pagi",
+        camera: presets.camera,
+        mood: presets.mood,
+        location: presets.location,
+        timeOfDay: presets.timeOfDay,
         animationMotion: "ambient",
         imagePrompt: "",
         animationPrompt: "",
         characterIds: [],
+        backToCamera,
       };
     });
 
@@ -217,6 +221,16 @@ export default function ScenePromptStudioPage() {
                 Pecah Jadi Scene
               </button>
             </div>
+            {/* Back to Camera toggle */}
+            <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={backToCamera}
+                onChange={e => setBackToCamera(e.target.checked)}
+                className="w-4 h-4 accent-violet-600 rounded"
+              />
+              <span className="text-[11px] text-slate-600">🔒 Karakter membelakangi kamera <span className="text-slate-400">(opsional — keamanan ekstra)</span></span>
+            </label>
           </div>
 
           {/* Settings (collapsible) */}

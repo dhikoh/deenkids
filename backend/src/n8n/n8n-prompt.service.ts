@@ -21,7 +21,7 @@ export interface GenerateThumbPromptDto {
   title: string;
   ratio: '16:9' | '1:1' | '4:5';
   style?: string;
-  scenePreset?: 'KELUARGA' | 'NABI_SAHABAT' | 'KELOMPOK_ANAK' | 'TUNGGAL' | 'TANPA_MAKHLUK';
+  scenePreset?: 'KELUARGA' | 'NABI_SAHABAT' | 'KELOMPOK_ANAK' | 'TUNGGAL' | 'TANPA_MAKHLUK' | 'KOSMIK' | 'ALAM' | 'HISTORIS' | 'KOTA';
   category?: 'QNA' | 'KISAH' | 'PEMBELAJARAN' | 'ARTIKEL';
 }
 
@@ -83,10 +83,26 @@ export class N8nPromptService {
         charSpecId = `Seorang anak muslim ${faceless}, mengenakan pakaian islami.`;
         charSpecEn = `A single Muslim child, ${facelessEn}, wearing Islamic clothing.`;
         break;
+      case 'KOSMIK':
+        charSpecId = 'TANPA makhluk bernyawa. Fokus pada: alam semesta, planet, nebula, bintang, galaksi, cahaya ilahi dari kegelapan luar angkasa. Visual grandiose dan megah.';
+        charSpecEn = 'No living beings. Focus on: cosmic grandeur — planets forming, nebulae swirling, stars igniting, divine ethereal light piercing through vast darkness of space. Awe-inspiring scale.';
+        break;
+      case 'ALAM':
+        charSpecId = 'TANPA atau MINIMAL makhluk bernyawa. Fokus pada: pemandangan alam megah — gunung, laut, sungai, hujan, pelangi, hutan. Jika ada hewan, WAJIB tanpa detail wajah (faceless/siluet).';
+        charSpecEn = 'No or minimal living beings. Focus on: majestic natural landscapes — mountains, oceans, rivers, rain, rainbows, forests. If animals present, they must be FACELESS (no facial features) or shown as silhouettes.';
+        break;
+      case 'HISTORIS':
+        charSpecId = `Karakter dewasa islami (pedagang, prajurit, ulama, raja) — semua ${faceless}. Setting kota kuno Timur Tengah, gurun, atau medan perang. Jika ada hewan (unta, kuda), WAJIB tanpa detail wajah.`;
+        charSpecEn = `Adult Islamic characters (merchants, warriors, scholars, rulers) — all ${facelessEn}. Ancient Middle Eastern city, desert, or battlefield setting. Animals (camels, horses) must be FACELESS or shown as silhouettes.`;
+        break;
+      case 'KOTA':
+        charSpecId = `Kehidupan kota/komunitas muslim — pasar, jalan, masjid dari luar. Karakter campuran (dewasa dan anak), semua ${faceless}. Jika ada hewan, WAJIB tanpa detail wajah.`;
+        charSpecEn = `Muslim community life — marketplace, streets, mosque exterior. Mixed characters (adults and children), all ${facelessEn}. Animals must be FACELESS or silhouettes.`;
+        break;
       case 'KELUARGA':
       default:
-        charSpecId = `Keluarga muslim — ayah berjenggot (koko/jubah), ibu berhijab syar'i panjang. Semua ${faceless}.`;
-        charSpecEn = `Muslim family — father with beard (Islamic clothing), mother with long hijab. All ${facelessEn}.`;
+        charSpecId = `Keluarga muslim — ayah berjenggot (koko/jubah), ibu berhijab syar'i panjang. Semua ${faceless}. Jika ada hewan peliharaan, WAJIB tanpa detail wajah.`;
+        charSpecEn = `Muslim family — father with beard (Islamic clothing), mother with long hijab. All ${facelessEn}. Pet animals must be FACELESS or silhouettes.`;
         break;
     }
 
@@ -976,17 +992,34 @@ ATURAN WAJIB:
 PANDUAN VISUAL:
 - Gaya: Animasi 3D Pixar/Disney, ramah anak, warna-warni ceria
 - Karakter: FACELESS (tanpa fitur wajah) — sesuai aturan Islami
+- HEWAN: Jika ada hewan, WAJIB FACELESS (tanpa fitur wajah — tanpa mata/hidung/mulut) atau ditampilkan sebagai siluet. Ini berlaku untuk SEMUA hewan tanpa kecuali.
 - Pencahayaan: Warm lighting, golden hour
 - Setting: Sesuaikan dengan konteks naskah (rumah muslim, masjid, taman, sekolah)
-- DILARANG: Gambar makhluk hidup dengan wajah, konten menakutkan, elemen non-Islami
+- DILARANG: Gambar makhluk hidup dengan wajah/fitur wajah, konten menakutkan, elemen non-Islami
+
+PANDUAN VISUAL PER JENIS SCENE:
+- Scene KOSMIK (penciptaan alam, bumi, langit): Visual grandiose — planet terbentuk, nebula, cahaya ilahi dari kegelapan luar angkasa. TANPA manusia. Fokus pada kebesaran ciptaan.
+- Scene ALAM (hujan, gunung, laut, pemandangan): Landscape sinematik, fokus alam. Manusia boleh ada sebagai elemen kecil jika relevan. Hewan sebagai siluet.
+- Scene HISTORIS (perang, perjalanan, kafilah, istana): Setting kuno Arabian/Timur Tengah. Karakter dewasa (prajurit, pedagang, dll) boleh muncul. Semua FACELESS. Hewan (unta, kuda) FACELESS/siluet.
+- Scene IBADAH (sholat, haji, tilawah): Interior masjid atau Ka'bah. Atmosfer sakral, pencahayaan hangat.
+- Scene KELUARGA (rumah, belajar, bermain): Interior rumah Muslim modern. Karakter anak dan orang tua.
+- Scene DALIL/SACRED (Al-Quran, doa): Fokus pada objek sakral — Al-Quran di rehal, tasbih, lentera. TANPA manusia.
+- Scene NABI: Nabi HANYA sebagai SILUET BERCAHAYA — outline jubah putih bersinar dikelilingi nur emas. DILARANG KERAS: fitur wajah, detail tubuh.
+
+IMPORTAN: JANGAN paksa menambahkan anak ke scene yang tidak melibatkan anak. Jika naskah tentang penciptaan alam semesta, buat scene kosmik tanpa manusia. Jika tentang kafilah dagang, buat scene dewasa tanpa anak.
 
 KONSISTENSI KARAKTER:
-- Jika ada karakter (anak, ayah, ibu), gunakan DESKRIPSI VISUAL IDENTIK di setiap scene:
-  • Anak laki-laki: "anak laki-laki berpeci putih, baju koko hijau"
-  • Anak perempuan: "anak perempuan berhijab pink, gamis putih"
-  • Ayah: "ayah berjenggot, jubah putih, sorban"
-  • Ibu: "ibu berhijab syar'i biru tua, gamis coklat muda"
+- Jika ada karakter (anak, dewasa, atau campuran), gunakan DESKRIPSI VISUAL IDENTIK di setiap scene:
+  • Anak laki-laki: "anak laki-laki berpeci putih, baju koko hijau, FACELESS"
+  • Anak perempuan: "anak perempuan berhijab pink, gamis putih, FACELESS"
+  • Ayah: "ayah berjenggot, jubah putih, sorban, FACELESS"
+  • Ibu: "ibu berhijab syar'i biru tua, gamis coklat muda, FACELESS"
+  • Pedagang: "pedagang bersorban, jubah coklat, FACELESS"
+  • Prajurit: "prajurit berturbam, baju besi sederhana, FACELESS"
+  • Ulama: "ulama tua berjenggot putih, jubah putih panjang, FACELESS"
 - Gunakan deskripsi yang SAMA PERSIS di setiap scene agar konsisten
+- JANGAN paksa menambahkan anak jika naskah tidak menyebutkan anak
+- Hewan: Jika ada hewan (unta, kuda, kucing dll), WAJIB FACELESS atau siluet di SEMUA scene
 
 ══════════════════════════════════════════
 FORMAT OUTPUT — WAJIB DIIKUTI
@@ -1036,7 +1069,9 @@ PANDUAN DURASI:
 
 ⚠️ PENTING:
 - imagePrompt harus dalam Bahasa INGGRIS (untuk AI image generator)
-- imagePrompt WAJIB menyebut "3D Pixar style, warm lighting, faceless characters, child-friendly"
+- imagePrompt WAJIB menyebut "3D Pixar style, warm lighting, faceless characters, child-friendly" HANYA jika scene melibatkan karakter manusia
+- Untuk scene KOSMIK/ALAM tanpa manusia, JANGAN sebut "faceless characters" — fokus pada deskripsi visual alam/kosmik
+- Untuk scene dengan HEWAN, tambahkan "faceless animals (no facial features)" di imagePrompt
 - subtitle dalam Bahasa INDONESIA
 - Output HANYA JSON — tanpa markdown, tanpa penjelasan
 - Aspek rasio ${ratio} WAJIB disebut dalam setiap imagePrompt`;
