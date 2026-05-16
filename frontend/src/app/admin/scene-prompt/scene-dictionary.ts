@@ -157,3 +157,6 @@ export const EMOTION_ATMOSPHERE: { pattern: RegExp; mood: string; presetId: stri
 export const ANIMAL_PATTERNS = /\b(unta|kuda|domba|kambing|kucing|anjing|burung|elang|singa|ular|ikan|gajah|serigala|rubah|kelinci|ayam|lebah|semut|laba-laba|hewan|binatang)\b/i;
 
 export const ANIMAL_RULE_EN = 'ANIMALS: All animals must be FACELESS (smooth blank face area without eyes/nose/mouth), shown as silhouettes, or depicted as very small distant background elements. No realistic animal faces. This follows strict Islamic art guidelines.';
+
+// ─── Human Reference (pronouns + general human words) ──────────
+export const HUMAN_REFERENCE_PATTERNS = /\b(kita|kami|mereka|dia|ia|saya|aku|engkau|kalian|orang|manusia|umat|hamba|seseorang|teman-teman|teman)\b/i;

@@ -12,7 +12,7 @@ import {
 import {
   SceneCategory, SCENE_CATEGORY_PATTERNS, SUBJECT_VISUALS,
   CHARACTER_PATTERNS, ACTION_VISUALS, EMOTION_ATMOSPHERE,
-  ANIMAL_PATTERNS, ANIMAL_RULE_EN,
+  ANIMAL_PATTERNS, ANIMAL_RULE_EN, HUMAN_REFERENCE_PATTERNS,
 } from './scene-dictionary';
 
 // ═══════════════════════════════════════════════════════════════
@@ -61,11 +61,12 @@ export function splitIntoScenes(rawText: string): string[] {
 
 export function detectSceneCategory(text: string): SceneCategory {
   const hasCharacters = CHARACTER_PATTERNS.some(cp => cp.pattern.test(text));
+  const hasHumanRef = HUMAN_REFERENCE_PATTERNS.test(text);
 
   for (const entry of SCENE_CATEGORY_PATTERNS) {
     if (entry.patterns.some(p => p.test(text))) {
-      // If cosmic/nature/sacred but characters ARE mentioned → treat as character scene
-      if ((entry.cat === 'cosmic' || entry.cat === 'nature' || entry.cat === 'sacred') && hasCharacters) {
+      // If cosmic/nature/sacred but humans ARE referenced → treat as character scene
+      if ((entry.cat === 'cosmic' || entry.cat === 'nature' || entry.cat === 'sacred') && (hasCharacters || hasHumanRef)) {
         return 'character';
       }
       return entry.cat;
@@ -101,6 +102,7 @@ export function autoDetectPresets(text: string, category: SceneCategory): {
   }
 
   // Location refinement from text
+  if (/\bsurga|jannah\b/i.test(text)) location = 'surga';
   if (/\b(masjid|musholla)\b/i.test(text)) location = 'masjid';
   if (/\b(gurun|padang\s*pasir|sahara)\b/i.test(text)) location = 'gurun';
   if (/\b(laut|pantai|samudra)\b/i.test(text)) location = 'pantai';
@@ -236,8 +238,10 @@ export function generateImagePrompt(
   const hasAllah = /\ballah\b/i.test(scene.narration);
   const hasAnimal = ANIMAL_PATTERNS.test(scene.narration);
   const hasCharacters = CHARACTER_PATTERNS.some(cp => cp.pattern.test(scene.narration));
-  // Only skip living-being rules if truly no characters mentioned
-  const noLivingBeings = (category === 'cosmic' || category === 'sacred') && !hasCharacters;
+  const hasHumanRef = HUMAN_REFERENCE_PATTERNS.test(scene.narration);
+  // FACELESS is ALWAYS ON unless scene is 100% certain no living beings
+  const definitelyNoLivingBeings = (category === 'cosmic' || category === 'sacred' || category === 'nature')
+    && !hasCharacters && !hasHumanRef;
 
   // 1. Header
   parts.push('Islamic illustration for Adably educational platform.');
@@ -246,11 +250,11 @@ export function generateImagePrompt(
   const visualScene = buildVisualScene(scene.narration, category);
   parts.push(`VISUAL SCENE: ${visualScene}`);
 
-  // 2b. Original narration context — so AI fully understands the paragraph
-  parts.push(`SCENE CONTEXT (the illustration must depict this narrative): "${scene.narration.trim()}"`);
+  // 2b. Narrative context — instruct AI, do NOT render text on image
+  parts.push(`NARRATIVE CONTEXT: This illustration depicts the concept from an Islamic educational narration. The narration says: ${scene.narration.trim()}. DO NOT render any text, words, or letters on the image`);
 
   // 3. Character cards (consistency)
-  if (!noLivingBeings) {
+  if (!definitelyNoLivingBeings) {
     const involved = characters.filter(c => scene.characterIds.includes(c.id));
     if (involved.length > 0) {
       parts.push(involved.map(c => `Character "${c.name}": ${c.description}, FACELESS`).join('. '));
@@ -289,8 +293,8 @@ export function generateImagePrompt(
     parts.push(`CONTINUITY: Scene ${sceneIndex + 1} of ${totalScenes}. Maintain exact same characters, art style, and color palette.`);
   }
 
-  // 11. Safety rules
-  if (!noLivingBeings) {
+  // 11. Safety rules — FACELESS is ALWAYS ON unless definitively no living beings
+  if (!definitelyNoLivingBeings) {
     parts.push(FACELESS_RULE_EN);
     parts.push(ISLAMIC_DRESS_RULE);
     if (scene.backToCamera) parts.push(BACK_TO_CAMERA_RULE);
@@ -302,7 +306,7 @@ export function generateImagePrompt(
   // 12. Quality
   parts.push('Highly detailed, professional quality, child-friendly warm colors, no scary elements.');
 
-  return parts.filter(Boolean).join('. ');
+  return parts.filter(Boolean).map(p => p.replace(/\.+\s*$/, '')).join('. ') + '.';
 }
 
 // ═══════════════════════════════════════════════════════════════

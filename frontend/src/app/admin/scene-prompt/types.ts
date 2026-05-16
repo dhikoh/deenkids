@@ -187,6 +187,7 @@ export const LOCATION_PRESETS = [
   { id: 'kota-kuno', label: 'Kota Kuno', prompt: 'in an ancient Middle Eastern city with mud-brick buildings, narrow streets, and traditional Islamic architecture' },
   { id: 'medan-perang', label: 'Medan Perang', prompt: 'on an open battlefield landscape with dust clouds, distant hills, and dramatic sky' },
   { id: 'pantai', label: 'Pantai/Laut', prompt: 'on a beautiful coastal setting with ocean waves, sandy beach, and vast horizon' },
+  { id: 'surga', label: 'Surga/Jannah', prompt: 'in an ethereal paradise garden (Jannah) with crystal clear rivers, golden pavilions of light, impossibly beautiful flowers and fruits, divine warm radiant glow' },
 ];
 
 export const TIME_PRESETS = [
