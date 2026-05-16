@@ -60,11 +60,17 @@ export function splitIntoScenes(rawText: string): string[] {
 // ═══════════════════════════════════════════════════════════════
 
 export function detectSceneCategory(text: string): SceneCategory {
+  const hasCharacters = CHARACTER_PATTERNS.some(cp => cp.pattern.test(text));
+
   for (const entry of SCENE_CATEGORY_PATTERNS) {
-    if (entry.patterns.some(p => p.test(text))) return entry.cat;
+    if (entry.patterns.some(p => p.test(text))) {
+      // If cosmic/nature/sacred but characters ARE mentioned → treat as character scene
+      if ((entry.cat === 'cosmic' || entry.cat === 'nature' || entry.cat === 'sacred') && hasCharacters) {
+        return 'character';
+      }
+      return entry.cat;
+    }
   }
-  // Check if any character is mentioned → character scene
-  if (CHARACTER_PATTERNS.some(cp => cp.pattern.test(text))) return 'character';
   return 'character'; // default
 }
 
@@ -229,7 +235,9 @@ export function generateImagePrompt(
   const hasProphet = category === 'prophet';
   const hasAllah = /\ballah\b/i.test(scene.narration);
   const hasAnimal = ANIMAL_PATTERNS.test(scene.narration);
-  const noLivingBeings = category === 'cosmic' || category === 'sacred';
+  const hasCharacters = CHARACTER_PATTERNS.some(cp => cp.pattern.test(scene.narration));
+  // Only skip living-being rules if truly no characters mentioned
+  const noLivingBeings = (category === 'cosmic' || category === 'sacred') && !hasCharacters;
 
   // 1. Header
   parts.push('Islamic illustration for Adably educational platform.');
