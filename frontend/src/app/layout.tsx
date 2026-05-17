@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Amiri } from "next/font/google";
 import "./globals.css";
 import ClientProviders from "@/components/ClientProviders";
-import { JsonLd, buildOrganizationSchema, buildWebSiteSchema } from "@/components/seo/JsonLd";
+import { JsonLd, buildOrganizationSchema, buildWebSiteSchema, buildItemListSchema } from "@/components/seo/JsonLd";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const amiri = Amiri({ weight: ["400", "700"], subsets: ["arabic"], variable: "--font-amiri" });
@@ -34,10 +34,21 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id">
-      <head />
+      <head>
+        {/* AI Discovery — helps AI crawlers find structured content */}
+        <link rel="author" href="/llms.txt" />
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM Content Summary" />
+        <link rel="alternate" type="text/plain" href="/llms-full.txt" title="LLM Content Detail" />
+        {/* Citation meta — untuk AI search engine extraction */}
+        <meta name="citation_title" content="Adably - Platform Edukasi Parenting Islami" />
+        <meta name="citation_author" content="Adably" />
+        <meta name="citation_publisher" content="Adably" />
+        <meta name="citation_language" content="id" />
+      </head>
       <body className={`${inter.variable} ${amiri.variable} font-sans antialiased bg-slate-50 text-slate-800 flex flex-col min-h-screen`}>
         <JsonLd schema={buildOrganizationSchema()} />
         <JsonLd schema={buildWebSiteSchema()} />
+        <JsonLd schema={buildItemListSchema()} />
         <ClientProviders>{children}</ClientProviders>
         <script
           dangerouslySetInnerHTML={{

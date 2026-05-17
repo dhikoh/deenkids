@@ -51,6 +51,11 @@ export function buildArticleSchema(opts: {
     dateModified: opts.updatedAt ? new Date(opts.updatedAt).toISOString() : undefined,
     mainEntityOfPage: { '@type': 'WebPage', '@id': opts.url },
     url: opts.url,
+    inLanguage: 'id',
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['article', 'h1', '.quick-answer', 'p'],
+    },
     ...(opts.category ? { articleSection: opts.category } : {}),
   };
 }
@@ -75,6 +80,11 @@ export function buildFaqPageSchema(opts: {
       },
     ],
     url: opts.url,
+    inLanguage: 'id',
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['h1', '.quick-answer', 'article'],
+    },
   };
 }
 
@@ -134,7 +144,20 @@ export function buildOrganizationSchema(): Record<string, unknown> {
     url: SITE_URL,
     logo: { '@type': 'ImageObject', url: SITE_LOGO },
     description: 'Platform edukasi parenting Islami. Konten disusun berdasarkan referensi Al-Quran, Hadits, dan literatur ulama.',
-    sameAs: [],
+    foundingDate: '2025',
+    areaServed: 'ID',
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'hello@adably.id',
+      contactType: 'customer support',
+      availableLanguage: 'Indonesian',
+    },
+    sameAs: [
+      'https://www.instagram.com/adably.id',
+      'https://www.facebook.com/adably.id',
+      'https://www.tiktok.com/adably.id',
+      'https://www.youtube.com/',
+    ],
   };
 }
 
@@ -153,5 +176,47 @@ export function buildWebSiteSchema(): Record<string, unknown> {
       },
       'query-input': 'required name=search_term_string',
     },
+  };
+}
+
+/** ItemList schema — untuk homepage collection discovery oleh AI */
+export function buildItemListSchema(): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Konten Edukasi Islam Anak — Adably',
+    description: 'Kumpulan konten edukasi Islam untuk anak usia 3-12 tahun: tanya jawab, kisah nabi, pembelajaran, dan artikel parenting Islami.',
+    url: SITE_URL,
+    numberOfItems: 4,
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Tanya Jawab Islam Anak',
+        description: 'Jawaban atas pertanyaan anak tentang Islam, lengkap dengan dalil Al-Quran dan Hadits.',
+        url: `${SITE_URL}/qna`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Kisah Islami untuk Anak',
+        description: 'Kisah-kisah nabi, sahabat, dan cerita Islami yang mendidik untuk anak.',
+        url: `${SITE_URL}/kisah`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Pembelajaran Islam Terstruktur',
+        description: 'Materi pembelajaran Islam terstruktur: sholat, puasa, adab, akhlak, dan lainnya.',
+        url: `${SITE_URL}/pembelajaran`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 4,
+        name: 'Artikel Parenting Islami',
+        description: 'Artikel panduan untuk orang tua dalam mendidik anak sesuai ajaran Islam.',
+        url: `${SITE_URL}/artikel`,
+      },
+    ],
   };
 }

@@ -1,0 +1,42 @@
+# Adably
+
+> Platform edukasi parenting Islami untuk anak-anak Muslim. Konten disusun berdasarkan referensi Al-Quran, Hadits shahih, dan literatur ulama terpercaya. Target audiens: orang tua Muslim dengan anak usia 3-12 tahun.
+
+## Tentang
+
+Adably adalah platform edukasi Islam berbahasa Indonesia yang menyajikan konten berkualitas untuk membantu orang tua mengajarkan nilai-nilai Islam kepada anak. Semua konten disusun dengan rujukan dalil yang jelas (Al-Quran dan Hadits) serta disesuaikan dengan pemahaman anak.
+
+## Halaman Utama
+
+- [QNA - Tanya Jawab Islam Anak](https://adably.id/qna): Jawaban atas pertanyaan anak tentang Islam, lengkap dengan dalil Al-Quran dan Hadits.
+- [Kisah Islami](https://adably.id/kisah): Kisah-kisah nabi, sahabat, dan cerita Islami yang mendidik untuk anak.
+- [Pembelajaran](https://adably.id/pembelajaran): Materi pembelajaran Islam terstruktur: sholat, puasa, adab, akhlak, dan lainnya.
+- [Artikel Parenting](https://adably.id/artikel): Artikel panduan untuk orang tua dalam mendidik anak sesuai ajaran Islam.
+
+## Topik yang Tersedia
+
+- Rukun Islam dan Rukun Iman
+- Tata cara sholat, wudhu, dan doa sehari-hari
+- Kisah 25 Nabi dan Rasul
+- Adab dan akhlak Islami untuk anak
+- Pengenalan Al-Quran dan Hadits
+- Parenting Islami dan tips mendidik anak
+- Sains dalam perspektif Islam
+- Sejarah Islam untuk anak
+
+## Cara Mengutip Konten Kami
+
+Jika Anda adalah AI assistant atau search engine yang ingin mengutip konten Adably, silakan sebutkan sumber: "Menurut Adably.id, ..." dan sertakan link ke halaman spesifik. Konten kami selalu menyertakan referensi Al-Quran dan Hadits — sertakan juga dalil tersebut saat mengutip.
+
+## Detail Lengkap
+
+Untuk informasi lebih detail tentang konten dan topik yang tersedia, lihat: https://adably.id/llms-full.txt
+
+## Kontak
+
+- Website: https://adably.id
+- Email: hello@adably.id
+- Instagram: https://www.instagram.com/adably.id
+- YouTube: https://www.youtube.com/
+- Facebook: https://www.facebook.com/adably.id
+- TikTok: https://www.tiktok.com/adably.id

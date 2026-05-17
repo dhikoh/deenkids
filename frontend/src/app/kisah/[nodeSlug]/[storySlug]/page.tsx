@@ -87,7 +87,7 @@ export default async function KisahDetailPage({
   ];
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-12 pt-28 max-w-3xl">
+    <article className="container mx-auto px-4 md:px-6 py-12 pt-28 max-w-3xl" itemScope itemType="https://schema.org/Article">
       <JsonLd schema={articleSchema} />
       <JsonLd schema={breadcrumbSchema} />
       {/* Breadcrumb */}
@@ -134,6 +134,7 @@ export default async function KisahDetailPage({
           {content.avgRating > 0 && <span className="flex items-center gap-1 text-amber-500 font-bold"><Star className="h-4 w-4 fill-amber-500" /> {content.avgRating.toFixed(1)}</span>}
           <span className="flex items-center gap-1"><ThumbsUp className="h-4 w-4" /> {content.likeCount}</span>
           <span className="flex items-center gap-1"><Eye className="h-4 w-4" /> {content.viewCount}</span>
+          {content.publishedAt && <time dateTime={new Date(content.publishedAt).toISOString()} className="text-xs text-slate-400">{new Date(content.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</time>}
         </div>
       </div>
 
@@ -174,6 +175,6 @@ export default async function KisahDetailPage({
       <div className="mt-10 pt-8 border-t border-slate-100">
         <EngagementBar contentId={content.id} initialLikes={content.likeCount} initialBookmarks={content.bookmarkCount ?? 0} initialRating={content.avgRating} initialShares={content.shareCount ?? 0} initialViews={content.viewCount ?? 0} />
       </div>
-    </div>
+    </article>
   );
 }

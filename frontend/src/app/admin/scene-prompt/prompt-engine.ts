@@ -1,82 +1,99 @@
 // ═══════════════════════════════════════════════════════════════
-// Scene Prompt Studio — Prompt Construction Engine (v2)
-// Redesigned: contextual scene building, not hardcoded templates
+// Scene Prompt Studio v3 — Hybrid Prompt Engine
+// Redesigned: meta-instruction approach, not keyword soup
+// AI interprets the narration; we provide context + safety rules
 // ═══════════════════════════════════════════════════════════════
 
 import {
-  ContentType, VisualStyle, CharacterCard, SceneItem,
+  VisualStyle, CharacterCard, SceneItem, AgeTarget,
   CAMERA_PRESETS, MOOD_PRESETS, LOCATION_PRESETS, TIME_PRESETS,
   ANIMATION_PRESETS, VISUAL_STYLE_PRESETS, ART_STYLES, RENDERINGS,
-  COLOR_MOODS, PLATFORM_TARGETS,
+  COLOR_MOODS, PLATFORM_TARGETS, AGE_TARGETS,
 } from './types';
 import {
-  SceneCategory, SCENE_CATEGORY_PATTERNS, SUBJECT_VISUALS,
-  CHARACTER_PATTERNS, ACTION_VISUALS, EMOTION_ATMOSPHERE,
-  ANIMAL_PATTERNS, ANIMAL_RULE_EN, HUMAN_REFERENCE_PATTERNS,
+  SceneCategory, SCENE_CATEGORY_PATTERNS, EMOTION_ATMOSPHERE,
+  ANIMAL_PATTERNS, HUMAN_REFERENCE_PATTERNS,
+  PROPHET_PATTERNS, ANGEL_PATTERNS, ALLAH_PATTERN,
 } from './scene-dictionary';
 
 // ═══════════════════════════════════════════════════════════════
-// ISLAMIC SAFETY RULES (injected into every prompt)
+// SENTENCE SPLITTER
 // ═══════════════════════════════════════════════════════════════
 
-const FACELESS_RULE_EN = 'MANDATORY: ALL human characters must be STRICTLY FACELESS — NO facial features whatsoever (no eyes, no nose, no mouth) — completely blank/smooth face area. Expression conveyed ONLY through body language and posture.';
-const ISLAMIC_DRESS_RULE = 'Islamic dress code: Women/girls MUST wear modest hijab. Men/boys wear koko/jubah/peci. Proper Islamic attire at all times.';
-const PROPHET_SAFETY = 'CRITICAL: Prophets must be represented ONLY as luminous silhouettes surrounded by golden light (nur). STRICTLY FORBIDDEN: any facial features, body details. Only glowing white-robed outline.';
-const ALLAH_SAFETY = 'CRITICAL: Allah must NEVER be depicted in any form. Show only the magnificence of creation or Islamic calligraphy/geometric art.';
-const BACK_TO_CAMERA_RULE = 'ADDITIONAL SAFETY: All characters are positioned with their backs facing the camera/viewer. Characters are seen from behind.';
+/**
+ * Split raw narration text into individual sentences.
+ * Handles edge cases: "QS.", "HR.", "SAW.", numbered lists, etc.
+ */
+export function splitIntoSentences(rawText: string): string[] {
+  if (!rawText.trim()) return [];
 
-// ═══════════════════════════════════════════════════════════════
-// CONTENT TYPE DETECTION
-// ═══════════════════════════════════════════════════════════════
+  // Protect known abbreviations from being split
+  let protected_ = rawText;
+  const ABBREVIATIONS: [RegExp, string][] = [
+    [/QS\./gi, '___QS___'],
+    [/HR\./gi, '___HR___'],
+    [/SAW\./gi, '___SAW___'],
+    [/SWT\./gi, '___SWT___'],
+    [/dll\./gi, '___DLL___'],
+    [/dsb\./gi, '___DSB___'],
+    [/dkk\./gi, '___DKK___'],
+    [/No\.\s*(\d)/gi, '___NO___$1'],
+    [/(\d+)\./g, '___NUM$1___'],
+  ];
 
-const QUESTION_PATTERNS = [/^(tahukah|apakah|mengapa|kenapa|bagaimana|siapa|apa|kapan|dimana|berapa)\b/i, /\?$/, /\b(kamu tahu|kamu ketahui)\b/i];
-const DALIL_PATTERNS = [/\b(QS\.|surah|surat|ayat|hadits|hadis|hr\.|riwayat|nabi\s+(muhammad|saw))\b/i, /\b(allah\s+(berfirman|swt)|rasulullah)\b/i];
-const DIALOG_PATTERNS = [/^["'""']/, /\b(berkata|bertanya|menjawab|bilang|tanya|jawab|ucap)\b/i, /["'""']\s*$/];
-const EXPLANATION_PATTERNS = [/\b(adalah|artinya|definisi|pengertian|bermakna|disebut|yaitu|merupakan|hukumnya)\b/i, /\b(wajib|sunnah|haram|makruh|mubah)\b/i];
-
-export function detectContentType(text: string): ContentType {
-  const t = text.trim();
-  if (DALIL_PATTERNS.some(p => p.test(t))) return 'dalil';
-  if (QUESTION_PATTERNS.some(p => p.test(t))) return 'pertanyaan';
-  if (DIALOG_PATTERNS.some(p => p.test(t))) return 'dialog';
-  if (EXPLANATION_PATTERNS.some(p => p.test(t))) return 'penjelasan';
-  return 'narasi';
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SCENE TEXT SPLITTER
-// ═══════════════════════════════════════════════════════════════
-
-export function splitIntoScenes(rawText: string): string[] {
-  const marker = /\[(?:Scene|Adegan|scene|adegan)\s*\d*\]/gi;
-  if (marker.test(rawText)) {
-    return rawText.split(marker).map(s => s.trim()).filter(s => s.length > 0);
+  for (const [pattern, replacement] of ABBREVIATIONS) {
+    protected_ = protected_.replace(pattern, replacement);
   }
-  return rawText.split(/\n\s*\n/).map(s => s.trim()).filter(s => s.length > 0);
+
+  // Split on sentence boundaries
+  const rawSentences = protected_
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+
+  // Restore abbreviations
+  const RESTORATIONS: [RegExp, string][] = [
+    [/___QS___/g, 'QS.'],
+    [/___HR___/g, 'HR.'],
+    [/___SAW___/g, 'SAW.'],
+    [/___SWT___/g, 'SWT.'],
+    [/___DLL___/g, 'dll.'],
+    [/___DSB___/g, 'dsb.'],
+    [/___DKK___/g, 'dkk.'],
+    [/___NO___(\d)/g, 'No. $1'],
+    [/___NUM(\d+)___/g, '$1.'],
+  ];
+
+  return rawSentences.map(sentence => {
+    let restored = sentence;
+    for (const [pattern, replacement] of RESTORATIONS) {
+      restored = restored.replace(pattern, replacement);
+    }
+    return restored;
+  }).filter(s => s.length > 2); // Filter out fragments
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SCENE CATEGORY DETECTION
+// SCENE CATEGORY DETECTION (kept from v2)
 // ═══════════════════════════════════════════════════════════════
 
 export function detectSceneCategory(text: string): SceneCategory {
-  const hasCharacters = CHARACTER_PATTERNS.some(cp => cp.pattern.test(text));
   const hasHumanRef = HUMAN_REFERENCE_PATTERNS.test(text);
 
   for (const entry of SCENE_CATEGORY_PATTERNS) {
     if (entry.patterns.some(p => p.test(text))) {
-      // If cosmic/nature/sacred but humans ARE referenced → treat as character scene
-      if ((entry.cat === 'cosmic' || entry.cat === 'nature' || entry.cat === 'sacred') && (hasCharacters || hasHumanRef)) {
+      // If cosmic/nature/sacred but humans ARE referenced → character scene
+      if ((entry.cat === 'cosmic' || entry.cat === 'nature' || entry.cat === 'sacred') && hasHumanRef) {
         return 'character';
       }
       return entry.cat;
     }
   }
-  return 'character'; // default
+  return 'character';
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SMART AUTO-PRESET DETECTION
+// SMART AUTO-PRESET DETECTION (kept from v2)
 // ═══════════════════════════════════════════════════════════════
 
 export function autoDetectPresets(text: string, category: SceneCategory): {
@@ -136,234 +153,157 @@ function resolveVisualStyle(presetId: string, customStyle?: VisualStyle) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CONTEXTUAL VISUAL SCENE BUILDER (replaces old interpretNarrationToVisual)
+// SAFETY RULES BUILDER
 // ═══════════════════════════════════════════════════════════════
 
-function buildVisualScene(narration: string, category: SceneCategory): string {
-  // 1. Try specific subject visual first (most precise)
-  for (const sv of SUBJECT_VISUALS) {
-    if (sv.pattern.test(narration)) return sv.visual;
+function buildSafetyRules(narration: string, backToCamera?: boolean): string {
+  const rules: string[] = [];
+  const hasProphet = PROPHET_PATTERNS.test(narration);
+  const hasAngel = ANGEL_PATTERNS.test(narration);
+  const hasAllah = ALLAH_PATTERN.test(narration);
+  const hasAnimal = ANIMAL_PATTERNS.test(narration);
+
+  // FACELESS is always mandatory for all living beings
+  rules.push('FACELESS: Semua karakter manusia WAJIB tanpa wajah (faceless) — area wajah kosong/halus, TIDAK ADA mata, hidung, atau mulut. Ekspresi hanya melalui bahasa tubuh dan gesture.');
+  rules.push('Dress code Islami: Perempuan/anak perempuan WAJIB berhijab. Laki-laki/anak laki-laki memakai koko/jubah/peci.');
+
+  if (hasProphet || hasAngel) {
+    const entities: string[] = [];
+    if (hasProphet) entities.push('Nabi');
+    if (hasAngel) entities.push('Malaikat');
+    rules.push(`${entities.join(' dan ')}: WAJIB digambar sebagai SILUET CAHAYA saja — outline berjubah putih bercahaya dikelilingi aura emas (nur). DILARANG menampilkan detail wajah atau tubuh.`);
   }
 
-  // 2. Category-based scene building
-  switch (category) {
-    case 'prophet':
-      return 'A reverent scene: the Prophet represented ONLY as a LUMINOUS SILHOUETTE — a glowing white-robed outline surrounded by soft golden radiant aura (nur). Background shows the relevant Islamic setting.';
-    case 'sacred':
-      return 'A beautiful ornate Quran on a decorated wooden rehal stand, pages open with Arabic calligraphy visible. Soft golden light rays, Islamic geometric arabesque patterns, prayer beads and warm lantern nearby. NO human figures.';
-    case 'cosmic':
-      return 'Magnificent cosmic vista — stars, nebulae, divine light piercing through darkness of space. Ethereal and awe-inspiring. NO human figures.';
-    case 'nature':
-      return buildNatureScene(narration);
-    case 'historic':
-      return buildHistoricScene(narration);
-    case 'mosque':
-      return 'Beautiful mosque interior with ornate Islamic architecture, arched windows with warm light, geometric patterns on walls and ceiling.';
-    case 'character':
-    default:
-      return buildCharacterScene(narration);
+  if (hasAllah) {
+    rules.push('Allah: TIDAK BOLEH digambar dalam bentuk apapun. Tunjukkan hanya keagungan ciptaan-Nya atau kaligrafi Islam.');
   }
-}
 
-function buildNatureScene(text: string): string {
-  const elements: string[] = [];
-  if (/\bgunung\b/i.test(text)) elements.push('majestic mountain landscape');
-  if (/\blaut|samudra\b/i.test(text)) elements.push('vast ocean with gentle waves');
-  if (/\bsungai\b/i.test(text)) elements.push('flowing river through lush valley');
-  if (/\bhujan\b/i.test(text)) elements.push('rain falling from dramatic clouds');
-  if (/\bpelangi\b/i.test(text)) elements.push('vibrant rainbow arcing across sky');
-  if (/\bhutan|pohon\b/i.test(text)) elements.push('dense forest with tall trees');
-  if (elements.length === 0) elements.push('beautiful natural landscape');
-  elements.push('Warm atmospheric lighting. Nature-focused scene');
-  if (!CHARACTER_PATTERNS.some(cp => cp.pattern.test(text))) {
-    elements.push('No human figures — pure nature landscape');
+  if (hasAnimal) {
+    rules.push('Hewan: Semua hewan WAJIB faceless (area wajah polos tanpa detail), ditampilkan sebagai siluet, atau sebagai elemen latar belakang yang sangat kecil.');
   }
-  return elements.join('. ') + '.';
-}
 
-function buildHistoricScene(text: string): string {
-  const elements: string[] = [];
-  if (/\b(kafilah|karavan)\b/i.test(text)) elements.push('caravan of camels crossing desert landscape');
-  if (/\b(perang|pertempuran)\b/i.test(text)) elements.push('ancient Arabian battlefield viewed from distance, dust clouds rising');
-  if (/\b(istana|kerajaan)\b/i.test(text)) elements.push('grand ancient Middle Eastern palace with Islamic architecture');
-  if (/\b(pasar|berdagang)\b/i.test(text)) elements.push('bustling ancient Arabian marketplace with stalls and goods');
-  if (/\b(hijrah|perjalanan)\b/i.test(text)) elements.push('travelers journeying through desert under starry sky');
-  if (elements.length === 0) elements.push('ancient Middle Eastern setting with Islamic architecture');
-  // Detect characters in historic scene
-  const chars = CHARACTER_PATTERNS.filter(cp => cp.pattern.test(text));
-  if (chars.length > 0) {
-    elements.push(...chars.map(c => c.visual));
+  if (backToCamera) {
+    rules.push('Tambahan: Semua karakter diposisikan membelakangi kamera/penonton.');
   }
-  elements.push('Historical atmosphere with dramatic lighting');
-  return elements.join('. ') + '.';
-}
 
-function buildCharacterScene(text: string): string {
-  const elements: string[] = [];
-  // Detect characters
-  const chars = CHARACTER_PATTERNS.filter(cp => cp.pattern.test(text));
-  if (chars.length > 0) {
-    elements.push(...chars.map(c => c.visual));
-  } else {
-    // No specific character mentioned — don't force children
-    elements.push('FACELESS Muslim figures in proper Islamic attire');
-  }
-  // Detect actions
-  for (const av of ACTION_VISUALS) {
-    if (av.pattern.test(text)) { elements.push(av.visual); break; }
-  }
-  // Detect settings from text
-  if (/\b(masjid|musholla)\b/i.test(text)) elements.push('inside a beautiful mosque');
-  else if (/\bsekolah|kelas\b/i.test(text)) elements.push('in a bright classroom');
-  else if (/\brumah|keluarga\b/i.test(text)) elements.push('in a warm cozy Muslim home');
-  else if (/\btaman|bermain\b/i.test(text)) elements.push('in a beautiful garden park');
-  else if (/\bpasar\b/i.test(text)) elements.push('in a traditional marketplace');
-
-  elements.push('Warm Islamic atmosphere with gentle lighting');
-  return elements.join('. ') + '.';
+  return rules.join('\n');
 }
 
 // ═══════════════════════════════════════════════════════════════
-// IMAGE PROMPT GENERATOR
+// HYBRID IMAGE PROMPT GENERATOR (v3)
 // ═══════════════════════════════════════════════════════════════
 
 export function generateImagePrompt(
-  scene: SceneItem, visualPresetId: string, customStyle: VisualStyle | undefined,
-  characters: CharacterCard[], aspectRatio: string, sceneIndex: number, totalScenes: number,
+  scene: SceneItem,
+  fullNarration: string,
+  visualPresetId: string,
+  customStyle: VisualStyle | undefined,
+  characters: CharacterCard[],
+  aspectRatio: string,
+  selectedAges: string[],
+  sceneIndex: number,
+  totalScenes: number,
 ): string {
-  const parts: string[] = [];
   const style = resolveVisualStyle(visualPresetId, customStyle);
-  const category = detectSceneCategory(scene.narration);
-  const hasProphet = category === 'prophet';
-  const hasAllah = /\ballah\b/i.test(scene.narration);
-  const hasAnimal = ANIMAL_PATTERNS.test(scene.narration);
-  const hasCharacters = CHARACTER_PATTERNS.some(cp => cp.pattern.test(scene.narration));
-  const hasHumanRef = HUMAN_REFERENCE_PATTERNS.test(scene.narration);
-  // FACELESS is ALWAYS ON unless scene is 100% certain no living beings
-  const definitelyNoLivingBeings = (category === 'cosmic' || category === 'sacred' || category === 'nature')
-    && !hasCharacters && !hasHumanRef;
-
-  // 1. Header
-  parts.push('Islamic illustration for Adably educational platform.');
-
-  // 2. Visual concept (translated from narration)
-  const visualScene = buildVisualScene(scene.narration, category);
-  parts.push(`VISUAL SCENE: ${visualScene}`);
-
-  // 2b. Narrative context — instruct AI, do NOT render text on image
-  parts.push(`NARRATIVE CONTEXT: This illustration depicts the concept from an Islamic educational narration. The narration says: ${scene.narration.trim()}. DO NOT render any text, words, or letters on the image`);
-
-  // 3. Character cards (consistency)
-  if (!definitelyNoLivingBeings) {
-    const involved = characters.filter(c => scene.characterIds.includes(c.id));
-    if (involved.length > 0) {
-      parts.push(involved.map(c => `Character "${c.name}": ${c.description}, FACELESS`).join('. '));
-    }
-  }
-
-  // 4. Location
   const loc = LOCATION_PRESETS.find(l => l.id === scene.location);
-  if (loc) parts.push(loc.prompt);
-
-  // 5. Camera
   const cam = CAMERA_PRESETS.find(c => c.id === scene.camera);
-  if (cam) parts.push(cam.prompt);
-
-  // 6. Mood
   const mood = MOOD_PRESETS.find(m => m.id === scene.mood);
-  if (mood) parts.push(mood.prompt);
-
-  // 7. Time of day
   const time = TIME_PRESETS.find(t => t.id === scene.timeOfDay);
-  if (time) parts.push(time.prompt);
+  const ageLabels = selectedAges
+    .map(id => AGE_TARGETS.find(a => a.id === id))
+    .filter(Boolean) as AgeTarget[];
+  const ageText = ageLabels.map(a => a.label).join(', ');
+  const ageHints = ageLabels.map(a => a.visualHint).join('. ');
 
-  // 8. Visual style
-  parts.push(`Art style: ${style.artStyle}. ${style.rendering}. ${style.colorMood}.`);
-
-  // 9. Aspect ratio
   const arMap: Record<string, string> = {
-    '16:9': 'Horizontal landscape composition --ar 16:9',
-    '9:16': 'Vertical portrait composition --ar 9:16',
-    '1:1': 'Square composition --ar 1:1',
+    '16:9': 'horizontal landscape (16:9)',
+    '9:16': 'vertical portrait (9:16)',
+    '1:1': 'square (1:1)',
   };
-  parts.push(arMap[aspectRatio] || arMap['16:9']);
 
-  // 10. Continuity
-  if (totalScenes > 1 && sceneIndex > 0) {
-    parts.push(`CONTINUITY: Scene ${sceneIndex + 1} of ${totalScenes}. Maintain exact same characters, art style, and color palette.`);
-  }
+  // Build character descriptions
+  const involvedChars = characters.filter(c => scene.characterIds.includes(c.id));
+  const charBlock = involvedChars.length > 0
+    ? `\nKarakter yang muncul di scene ini (pastikan konsisten):\n${involvedChars.map(c => `- ${c.name}: ${c.description} (FACELESS — tanpa wajah)`).join('\n')}`
+    : '';
 
-  // 11. Safety rules — FACELESS is ALWAYS ON unless definitively no living beings
-  if (!definitelyNoLivingBeings) {
-    parts.push(FACELESS_RULE_EN);
-    parts.push(ISLAMIC_DRESS_RULE);
-    if (scene.backToCamera) parts.push(BACK_TO_CAMERA_RULE);
-  }
-  if (hasProphet) parts.push(PROPHET_SAFETY);
-  if (hasAllah) parts.push(ALLAH_SAFETY);
-  if (hasAnimal) parts.push(ANIMAL_RULE_EN);
+  // Continuity instruction
+  const continuity = totalScenes > 1
+    ? `\nINSTRUKSI KONTINUITAS: Ini adalah scene ${sceneIndex + 1} dari ${totalScenes}. ${sceneIndex > 0 ? 'Perhatikan gambar sebelumnya agar karakter dan setting tidak berganti jika konteksnya masih sama. Tapi jika kalimat memang menunjukkan perubahan scene/lokasi/waktu, maka wajar untuk mengubahnya — ikuti isi kalimat.' : 'Ini scene pertama — bangun fondasi visual yang konsisten untuk scene berikutnya.'}`
+    : '';
 
-  // 12. Quality
-  parts.push('Highly detailed, professional quality, child-friendly warm colors, no scary elements.');
+  // Build the meta-instruction prompt
+  return `Buatkan gambar ilustrasi untuk web pendidikan anak Islami (adably.id).
 
-  return parts.filter(Boolean).map(p => p.replace(/\.+\s*$/, '')).join('. ') + '.';
+Pastikan kamu melihat kalimat yang diminta dan merealisasikan dalam bentuk gambar dengan spesifikasi yang diberikan. Pahami secara mendalam konteks kalimat ini dalam narasi keseluruhan — analisa kalimat-kalimat sebelumnya agar tidak melenceng dari konteks cerita.
+
+Ini untuk penonton usia ${ageText}. Sesuaikan gaya visual: ${ageHints}.
+
+Web ini tidak hanya bertema Islami murni, tapi juga mencakup penjelasan sains, sejarah, cerita fiksi, dan sebagainya — namun tetap pada koridor Islami (hijab, pakaian Islami, dsb). Pahami betul konteks dari isi konten dan kalimat yang diminta.
+
+═══ GAYA VISUAL ═══
+Art style: ${style.artStyle}
+Rendering: ${style.rendering}
+Color mood: ${style.colorMood}
+Komposisi: ${arMap[aspectRatio] || arMap['16:9']}
+${cam ? `Sudut kamera: ${cam.prompt}` : ''}
+${mood ? `Suasana: ${mood.prompt}` : ''}
+${time ? `Waktu: ${time.prompt}` : ''}
+${loc ? `Lokasi: ${loc.prompt}` : ''}
+
+═══ RULES WAJIB ═══
+${buildSafetyRules(scene.narration, scene.backToCamera)}
+DO NOT render any text, words, or letters on the image.
+${charBlock}
+${continuity}
+
+═══ ISI KONTEN KESELURUHAN ═══
+${fullNarration.trim()}
+
+═══ KALIMAT YANG DIMINTA UNTUK DIBUATKAN GAMBAR ═══
+${scene.narration.trim()}`.trim();
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ANIMATION PROMPT GENERATOR
+// HYBRID ANIMATION PROMPT GENERATOR (v3)
 // ═══════════════════════════════════════════════════════════════
 
 export function generateAnimationPrompt(
-  scene: SceneItem, visualPresetId: string, customStyle: VisualStyle | undefined, platformId: string,
+  scene: SceneItem,
+  fullNarration: string,
+  visualPresetId: string,
+  customStyle: VisualStyle | undefined,
+  platformId: string,
+  selectedAges: string[],
+  sceneIndex: number,
+  totalScenes: number,
 ): string {
-  const parts: string[] = [];
   const style = resolveVisualStyle(visualPresetId, customStyle);
   const platform = PLATFORM_TARGETS.find(p => p.id === platformId);
   const motion = ANIMATION_PRESETS.find(a => a.id === scene.animationMotion);
-  const category = detectSceneCategory(scene.narration);
+  const ageLabels = selectedAges
+    .map(id => AGE_TARGETS.find(a => a.id === id))
+    .filter(Boolean) as AgeTarget[];
+  const ageText = ageLabels.map(a => a.label).join(', ');
 
-  // 1. Motion
-  if (motion) parts.push(motion.prompt);
+  return `Buatkan animasi/video pendek dari gambar ilustrasi untuk web pendidikan anak Islami.
 
-  // 2. Context-derived motion
-  const motionCtx = deriveMotion(scene.narration, category);
-  if (motionCtx) parts.push(motionCtx);
+Untuk penonton usia ${ageText}. Gerakan harus halus, child-friendly, tidak ada elemen menakutkan.
 
-  // 3. Safety
-  if (category !== 'cosmic' && category !== 'sacred') {
-    parts.push('All characters must remain FACELESS throughout animation. Expression only through body movement.');
-    if (scene.backToCamera) parts.push('Characters face away from camera at all times.');
-  }
-  if (category === 'prophet') parts.push('Prophet remains as luminous glowing silhouette only.');
-  if (ANIMAL_PATTERNS.test(scene.narration)) parts.push('Animals shown as silhouettes or without facial detail throughout animation.');
+═══ GERAKAN YANG DIMINTA ═══
+${motion ? motion.prompt : 'Subtle ambient movement with gentle lighting shifts.'}
 
-  // 4. Style
-  parts.push(`Maintain ${style.artStyle} style throughout. No style drift.`);
-  if (platform && platform.id !== 'generic') parts.push(`Duration: ${platform.maxDuration}`);
-  parts.push('Smooth natural motion, child-friendly content.');
+═══ RULES WAJIB ═══
+${buildSafetyRules(scene.narration, scene.backToCamera)}
 
-  return parts.filter(Boolean).join('. ');
-}
+═══ GAYA VISUAL ═══
+Pertahankan style ${style.artStyle} sepanjang animasi. Tidak boleh ada style drift.
+${platform && platform.id !== 'generic' ? `Durasi: ${platform.maxDuration}` : ''}
+Smooth natural motion, konten aman untuk anak.
+${totalScenes > 1 ? `\nScene ${sceneIndex + 1} dari ${totalScenes}. Pertahankan konsistensi karakter dan warna dari scene sebelumnya.` : ''}
 
-function deriveMotion(text: string, category: SceneCategory): string {
-  if (category === 'prophet') return 'Luminous silhouette gently radiating light, nur aura softly pulsing. Background elements move subtly.';
-  if (category === 'cosmic') return 'Majestic cosmic animation: stars twinkling, nebulae swirling slowly, divine light rays shifting. No human figures.';
-  if (category === 'sacred') return 'Quran pages flutter gently, golden light rays slowly shift, tasbih beads catch light. Sacred ambiance.';
-  if (category === 'nature') {
-    if (/hujan/i.test(text)) return 'Rain droplets falling, puddles forming, clouds shifting slowly.';
-    if (/angin|daun/i.test(text)) return 'Gentle breeze, leaves rustling, fabric swaying softly.';
-    return 'Subtle nature animation: clouds drifting, light shifting, gentle wind.';
-  }
-
-  const lower = text.toLowerCase();
-  if (/berlari|lari|mengejar/.test(lower)) return 'FACELESS character running with dynamic body motion.';
-  if (/berjalan|melangkah/.test(lower)) return 'FACELESS character walking forward naturally.';
-  if (/menangis|sedih/.test(lower)) return 'Emotional body language: shoulders shaking, head bowed.';
-  if (/tersenyum|gembira|senang/.test(lower)) return 'Joyful body language: bouncing, arms raised.';
-  if (/sholat|salat|berdoa/.test(lower)) return 'Prayer motion: gentle bowing or hands raised in dua.';
-  if (/memeluk/.test(lower)) return 'Two figures embracing warmly, gentle rocking motion.';
-
-  return 'Subtle ambient movement with gentle lighting shifts.';
+═══ KONTEKS NARASI ═══
+${scene.narration.trim()}`.trim();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -371,12 +311,18 @@ function deriveMotion(text: string, category: SceneCategory): string {
 // ═══════════════════════════════════════════════════════════════
 
 export function generateAllPrompts(
-  scenes: SceneItem[], visualPresetId: string, customStyle: VisualStyle | undefined,
-  characters: CharacterCard[], aspectRatio: string, platformId: string,
+  scenes: SceneItem[],
+  fullNarration: string,
+  visualPresetId: string,
+  customStyle: VisualStyle | undefined,
+  characters: CharacterCard[],
+  aspectRatio: string,
+  platformId: string,
+  selectedAges: string[],
 ): SceneItem[] {
   return scenes.map((scene, i) => ({
     ...scene,
-    imagePrompt: generateImagePrompt(scene, visualPresetId, customStyle, characters, aspectRatio, i, scenes.length),
-    animationPrompt: generateAnimationPrompt(scene, visualPresetId, customStyle, platformId),
+    imagePrompt: generateImagePrompt(scene, fullNarration, visualPresetId, customStyle, characters, aspectRatio, selectedAges, i, scenes.length),
+    animationPrompt: generateAnimationPrompt(scene, fullNarration, visualPresetId, customStyle, platformId, selectedAges, i, scenes.length),
   }));
 }

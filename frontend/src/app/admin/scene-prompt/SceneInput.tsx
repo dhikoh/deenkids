@@ -2,26 +2,44 @@
 import { useState } from "react";
 import {
   Camera, Cloud, MapPin, Clock, Film, Users, Plus, Trash2, ChevronDown, ChevronUp,
-  Sparkles, Type, Wand2,
+  Wand2, Merge, CheckSquare, Square, GripVertical,
 } from "lucide-react";
 import {
-  SceneItem, CharacterCard, ContentType,
+  SceneItem, SentenceItem, CharacterCard,
   CAMERA_PRESETS, MOOD_PRESETS, LOCATION_PRESETS, TIME_PRESETS,
-  ANIMATION_PRESETS, CONTENT_TYPE_LABELS,
+  ANIMATION_PRESETS,
 } from "./types";
 
 interface Props {
+  sentences: SentenceItem[];
   scenes: SceneItem[];
   characters: CharacterCard[];
+  onSentencesChange: (sentences: SentenceItem[]) => void;
   onScenesChange: (scenes: SceneItem[]) => void;
   onCharactersChange: (chars: CharacterCard[]) => void;
-  isGenerating: boolean;
+  onMergeSelected: () => void;
 }
 
-export default function SceneInput({ scenes, characters, onScenesChange, onCharactersChange, isGenerating }: Props) {
+export default function SceneInput({
+  sentences, scenes, characters,
+  onSentencesChange, onScenesChange, onCharactersChange, onMergeSelected,
+}: Props) {
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
   const [showCharacters, setShowCharacters] = useState(false);
 
+  const selectedCount = sentences.filter(s => s.selected).length;
+
+  // ─── Sentence Selection ───
+  const toggleSentence = (id: string) => {
+    onSentencesChange(sentences.map(s => s.id === id ? { ...s, selected: !s.selected } : s));
+  };
+
+  const selectAll = () => {
+    const allSelected = sentences.every(s => s.selected);
+    onSentencesChange(sentences.map(s => ({ ...s, selected: !allSelected })));
+  };
+
+  // ─── Scene Updates ───
   const updateScene = (i: number, patch: Partial<SceneItem>) => {
     onScenesChange(scenes.map((s, idx) => idx === i ? { ...s, ...patch } : s));
   };
@@ -31,6 +49,7 @@ export default function SceneInput({ scenes, characters, onScenesChange, onChara
     if (expandedScene === i) setExpandedScene(null);
   };
 
+  // ─── Character Management ───
   const addCharacter = () => {
     onCharactersChange([...characters, { id: `char-${Date.now()}`, name: "", description: "" }]);
   };
@@ -42,7 +61,6 @@ export default function SceneInput({ scenes, characters, onScenesChange, onChara
   const removeCharacter = (i: number) => {
     const charId = characters[i].id;
     onCharactersChange(characters.filter((_, idx) => idx !== i));
-    // Remove character reference from all scenes
     onScenesChange(scenes.map(s => ({
       ...s,
       characterIds: s.characterIds.filter(id => id !== charId),
@@ -125,18 +143,78 @@ export default function SceneInput({ scenes, characters, onScenesChange, onChara
         )}
       </div>
 
+      {/* ─── Sentence List (for merging) ─── */}
+      {sentences.length > 0 && (
+        <div className="border border-slate-200 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-slate-100">
+            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              📝 Kalimat ({sentences.length}) — pilih & gabung jadi scene
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={selectAll}
+                className="text-[10px] font-bold text-slate-500 hover:text-violet-600 transition-all"
+              >
+                {sentences.every(s => s.selected) ? 'Batal Semua' : 'Pilih Semua'}
+              </button>
+              {selectedCount >= 1 && (
+                <button
+                  onClick={onMergeSelected}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-[10px] font-bold transition-all shadow-sm"
+                >
+                  <Merge size={11} />
+                  Gabung {selectedCount} kalimat → 1 Scene
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+            {sentences.map((sentence) => (
+              <label
+                key={sentence.id}
+                className={`flex items-start gap-2 px-4 py-2.5 cursor-pointer transition-all hover:bg-slate-50 ${
+                  sentence.selected ? 'bg-violet-50/50' : ''
+                }`}
+              >
+                <button
+                  onClick={(e) => { e.preventDefault(); toggleSentence(sentence.id); }}
+                  className="mt-0.5 flex-shrink-0"
+                >
+                  {sentence.selected
+                    ? <CheckSquare size={14} className="text-violet-600" />
+                    : <Square size={14} className="text-slate-300" />
+                  }
+                </button>
+                <span className="text-[10px] font-bold text-slate-400 mt-0.5 flex-shrink-0 w-5">
+                  {sentence.originalIndex + 1}
+                </span>
+                <span className="text-[11px] text-slate-600 leading-relaxed">{sentence.text}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ─── Scene List ─── */}
       {scenes.length === 0 ? (
         <div className="text-center py-12">
           <Wand2 size={40} className="text-slate-200 mx-auto mb-3" />
           <p className="text-sm text-slate-400 font-bold">Belum ada scene</p>
-          <p className="text-xs text-slate-300 mt-1">Paste narasi di atas, lalu klik &quot;Pecah Jadi Scene&quot;</p>
+          <p className="text-xs text-slate-300 mt-1">
+            {sentences.length > 0
+              ? 'Pilih kalimat di atas, lalu klik "Gabung → 1 Scene"'
+              : 'Paste narasi di atas, lalu klik "Pecah Jadi Kalimat"'
+            }
+          </p>
         </div>
       ) : (
         <div className="space-y-2">
+          <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1.5 px-1">
+            🎬 Scene yang sudah dibuat ({scenes.length})
+          </h4>
           {scenes.map((scene, i) => {
             const isExpanded = expandedScene === i;
-            const typeInfo = CONTENT_TYPE_LABELS[scene.contentType];
 
             return (
               <div key={scene.id} className="border border-slate-200 rounded-xl bg-white hover:border-slate-300 transition-all">
@@ -145,9 +223,10 @@ export default function SceneInput({ scenes, characters, onScenesChange, onChara
                   className="flex items-center gap-2 p-3 cursor-pointer"
                   onClick={() => setExpandedScene(isExpanded ? null : i)}
                 >
+                  <GripVertical size={12} className="text-slate-300 flex-shrink-0" />
                   <span className="text-[10px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded">{i + 1}</span>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${typeInfo.color}`}>
-                    {typeInfo.emoji} {typeInfo.label}
+                  <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
+                    {scene.sentenceIds.length} kalimat
                   </span>
                   <p className="flex-1 text-[11px] text-slate-600 truncate">{scene.narration}</p>
                   <button onClick={e => { e.stopPropagation(); removeScene(i); }} className="p-1 rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all">
@@ -166,20 +245,6 @@ export default function SceneInput({ scenes, characters, onScenesChange, onChara
                       rows={3}
                       className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 focus:border-violet-400 outline-none resize-none"
                     />
-
-                    {/* Content type override */}
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1">
-                        <Type size={10} /> Tipe Konten
-                      </label>
-                      <div className="flex flex-wrap gap-1">
-                        {(Object.entries(CONTENT_TYPE_LABELS) as [ContentType, typeof CONTENT_TYPE_LABELS[ContentType]][]).map(([key, info]) => (
-                          <PresetButton key={key} active={scene.contentType === key} onClick={() => updateScene(i, { contentType: key })}>
-                            {info.emoji} {info.label}
-                          </PresetButton>
-                        ))}
-                      </div>
-                    </div>
 
                     {/* Camera angle */}
                     <div>

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Copy, Check, Image, Film, ChevronDown, ChevronUp } from "lucide-react";
 import toast from "react-hot-toast";
-import { SceneItem, CONTENT_TYPE_LABELS } from "./types";
+import { SceneItem } from "./types";
 
 interface Props {
   scenes: SceneItem[];
@@ -22,7 +22,7 @@ export default function PromptOutput({ scenes }: Props) {
 
   const handleCopyAll = () => {
     const allText = scenes.map((s, i) => {
-      return `=== Scene ${i + 1} ===\n\n📝 Narasi:\n${s.narration}\n\n🖼️ Prompt Gambar:\n${s.imagePrompt}\n\n🎬 Prompt Animasi:\n${s.animationPrompt}`;
+      return `=== Scene ${i + 1} (${s.sentenceIds.length} kalimat) ===\n\n📝 Narasi:\n${s.narration}\n\n🖼️ Prompt Gambar:\n${s.imagePrompt}\n\n🎬 Prompt Animasi:\n${s.animationPrompt}`;
     }).join("\n\n" + "─".repeat(50) + "\n\n");
     handleCopy(allText, "all");
   };
@@ -58,7 +58,6 @@ export default function PromptOutput({ scenes }: Props) {
       {/* Scene prompt cards */}
       {scenes.map((scene, i) => {
         const isExpanded = expandedScene === i;
-        const typeInfo = CONTENT_TYPE_LABELS[scene.contentType];
         const imgKey = `img-${i}`;
         const animKey = `anim-${i}`;
 
@@ -72,8 +71,8 @@ export default function PromptOutput({ scenes }: Props) {
               <span className="text-[10px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded">
                 {i + 1}
               </span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${typeInfo.color}`}>
-                {typeInfo.emoji} {typeInfo.label}
+              <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
+                {scene.sentenceIds.length} kalimat
               </span>
               <p className="flex-1 text-[11px] text-slate-500 truncate">{scene.narration}</p>
               {isExpanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}

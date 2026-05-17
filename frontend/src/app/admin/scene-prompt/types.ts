@@ -1,21 +1,28 @@
 // ═══════════════════════════════════════════════════════════════
-// Scene Prompt Studio — Types & Preset Data
+// Scene Prompt Studio v3 — Types & Preset Data
+// Redesigned: sentence-level splitting, multi-age, hybrid prompt
 // ═══════════════════════════════════════════════════════════════
 
 // ─── Core Types ────────────────────────────────────────────────
 
-export interface CharacterCard {
+/** A single sentence extracted from the raw narration */
+export interface SentenceItem {
   id: string;
-  name: string;
-  description: string;
+  /** Original sentence text */
+  text: string;
+  /** Index in the original narration (for ordering) */
+  originalIndex: number;
+  /** Whether this sentence is selected for merging */
+  selected: boolean;
 }
 
+/** A scene created by merging one or more sentences */
 export interface SceneItem {
   id: string;
-  /** Original narration text */
+  /** Merged sentence text (the paragraph to be illustrated) */
   narration: string;
-  /** Auto-detected or user-selected content type */
-  contentType: ContentType;
+  /** IDs of original sentences that make up this scene */
+  sentenceIds: string[];
   /** Camera angle preset */
   camera: string;
   /** Mood/atmosphere preset */
@@ -26,9 +33,9 @@ export interface SceneItem {
   timeOfDay: string;
   /** Animation motion preset */
   animationMotion: string;
-  /** Generated image prompt */
+  /** Generated image prompt (v3 meta-instruction) */
   imagePrompt: string;
-  /** Generated animation prompt */
+  /** Generated animation prompt (v3 meta-instruction) */
   animationPrompt: string;
   /** Characters involved (references to CharacterCard IDs) */
   characterIds: string[];
@@ -36,8 +43,49 @@ export interface SceneItem {
   backToCamera?: boolean;
 }
 
-/** Content type auto-detection or manual override */
-export type ContentType = 'narasi' | 'dialog' | 'penjelasan' | 'pertanyaan' | 'dalil';
+export interface CharacterCard {
+  id: string;
+  name: string;
+  description: string;
+}
+
+// ─── Age Target ────────────────────────────────────────────────
+
+export interface AgeTarget {
+  id: string;
+  label: string;
+  description: string;
+  visualHint: string;
+}
+
+export const AGE_TARGETS: AgeTarget[] = [
+  {
+    id: '3-5',
+    label: '3-5 tahun',
+    description: 'Balita — sangat sederhana',
+    visualHint: 'sangat kartun, bentuk bulat sederhana, warna cerah kontras tinggi, karakter besar mendominasi frame, minim detail latar belakang',
+  },
+  {
+    id: '5-7',
+    label: '5-7 tahun',
+    description: 'TK/SD awal — default',
+    visualHint: 'kartun lucu, warna hangat pastel, karakter ekspresif melalui gesture tubuh, latar sederhana tapi informatif, suasana hangat dan ramah',
+  },
+  {
+    id: '7-10',
+    label: '7-10 tahun',
+    description: 'SD kelas 2-4',
+    visualHint: 'ilustrasi semi-detail, proporsi lebih realistis, bisa ada elemen teks dekoratif (kaligrafi), latar lebih kaya detail, komposisi lebih dinamis',
+  },
+  {
+    id: '10-12',
+    label: '10-12 tahun',
+    description: 'SD kelas 5-6 / SMP awal',
+    visualHint: 'ilustrasi detail, gaya lebih mature tapi tetap child-safe, bisa semi-realistis, komposisi cinematic, boleh ada kedalaman emosi visual',
+  },
+];
+
+export const DEFAULT_AGE_TARGET = '5-7';
 
 // ─── Visual Style ──────────────────────────────────────────────
 
@@ -243,13 +291,3 @@ export const SCENE_ASPECT_RATIOS = [
   { id: '9:16', label: '9:16', desc: 'Reels / TikTok' },
   { id: '1:1', label: '1:1', desc: 'Instagram Feed' },
 ];
-
-// ─── Content Type Detection Keywords ───────────────────────────
-
-export const CONTENT_TYPE_LABELS: Record<ContentType, { label: string; emoji: string; color: string }> = {
-  narasi: { label: 'Narasi', emoji: '📖', color: 'bg-emerald-100 text-emerald-700' },
-  dialog: { label: 'Dialog', emoji: '💬', color: 'bg-sky-100 text-sky-700' },
-  penjelasan: { label: 'Penjelasan', emoji: '📚', color: 'bg-violet-100 text-violet-700' },
-  pertanyaan: { label: 'Pertanyaan', emoji: '🤔', color: 'bg-amber-100 text-amber-700' },
-  dalil: { label: 'Dalil/Ayat', emoji: '☪️', color: 'bg-rose-100 text-rose-700' },
-};

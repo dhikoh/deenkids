@@ -69,7 +69,7 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
   ]);
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-12 pt-28 max-w-3xl">
+    <article className="container mx-auto px-4 md:px-6 py-12 pt-28 max-w-3xl" itemScope itemType="https://schema.org/Article">
       <JsonLd schema={articleSchema} />
       <JsonLd schema={breadcrumbSchema} />
       <Link href="/artikel" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-8 font-bold text-sm">
@@ -104,6 +104,7 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
           {content.avgRating > 0 && <span className="flex items-center gap-1 text-amber-500 font-bold"><Star className="h-4 w-4 fill-amber-500" /> {content.avgRating.toFixed(1)}</span>}
           <span className="flex items-center gap-1"><ThumbsUp className="h-4 w-4" /> {content.likeCount}</span>
           <span className="flex items-center gap-1"><Eye className="h-4 w-4" /> {content.viewCount}</span>
+          {content.publishedAt && <time dateTime={new Date(content.publishedAt).toISOString()} className="text-xs text-slate-400">{new Date(content.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</time>}
         </div>
         {content.tags?.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
@@ -175,6 +176,6 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
         initialShares={content.shareCount || 0}
         initialViews={content.viewCount || 0}
       />
-    </div>
+    </article>
   );
 }

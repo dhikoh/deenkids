@@ -3,6 +3,7 @@ import { AdminService } from './admin.service';
 import { ReviewService } from './review.service';
 import { StructureService } from './structure.service';
 import { N8nService, SaveContentPayload } from '../n8n/n8n.service';
+import { IndexNowService } from '../common/seo/indexnow.service';
 import { RolesGuard, JwtAuthGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -20,6 +21,7 @@ export class AdminController {
     private readonly reviewService: ReviewService,
     private readonly structureService: StructureService,
     private readonly n8nService: N8nService,
+    private readonly indexNowService: IndexNowService,
   ) {}
 
   // ── Dashboard Stats ──
@@ -188,5 +190,23 @@ export class AdminController {
     };
 
     return this.n8nService.saveContent(payload);
+  }
+
+  // ── SEO / AI Indexing ──
+
+  @Post('seo/submit-all')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Bulk submit ALL published content URLs to IndexNow for instant AI/search indexing' })
+  async seoSubmitAll() {
+    this.logger.log('🚀 Admin triggered bulk IndexNow submit');
+    return this.indexNowService.submitAllPublishedContent();
+  }
+
+  @Post('seo/ping-sitemap')
+  @Roles('SUPERADMIN')
+  @ApiOperation({ summary: 'Ping Google and Bing that sitemap has been updated' })
+  async seoPingSitemap() {
+    this.logger.log('🌐 Admin triggered sitemap ping');
+    return this.indexNowService.pingSitemap();
   }
 }
