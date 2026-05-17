@@ -135,6 +135,31 @@ export class EditorController {
     return { url, filename: file.originalname, size: file.size, message: 'Audio berhasil di-upload' };
   }
 
+  // ── Video Upload — stored in MinIO object storage ─────────────────────
+  @Post('video/upload')
+  @ApiOperation({ summary: 'Upload video MP4/WebM for content — Admin/SuperAdmin only' })
+  @Roles('ADMIN', 'SUPERADMIN')
+  @UseInterceptors(FileInterceptor('video', {
+    storage: memoryStorage(),
+    limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
+    fileFilter: (_req, file, cb) => {
+      if (!file.mimetype.match(/^video\/(mp4|webm|quicktime|x-msvideo|x-matroska)/)) {
+        return cb(new BadRequestException('Hanya file video MP4/WebM/MOV yang diizinkan'), false);
+      }
+      cb(null, true);
+    },
+  }))
+  async uploadVideo(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('File video tidak ditemukan dalam request');
+    const url = await this.storageService.uploadFile(
+      file.buffer,
+      file.mimetype,
+      file.originalname,
+      'video',
+    );
+    return { url, filename: file.originalname, size: file.size, message: 'Video berhasil di-upload' };
+  }
+
   // ═══════════════════════════════════════════════════════
   // TRASH / RECYCLE BIN
   // ═══════════════════════════════════════════════════════

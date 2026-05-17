@@ -1,35 +1,48 @@
 "use client";
 
-import { useState } from "react";
-import { Film, Volume2, ChevronDown } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Film, Volume2 } from "lucide-react";
 
 interface Props {
-  storyboardVideoUrl: string; // YouTube embed URL
+  storyboardVideoUrl: string; // YouTube URL or uploaded file path
   audioUrl?: string | null;
   enableAudio?: boolean;
   title: string;
 }
 
 /**
- * Public page toggle: Video (YouTube embed) vs Audio player.
- * Shows a tabbed UI when both storyboard video and audio are available.
- * Falls back to video-only or audio-only when only one exists.
+ * Public page toggle: Video vs Audio player.
+ * Supports both YouTube embed URLs and direct file URLs (MP4/WebM).
+ * Shows a tabbed UI when both video and audio are available.
  */
 export default function StoryboardVideoPlayer({ storyboardVideoUrl, audioUrl, enableAudio, title }: Props) {
   const [mode, setMode] = useState<'video' | 'audio'>('video');
   const hasAudio = enableAudio && audioUrl;
 
-  // Extract YouTube video ID for embed
-  const getYouTubeEmbedUrl = (url: string): string => {
-    // Already an embed URL
-    if (url.includes('/embed/')) return url;
-    // Standard YouTube URL
-    const match = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
-    if (match) return `https://www.youtube.com/embed/${match[1]}`;
-    return url;
-  };
+  // Detect if URL is YouTube
+  const isYouTube = useMemo(() => {
+    return storyboardVideoUrl.includes('youtube.com') || storyboardVideoUrl.includes('youtu.be');
+  }, [storyboardVideoUrl]);
 
-  const embedUrl = getYouTubeEmbedUrl(storyboardVideoUrl);
+  // Extract YouTube video ID for embed
+  const youtubeEmbedUrl = useMemo(() => {
+    if (!isYouTube) return '';
+    if (storyboardVideoUrl.includes('/embed/')) return storyboardVideoUrl;
+    const match = storyboardVideoUrl.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    if (match) return `https://www.youtube.com/embed/${match[1]}`;
+    return storyboardVideoUrl;
+  }, [storyboardVideoUrl, isYouTube]);
+
+  // Resolve file URL (handle relative paths from MinIO)
+  const fileVideoUrl = useMemo(() => {
+    if (isYouTube) return '';
+    if (storyboardVideoUrl.startsWith('http://') || storyboardVideoUrl.startsWith('https://')) {
+      return storyboardVideoUrl;
+    }
+    // Relative path from backend storage
+    const base = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '');
+    return `${base}${storyboardVideoUrl}`;
+  }, [storyboardVideoUrl, isYouTube]);
 
   return (
     <div className="mb-6">
@@ -59,17 +72,29 @@ export default function StoryboardVideoPlayer({ storyboardVideoUrl, audioUrl, en
         </div>
       )}
 
-      {/* Video embed */}
+      {/* Video — YouTube embed OR native player */}
       {mode === 'video' && (
         <div className="w-full aspect-video rounded-2xl overflow-hidden shadow-lg bg-black border border-slate-200">
-          <iframe
-            src={embedUrl}
-            title={title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="w-full h-full"
-            loading="lazy"
-          />
+          {isYouTube ? (
+            <iframe
+              src={youtubeEmbedUrl}
+              title={title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="w-full h-full"
+              loading="lazy"
+            />
+          ) : (
+            <video
+              controls
+              className="w-full h-full"
+              preload="metadata"
+              playsInline
+            >
+              <source src={fileVideoUrl} />
+              Browser Anda tidak mendukung video player.
+            </video>
+          )}
         </div>
       )}
 

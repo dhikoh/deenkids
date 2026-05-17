@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock, Volume2, VolumeX, Eye, Mic, Upload, Music } from "lucide-react";
+import { CheckCircle, Save, Sparkles, Plus, Trash2, ArrowRight, BookOpen, Lightbulb, MessageCircle, Info, X, GripVertical, ArrowUp, ArrowDown, Image, Video, UserCircle, AlertTriangle, Clock, Volume2, VolumeX, Eye, Mic, Upload, Music, Film, Link2 } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
-import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle, submitContentForReview, apiFetch, authHeaders, API_BASE_URL, generateTtsAudio, uploadAudioFile } from "@/lib/api";
+import { createContent, fetchEditorNodes, fetchEditorTags, fetchAiToggle, submitContentForReview, apiFetch, authHeaders, API_BASE_URL, generateTtsAudio, uploadAudioFile, uploadVideoFile } from "@/lib/api";
 import ImageCropperModal from "@/components/ImageCropperModal";
 
 type ContentTypeOption = "PEMBELAJARAN" | "QNA" | "ARTICLE" | "KISAH";
@@ -71,6 +71,10 @@ function EditorContent() {
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [showExportScript, setShowExportScript] = useState(false);
   const [exportScriptText, setExportScriptText] = useState("");
+  const [videoUrl, setVideoUrl] = useState(""); // uploaded video path or YouTube URL
+  const [videoMode, setVideoMode] = useState<'upload' | 'youtube'>('upload');
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [youtubeInput, setYoutubeInput] = useState("");
   const [pov, setPov] = useState(""); // 'ORTU' | 'ANAK' | '' — hanya untuk ARTICLE
   const [openingText, setOpeningText] = useState("");
   const [closingText, setClosingText] = useState("");
@@ -145,6 +149,16 @@ function EditorContent() {
               setAudioUrl(c.audioUrl || "");
               setThumbnailUrl(c.thumbnailUrl || "");
               setSocialThumbnailUrl(c.socialThumbnailUrl || "");
+              if (c.storyboardVideoUrl) {
+                setVideoUrl(c.storyboardVideoUrl);
+                // Auto-detect mode from existing URL
+                if (c.storyboardVideoUrl.includes('youtube.com') || c.storyboardVideoUrl.includes('youtu.be')) {
+                  setVideoMode('youtube');
+                  setYoutubeInput(c.storyboardVideoUrl);
+                } else {
+                  setVideoMode('upload');
+                }
+              }
               setOpeningText(c.openingText || "");
               setClosingText(c.closingText || "");
               setOpeningAudio(c.openingAudio !== undefined ? c.openingAudio : true);
@@ -220,13 +234,13 @@ function EditorContent() {
     if (editId) return; // Don't auto-save when editing existing content
     const timer = setInterval(() => {
       if (title || blocks.length > 0) {
-        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, audioUrl, thumbnailUrl, pov, openingText, closingText, openingAudio, closingAudio, savedAt: new Date().toISOString() };
+        const draft = { title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, audioUrl, thumbnailUrl, pov, openingText, closingText, openingAudio, closingAudio, videoUrl, savedAt: new Date().toISOString() };
         localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft));
         setLastAutoSave(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
       }
     }, 30000);
     return () => clearInterval(timer);
-  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, audioUrl, thumbnailUrl, pov, openingText, closingText, openingAudio, closingAudio, editId]);
+  }, [title, description, contentType, ageGroups, nodeId, tags, blocks, displayAuthorName, useAi, enableAudio, audioTitle, audioDescription, audioUrl, thumbnailUrl, pov, openingText, closingText, openingAudio, closingAudio, videoUrl, editId]);
 
   const recoverDraft = () => {
     try {
@@ -246,6 +260,7 @@ function EditorContent() {
         if (d.audioDescription !== undefined) setAudioDescription(d.audioDescription);
         if (d.thumbnailUrl) setThumbnailUrl(d.thumbnailUrl);
         if (d.audioUrl) setAudioUrl(d.audioUrl);
+        if (d.videoUrl) setVideoUrl(d.videoUrl);
         if (d.openingText) setOpeningText(d.openingText);
         if (d.closingText) setClosingText(d.closingText);
         if (d.openingAudio !== undefined) setOpeningAudio(d.openingAudio);
@@ -319,6 +334,7 @@ function EditorContent() {
       const payload: any = {
         title, description, type: contentType, ageGroups, useAiChecker: useAi, enableAudio, audioTitle, audioDescription,
         audioUrl: audioUrl || null,
+        storyboardVideoUrl: videoUrl || null,
         tags,
         thumbnailUrl: thumbnailUrl || null,
         socialThumbnailUrl: socialThumbnailUrl || null,
@@ -533,7 +549,7 @@ function EditorContent() {
             <span className="text-sm font-medium flex items-center gap-1">{enableAudio ? <Volume2 className="h-4 w-4 text-purple-500" /> : <VolumeX className="h-4 w-4 text-slate-400" />} Audio</span>
           </label>
           <button onClick={() => {
-            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, audioTitle, audioDescription, audioUrl, displayAuthorName, openingText, closingText, openingAudio, closingAudio, thumbnailUrl, socialThumbnailUrl, pov };
+            const previewData = { title, description, contentType, ageGroups, blocks, tags, editId, enableAudio, audioTitle, audioDescription, audioUrl, displayAuthorName, openingText, closingText, openingAudio, closingAudio, thumbnailUrl, socialThumbnailUrl, pov, storyboardVideoUrl: videoUrl };
             localStorage.setItem('adably_preview_data', JSON.stringify(previewData));
             window.open('/admin/editor/preview', '_blank');
           }} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold shadow-md transition-all flex items-center gap-2">
@@ -1090,7 +1106,137 @@ function EditorContent() {
           </div>
 
           {/* ═══════════════════════════════════════════════════
-              Panel 2: Generate AI TTS — SUPERADMIN ONLY
+              Panel 2: Video Konten — ADMIN/SUPERADMIN ONLY
+              Upload MP4/WebM or paste YouTube URL
+              ═══════════════════════════════════════════════════ */}
+          {(isSuperAdmin || user?.role === 'ADMIN') && (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-indigo-200">
+              <h3 className="font-bold text-slate-800 mb-1 flex items-center gap-2">
+                <Film size={16} className="text-indigo-500" /> Video Konten
+              </h3>
+              <p className="text-xs text-slate-400 mb-3">Upload video atau paste YouTube URL.</p>
+
+              {/* Tab: Upload / YouTube */}
+              <div className="flex gap-1 mb-3 bg-slate-100 rounded-xl p-1">
+                <button
+                  type="button"
+                  onClick={() => setVideoMode('upload')}
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                    videoMode === 'upload' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <Upload size={12} /> Upload File
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVideoMode('youtube')}
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                    videoMode === 'youtube' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <Link2 size={12} /> YouTube URL
+                </button>
+              </div>
+
+              {/* Upload tab */}
+              {videoMode === 'upload' && (
+                <label className={`flex items-center gap-2 justify-center border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors mb-3 ${
+                  uploadingVideo ? 'border-indigo-300 bg-indigo-50' : videoUrl && !videoUrl.includes('youtube') ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
+                }`}>
+                  <Upload size={14} className={videoUrl && !videoUrl.includes('youtube') ? 'text-emerald-500' : 'text-slate-400'} />
+                  <span className="text-xs font-bold text-slate-600">
+                    {uploadingVideo ? 'Mengupload...' : videoUrl && !videoUrl.includes('youtube') ? '✓ Video ter-upload — klik ganti' : 'Upload file MP4/WebM (maks 500MB)'}
+                  </span>
+                  <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" disabled={uploadingVideo}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]; if (!file) return;
+                      if (file.size > 500 * 1024 * 1024) return toast.error('Ukuran maks 500MB');
+                      const token = Cookies.get('_at'); if (!token) return;
+                      setUploadingVideo(true);
+                      try {
+                        const result = await uploadVideoFile(file, token);
+                        setVideoUrl(result.url);
+                        setYoutubeInput('');
+                        toast.success('🎬 Video berhasil di-upload!');
+                      } catch (err: any) { toast.error(err.message || 'Upload video gagal'); }
+                      finally { setUploadingVideo(false); e.target.value = ''; }
+                    }}
+                  />
+                </label>
+              )}
+
+              {/* YouTube tab */}
+              {videoMode === 'youtube' && (
+                <div className="space-y-2 mb-3">
+                  <input
+                    type="url"
+                    value={youtubeInput}
+                    onChange={e => setYoutubeInput(e.target.value)}
+                    placeholder="https://youtube.com/watch?v=..."
+                    className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:border-indigo-500 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    disabled={!youtubeInput.trim()}
+                    onClick={() => {
+                      const url = youtubeInput.trim();
+                      if (!url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)) {
+                        toast.error('URL YouTube tidak valid');
+                        return;
+                      }
+                      setVideoUrl(url);
+                      toast.success('🎬 YouTube URL disimpan!');
+                    }}
+                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-colors"
+                  >
+                    Simpan URL
+                  </button>
+                </div>
+              )}
+
+              {/* Video preview */}
+              {videoUrl && (
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Film size={13} className="text-indigo-500" />
+                    <span className="text-xs font-bold text-slate-600">Preview</span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                      videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')
+                        ? 'bg-rose-100 text-rose-600' : 'bg-indigo-100 text-indigo-600'
+                    }`}>
+                      {videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be') ? 'YouTube' : 'File Upload'}
+                    </span>
+                    <button type="button" onClick={() => { setVideoUrl(''); setYoutubeInput(''); }} className="ml-auto text-xs text-rose-400 hover:text-rose-600 font-bold">Hapus</button>
+                  </div>
+                  {(videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) ? (
+                    <div className="aspect-video rounded-lg overflow-hidden bg-black">
+                      <iframe
+                        src={(() => {
+                          const m = videoUrl.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+                          return m ? `https://www.youtube.com/embed/${m[1]}` : videoUrl;
+                        })()}
+                        title="Preview"
+                        allowFullScreen
+                        className="w-full h-full"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <video controls className="w-full rounded-lg" preload="metadata">
+                      <source src={
+                        videoUrl.startsWith('http://') || videoUrl.startsWith('https://')
+                          ? videoUrl
+                          : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '')}${videoUrl}`
+                      } />
+                    </video>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════
+              Panel 3: Generate AI TTS — SUPERADMIN ONLY
               ═══════════════════════════════════════════════════ */}
           {isSuperAdmin && (
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-purple-200">

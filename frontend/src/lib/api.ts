@@ -1019,6 +1019,29 @@ export async function uploadAudioFile(
   return res.json();
 }
 
+// ─────────────────────────────────────────────
+// Video Upload (ADMIN, SUPERADMIN Only)
+// Upload MP4/WebM file → returns { url, filename, size }
+// ─────────────────────────────────────────────
+
+export async function uploadVideoFile(
+  file: File,
+  token: string,
+): Promise<{ url: string; filename: string; size: number; message: string }> {
+  const formData = new FormData();
+  formData.append('video', file);
+  const res = await fetch(`${API_BASE_URL}/editor/video/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Upload gagal' }));
+    throw new Error(err.message || `Upload error ${res.status}`);
+  }
+  return res.json();
+}
+
 // ── Homepage Visibility Config ──
 
 export async function fetchHomepageConfig(): Promise<{ pembelajaran: boolean; qna: boolean; kisah: boolean; article: boolean }> {

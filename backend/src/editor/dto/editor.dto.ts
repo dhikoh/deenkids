@@ -120,6 +120,11 @@ export class CreateContentDto {
   @IsOptional()
   audioUrl?: string;
 
+  @ApiProperty({ required: false, description: 'Video URL — uploaded MP4/WebM path or YouTube URL (Admin/SuperAdmin only)' })
+  @IsString()
+  @IsOptional()
+  storyboardVideoUrl?: string;
+
   @ApiProperty({ required: false, description: 'Teks pembukaan/mukadimah (salam + pengantar)' })
   @IsString()
   @IsOptional()

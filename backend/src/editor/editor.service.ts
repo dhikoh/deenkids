@@ -65,6 +65,7 @@ export class EditorService {
         audioTitle: dto.audioTitle !== undefined ? dto.audioTitle : true,
         audioDescription: dto.audioDescription !== undefined ? dto.audioDescription : true,
         audioUrl: dto.audioUrl ? sanitizeText(dto.audioUrl) : null,
+        storyboardVideoUrl: dto.storyboardVideoUrl ? sanitizeText(dto.storyboardVideoUrl) : null,
         pov: dto.type === 'ARTICLE' ? (dto.pov || null) : null,
         openingText: dto.openingText ? sanitizeText(dto.openingText) : null,
         closingText: dto.closingText ? sanitizeText(dto.closingText) : null,
@@ -255,6 +256,7 @@ export class EditorService {
         audioTitle: dto.audioTitle !== undefined ? dto.audioTitle : existing.audioTitle,
         audioDescription: dto.audioDescription !== undefined ? dto.audioDescription : existing.audioDescription,
         audioUrl: dto.audioUrl !== undefined ? (dto.audioUrl ? sanitizeText(dto.audioUrl) : null) : existing.audioUrl,
+        storyboardVideoUrl: dto.storyboardVideoUrl !== undefined ? (dto.storyboardVideoUrl ? sanitizeText(dto.storyboardVideoUrl) : null) : existing.storyboardVideoUrl,
         metaTitle: dto.metaTitle ? sanitizeText(dto.metaTitle) : dto.metaTitle,
         metaDesc: dto.metaDesc ? sanitizeText(dto.metaDesc) : dto.metaDesc,
         pov: existing.type === 'ARTICLE' ? (dto.pov !== undefined ? (dto.pov || null) : existing.pov) : null,
@@ -295,6 +297,14 @@ export class EditorService {
         && updateData.socialThumbnailUrl !== existing.socialThumbnailUrl) {
       this.storageService.deleteFile(existing.socialThumbnailUrl).catch(err =>
         this.logger.warn(`⚠️  Failed to cleanup old social thumbnail: ${err.message}`),
+      );
+    }
+
+    // Cleanup old video file from MinIO if being replaced or cleared (skip YouTube URLs)
+    if (existing.storyboardVideoUrl && updateData.storyboardVideoUrl !== existing.storyboardVideoUrl
+        && !existing.storyboardVideoUrl.includes('youtube.com') && !existing.storyboardVideoUrl.includes('youtu.be')) {
+      this.storageService.deleteFile(existing.storyboardVideoUrl).catch(err =>
+        this.logger.warn(`⚠️  Failed to cleanup old video: ${err.message}`),
       );
     }
 
@@ -621,6 +631,12 @@ export class EditorService {
         this.logger.warn(`⚠️  Failed to cleanup social thumbnail on permanent delete: ${err.message}`),
       );
     }
+    // Cleanup uploaded video file (skip YouTube URLs)
+    if (content.storyboardVideoUrl && !content.storyboardVideoUrl.includes('youtube.com') && !content.storyboardVideoUrl.includes('youtu.be')) {
+      await this.storageService.deleteFile(content.storyboardVideoUrl).catch(err =>
+        this.logger.warn(`⚠️  Failed to cleanup video on permanent delete: ${err.message}`),
+      );
+    }
 
     // Hard delete — Prisma cascade will clean up all related data
     await this.prisma.contentItem.delete({ where: { id: contentId } });
@@ -637,7 +653,7 @@ export class EditorService {
     // Cleanup all MinIO files from trashed content before bulk delete
     const trashedWithFiles = await this.prisma.contentItem.findMany({
       where: { deletedAt: { not: null } },
-      select: { audioUrl: true, thumbnailUrl: true, socialThumbnailUrl: true },
+      select: { audioUrl: true, thumbnailUrl: true, socialThumbnailUrl: true, storyboardVideoUrl: true },
     });
     for (const item of trashedWithFiles) {
       if (item.audioUrl) {
@@ -653,6 +669,12 @@ export class EditorService {
       if (item.socialThumbnailUrl) {
         await this.storageService.deleteFile(item.socialThumbnailUrl).catch(err =>
           this.logger.warn(`⚠️  Failed to cleanup social thumbnail in emptyTrash: ${err.message}`),
+        );
+      }
+      // Cleanup uploaded video (skip YouTube URLs)
+      if (item.storyboardVideoUrl && !item.storyboardVideoUrl.includes('youtube.com') && !item.storyboardVideoUrl.includes('youtu.be')) {
+        await this.storageService.deleteFile(item.storyboardVideoUrl).catch(err =>
+          this.logger.warn(`⚠️  Failed to cleanup video in emptyTrash: ${err.message}`),
         );
       }
     }
