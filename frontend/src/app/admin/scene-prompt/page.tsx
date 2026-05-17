@@ -13,6 +13,14 @@ import { splitIntoSentences, generateAllPrompts, detectSceneCategory, autoDetect
 import SceneInput from "./SceneInput";
 import PromptOutput from "./PromptOutput";
 
+/**
+ * Scene Prompt Studio v3 — Workflow yang benar:
+ * 
+ * STEP 1: Paste narasi → "Pecah & Buat Scene" → otomatis 1 kalimat = 1 scene
+ * STEP 2: User bisa merge 2+ scene berdekatan → jadi 1 scene (opsional)
+ * STEP 3: User edit per-scene settings (camera, mood, karakter, dll)
+ * STEP 4: Klik "Generate Prompt" → output gambar + animasi
+ */
 export default function ScenePromptStudioPage() {
   // ─── State ───
   const [rawText, setRawText] = useState("");
@@ -38,8 +46,11 @@ export default function ScenePromptStudioPage() {
 
   const isCustom = visualPresetId === "custom";
 
-  // ─── Split Narration into Sentences ───
-  const handleSplitSentences = () => {
+  // Track which step user is on for UI guidance
+  const step = scenes.length > 0 ? (scenes[0].imagePrompt ? 3 : 2) : (sentences.length > 0 ? 1 : 0);
+
+  // ─── STEP 1: Pecah narasi & langsung buat scene ───
+  const handleSplitAndCreateScenes = () => {
     if (!rawText.trim()) {
       toast.error("Masukkan narasi terlebih dahulu");
       return;
@@ -51,61 +62,17 @@ export default function ScenePromptStudioPage() {
       return;
     }
 
+    // Create sentences for reference
     const newSentences: SentenceItem[] = extracted.map((text, i) => ({
       id: `sent-${Date.now()}-${i}`,
       text,
       originalIndex: i,
       selected: false,
     }));
-
     setSentences(newSentences);
-    toast.success(`${newSentences.length} kalimat berhasil dipecah`);
-  };
 
-  // ─── Merge Selected Sentences into a Scene ───
-  const handleMergeSelected = () => {
-    const selected = sentences.filter(s => s.selected);
-    if (selected.length === 0) {
-      toast.error("Pilih minimal 1 kalimat untuk digabung");
-      return;
-    }
-
-    // Sort by original index to maintain order
-    const sorted = [...selected].sort((a, b) => a.originalIndex - b.originalIndex);
-    const mergedText = sorted.map(s => s.text).join(" ");
-    const category = detectSceneCategory(mergedText);
-    const presets = autoDetectPresets(mergedText, category);
-
-    const newScene: SceneItem = {
-      id: `scene-${Date.now()}`,
-      narration: mergedText,
-      sentenceIds: sorted.map(s => s.id),
-      camera: presets.camera,
-      mood: presets.mood,
-      location: presets.location,
-      timeOfDay: presets.timeOfDay,
-      animationMotion: "ambient",
-      imagePrompt: "",
-      animationPrompt: "",
-      characterIds: [],
-      backToCamera,
-    };
-
-    setScenes(prev => [...prev, newScene]);
-
-    // Deselect merged sentences
-    setSentences(prev => prev.map(s => selected.find(sel => sel.id === s.id) ? { ...s, selected: false } : s));
-    toast.success(`${selected.length} kalimat digabung → Scene ${scenes.length + 1}`);
-  };
-
-  // ─── Auto-merge: each sentence becomes 1 scene ───
-  const handleAutoMerge = () => {
-    if (sentences.length === 0) {
-      toast.error("Pecah narasi menjadi kalimat terlebih dahulu");
-      return;
-    }
-
-    const newScenes: SceneItem[] = sentences.map((s) => {
+    // Auto-create 1 scene per sentence
+    const newScenes: SceneItem[] = newSentences.map((s) => {
       const category = detectSceneCategory(s.text);
       const presets = autoDetectPresets(s.text, category);
       return {
@@ -125,14 +92,71 @@ export default function ScenePromptStudioPage() {
     });
 
     setScenes(newScenes);
-    toast.success(`${newScenes.length} scene otomatis dari ${sentences.length} kalimat`);
+    toast.success(`✅ ${newScenes.length} scene berhasil dibuat dari ${extracted.length} kalimat`);
+  };
+
+  // ─── STEP 2: Merge selected scenes (AFTER scenes exist) ───
+  const handleMergeSelectedScenes = (selectedIndices: number[]) => {
+    if (selectedIndices.length < 2) {
+      toast.error("Pilih minimal 2 scene untuk digabung");
+      return;
+    }
+
+    // Sort indices
+    const sorted = [...selectedIndices].sort((a, b) => a - b);
+
+    // Check contiguous
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] !== sorted[i - 1] + 1) {
+        toast.error("Scene yang digabung harus berurutan (berdekatan)");
+        return;
+      }
+    }
+
+    const scenesToMerge = sorted.map(i => scenes[i]);
+    const mergedNarration = scenesToMerge.map(s => s.narration).join(" ");
+    const mergedSentenceIds = scenesToMerge.flatMap(s => s.sentenceIds);
+    const mergedCharacterIds = [...new Set(scenesToMerge.flatMap(s => s.characterIds))];
+
+    // Use first scene's presets as base
+    const baseScene = scenesToMerge[0];
+    const mergedScene: SceneItem = {
+      id: `scene-merged-${Date.now()}`,
+      narration: mergedNarration,
+      sentenceIds: mergedSentenceIds,
+      camera: baseScene.camera,
+      mood: baseScene.mood,
+      location: baseScene.location,
+      timeOfDay: baseScene.timeOfDay,
+      animationMotion: baseScene.animationMotion,
+      imagePrompt: "",       // Clear — needs re-generate
+      animationPrompt: "",   // Clear — needs re-generate
+      characterIds: mergedCharacterIds,
+      backToCamera: baseScene.backToCamera,
+    };
+
+    // Replace merged scenes with single merged scene
+    const newScenes = [
+      ...scenes.slice(0, sorted[0]),
+      mergedScene,
+      ...scenes.slice(sorted[sorted.length - 1] + 1),
+    ];
+
+    setScenes(newScenes);
+    toast.success(`🔗 ${sorted.length} scene digabung → Scene ${sorted[0] + 1}`);
+  };
+
+  // ─── Reset — start over ───
+  const handleReset = () => {
+    setSentences([]);
+    setScenes([]);
+    toast.success("🔄 Reset berhasil — siap mulai ulang");
   };
 
   // ─── Toggle Age Selection ───
   const toggleAge = (ageId: string) => {
     setSelectedAges(prev => {
       if (prev.includes(ageId)) {
-        // Don't allow deselecting if it's the last one
         if (prev.length === 1) return prev;
         return prev.filter(id => id !== ageId);
       }
@@ -140,10 +164,10 @@ export default function ScenePromptStudioPage() {
     });
   };
 
-  // ─── Generate All Prompts ───
+  // ─── STEP 3: Generate All Prompts ───
   const handleGenerate = () => {
     if (scenes.length === 0) {
-      toast.error("Buat scene terlebih dahulu (gabung kalimat)");
+      toast.error("Buat scene terlebih dahulu");
       return;
     }
 
@@ -171,16 +195,49 @@ export default function ScenePromptStudioPage() {
             <Clapperboard className="h-6 w-6 text-violet-600" /> Scene Prompt Studio
             <span className="text-xs font-normal bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full">v3</span>
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">Generate prompt gambar & animasi — split per kalimat, gabung sesuai kebutuhan</p>
+          <p className="text-slate-500 mt-1 text-sm">Generate prompt gambar & animasi — pecah narasi, atur scene, generate prompt</p>
         </div>
-        <button
-          onClick={handleGenerate}
-          disabled={scenes.length === 0}
-          className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-violet-200 transition-all disabled:opacity-50"
-        >
-          <Sparkles size={16} />
-          Generate Prompt ({scenes.length} scene)
-        </button>
+
+        {/* Step indicator */}
+        <div className="flex items-center gap-2">
+          {scenes.length > 0 && (
+            <button
+              onClick={handleReset}
+              className="px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-xl text-xs font-bold transition-all"
+            >
+              🔄 Reset
+            </button>
+          )}
+          <button
+            onClick={handleGenerate}
+            disabled={scenes.length === 0}
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-violet-200 transition-all disabled:opacity-50"
+          >
+            <Sparkles size={16} />
+            Generate Prompt ({scenes.length} scene)
+          </button>
+        </div>
+      </div>
+
+      {/* ─── Step Progress Bar ─── */}
+      <div className="flex items-center gap-2 mb-6 px-1">
+        {[
+          { num: 1, label: "Pecah Narasi", active: step >= 1 },
+          { num: 2, label: "Atur Scene", active: step >= 2 },
+          { num: 3, label: "Generate Prompt", active: step >= 3 },
+        ].map((s, i) => (
+          <div key={s.num} className="flex items-center gap-2 flex-1">
+            <div className={`flex items-center gap-2 flex-1 px-3 py-2 rounded-xl border transition-all ${
+              s.active ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-slate-50 border-slate-200 text-slate-400'
+            }`}>
+              <span className={`text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center ${
+                s.active ? 'bg-violet-600 text-white' : 'bg-slate-200 text-slate-400'
+              }`}>{s.num}</span>
+              <span className="text-[11px] font-bold">{s.label}</span>
+            </div>
+            {i < 2 && <span className="text-slate-300 text-xs">→</span>}
+          </div>
+        ))}
       </div>
 
       {/* ─── Visual Style + Age Section ─── */}
@@ -306,7 +363,7 @@ export default function ScenePromptStudioPage() {
             <textarea
               value={rawText}
               onChange={e => setRawText(e.target.value)}
-              placeholder={"Paste seluruh naskah di sini...\n\nSetiap kalimat (diakhiri titik, tanda seru, atau tanda tanya) akan dipecah menjadi item terpisah.\n\nContoh:\nTahukah kamu apa itu aurat? Aurat adalah bagian tubuh yang wajib ditutup. Allah berfirman dalam QS. An-Nur ayat 31 tentang menutup aurat."}
+              placeholder={"Paste seluruh naskah di sini...\n\nSetiap kalimat (diakhiri titik, tanda seru, atau tanda tanya) akan dipecah menjadi 1 scene.\n\nContoh:\nTahukah kamu apa itu aurat? Aurat adalah bagian tubuh yang wajib ditutup. Allah berfirman dalam QS. An-Nur ayat 31 tentang menutup aurat."}
               rows={8}
               className="w-full text-xs border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:border-violet-400 outline-none resize-none placeholder:text-slate-300 leading-relaxed"
             />
@@ -314,24 +371,14 @@ export default function ScenePromptStudioPage() {
               <span className="text-[10px] text-slate-400">
                 {rawText.trim() ? `~${splitIntoSentences(rawText).length} kalimat terdeteksi` : "Belum ada teks"}
               </span>
-              <div className="flex gap-2">
-                {sentences.length > 0 && scenes.length === 0 && (
-                  <button
-                    onClick={handleAutoMerge}
-                    className="flex items-center gap-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all"
-                  >
-                    ⚡ Auto: 1 kalimat = 1 scene
-                  </button>
-                )}
-                <button
-                  onClick={handleSplitSentences}
-                  disabled={!rawText.trim()}
-                  className="flex items-center gap-1 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50"
-                >
-                  <Layers size={14} />
-                  Pecah Jadi Kalimat
-                </button>
-              </div>
+              <button
+                onClick={handleSplitAndCreateScenes}
+                disabled={!rawText.trim()}
+                className="flex items-center gap-1 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+              >
+                <Layers size={14} />
+                {scenes.length > 0 ? "Pecah Ulang" : "Pecah & Buat Scene"}
+              </button>
             </div>
             {/* Back to Camera toggle */}
             <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
@@ -396,21 +443,22 @@ export default function ScenePromptStudioPage() {
             )}
           </div>
 
-          {/* Scene Input (character cards + sentence list + scene list) */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm max-h-[calc(100vh-320px)] overflow-y-auto">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5 mb-3">
-              🎬 Scene ({scenes.length})
-            </h3>
-            <SceneInput
-              sentences={sentences}
-              scenes={scenes}
-              characters={characters}
-              onSentencesChange={setSentences}
-              onScenesChange={setScenes}
-              onCharactersChange={setCharacters}
-              onMergeSelected={handleMergeSelected}
-            />
-          </div>
+          {/* Scene Input (character cards + scene list with merge) */}
+          {scenes.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm max-h-[calc(100vh-320px)] overflow-y-auto">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5 mb-3">
+                🎬 Scene ({scenes.length})
+                <span className="text-[9px] font-normal text-slate-400 ml-1">— pilih 2+ scene berdekatan untuk digabung</span>
+              </h3>
+              <SceneInput
+                scenes={scenes}
+                characters={characters}
+                onScenesChange={setScenes}
+                onCharactersChange={setCharacters}
+                onMergeScenes={handleMergeSelectedScenes}
+              />
+            </div>
+          )}
         </div>
 
         {/* Right: Output Panel */}

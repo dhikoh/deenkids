@@ -5,38 +5,40 @@ import {
   Wand2, Merge, CheckSquare, Square, GripVertical,
 } from "lucide-react";
 import {
-  SceneItem, SentenceItem, CharacterCard,
+  SceneItem, CharacterCard,
   CAMERA_PRESETS, MOOD_PRESETS, LOCATION_PRESETS, TIME_PRESETS,
   ANIMATION_PRESETS,
 } from "./types";
 
 interface Props {
-  sentences: SentenceItem[];
   scenes: SceneItem[];
   characters: CharacterCard[];
-  onSentencesChange: (sentences: SentenceItem[]) => void;
   onScenesChange: (scenes: SceneItem[]) => void;
   onCharactersChange: (chars: CharacterCard[]) => void;
-  onMergeSelected: () => void;
+  onMergeScenes: (selectedIndices: number[]) => void;
 }
 
 export default function SceneInput({
-  sentences, scenes, characters,
-  onSentencesChange, onScenesChange, onCharactersChange, onMergeSelected,
+  scenes, characters,
+  onScenesChange, onCharactersChange, onMergeScenes,
 }: Props) {
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
   const [showCharacters, setShowCharacters] = useState(false);
+  const [selectedScenes, setSelectedScenes] = useState<Set<number>>(new Set());
 
-  const selectedCount = sentences.filter(s => s.selected).length;
-
-  // ─── Sentence Selection ───
-  const toggleSentence = (id: string) => {
-    onSentencesChange(sentences.map(s => s.id === id ? { ...s, selected: !s.selected } : s));
+  // ─── Scene Selection (for merging) ───
+  const toggleSceneSelection = (index: number) => {
+    setSelectedScenes(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
   };
 
-  const selectAll = () => {
-    const allSelected = sentences.every(s => s.selected);
-    onSentencesChange(sentences.map(s => ({ ...s, selected: !allSelected })));
+  const handleMerge = () => {
+    onMergeScenes(Array.from(selectedScenes));
+    setSelectedScenes(new Set());
   };
 
   // ─── Scene Updates ───
@@ -47,6 +49,14 @@ export default function SceneInput({
   const removeScene = (i: number) => {
     onScenesChange(scenes.filter((_, idx) => idx !== i));
     if (expandedScene === i) setExpandedScene(null);
+    setSelectedScenes(prev => {
+      const next = new Set<number>();
+      prev.forEach(idx => {
+        if (idx < i) next.add(idx);
+        else if (idx > i) next.add(idx - 1);
+      });
+      return next;
+    });
   };
 
   // ─── Character Management ───
@@ -143,56 +153,19 @@ export default function SceneInput({
         )}
       </div>
 
-      {/* ─── Sentence List (for merging) ─── */}
-      {sentences.length > 0 && (
-        <div className="border border-slate-200 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-slate-100">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              📝 Kalimat ({sentences.length}) — pilih & gabung jadi scene
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={selectAll}
-                className="text-[10px] font-bold text-slate-500 hover:text-violet-600 transition-all"
-              >
-                {sentences.every(s => s.selected) ? 'Batal Semua' : 'Pilih Semua'}
-              </button>
-              {selectedCount >= 1 && (
-                <button
-                  onClick={onMergeSelected}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-[10px] font-bold transition-all shadow-sm"
-                >
-                  <Merge size={11} />
-                  Gabung {selectedCount} kalimat → 1 Scene
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
-            {sentences.map((sentence) => (
-              <label
-                key={sentence.id}
-                className={`flex items-start gap-2 px-4 py-2.5 cursor-pointer transition-all hover:bg-slate-50 ${
-                  sentence.selected ? 'bg-violet-50/50' : ''
-                }`}
-              >
-                <button
-                  onClick={(e) => { e.preventDefault(); toggleSentence(sentence.id); }}
-                  className="mt-0.5 flex-shrink-0"
-                >
-                  {sentence.selected
-                    ? <CheckSquare size={14} className="text-violet-600" />
-                    : <Square size={14} className="text-slate-300" />
-                  }
-                </button>
-                <span className="text-[10px] font-bold text-slate-400 mt-0.5 flex-shrink-0 w-5">
-                  {sentence.originalIndex + 1}
-                </span>
-                <span className="text-[11px] text-slate-600 leading-relaxed">{sentence.text}</span>
-              </label>
-            ))}
-          </div>
+      {/* ─── Merge Bar (when 2+ scenes selected) ─── */}
+      {selectedScenes.size >= 2 && (
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl animate-in slide-in-from-top-2 duration-200">
+          <span className="text-xs font-bold text-violet-700">
+            {selectedScenes.size} scene dipilih
+          </span>
+          <button
+            onClick={handleMerge}
+            className="flex items-center gap-1 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
+          >
+            <Merge size={12} />
+            Gabung → 1 Scene
+          </button>
         </div>
       )}
 
@@ -202,37 +175,65 @@ export default function SceneInput({
           <Wand2 size={40} className="text-slate-200 mx-auto mb-3" />
           <p className="text-sm text-slate-400 font-bold">Belum ada scene</p>
           <p className="text-xs text-slate-300 mt-1">
-            {sentences.length > 0
-              ? 'Pilih kalimat di atas, lalu klik "Gabung → 1 Scene"'
-              : 'Paste narasi di atas, lalu klik "Pecah Jadi Kalimat"'
-            }
+            Paste narasi di atas, lalu klik &quot;Pecah & Buat Scene&quot;
           </p>
         </div>
       ) : (
         <div className="space-y-2">
-          <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1.5 px-1">
-            🎬 Scene yang sudah dibuat ({scenes.length})
-          </h4>
+          <div className="flex items-center justify-between px-1">
+            <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              🎬 Daftar Scene ({scenes.length})
+            </h4>
+            {selectedScenes.size > 0 && (
+              <button
+                onClick={() => setSelectedScenes(new Set())}
+                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-all"
+              >
+                Batal Pilih
+              </button>
+            )}
+          </div>
+          <p className="text-[9px] text-slate-400 px-1 -mt-1">Centang 2+ scene berurutan → tombol &quot;Gabung&quot; muncul</p>
+
           {scenes.map((scene, i) => {
             const isExpanded = expandedScene === i;
+            const isSelected = selectedScenes.has(i);
 
             return (
-              <div key={scene.id} className="border border-slate-200 rounded-xl bg-white hover:border-slate-300 transition-all">
+              <div key={scene.id} className={`border rounded-xl bg-white transition-all ${
+                isSelected ? 'border-violet-400 ring-1 ring-violet-200' : 'border-slate-200 hover:border-slate-300'
+              }`}>
                 {/* Scene header */}
-                <div
-                  className="flex items-center gap-2 p-3 cursor-pointer"
-                  onClick={() => setExpandedScene(isExpanded ? null : i)}
-                >
-                  <GripVertical size={12} className="text-slate-300 flex-shrink-0" />
-                  <span className="text-[10px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded">{i + 1}</span>
-                  <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
-                    {scene.sentenceIds.length} kalimat
-                  </span>
-                  <p className="flex-1 text-[11px] text-slate-600 truncate">{scene.narration}</p>
-                  <button onClick={e => { e.stopPropagation(); removeScene(i); }} className="p-1 rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all">
+                <div className="flex items-center gap-2 p-3">
+                  {/* Selection checkbox */}
+                  <button
+                    onClick={() => toggleSceneSelection(i)}
+                    className="flex-shrink-0"
+                  >
+                    {isSelected
+                      ? <CheckSquare size={14} className="text-violet-600" />
+                      : <Square size={14} className="text-slate-300 hover:text-slate-400" />
+                    }
+                  </button>
+
+                  <div
+                    className="flex items-center gap-2 flex-1 cursor-pointer min-w-0"
+                    onClick={() => setExpandedScene(isExpanded ? null : i)}
+                  >
+                    <GripVertical size={12} className="text-slate-300 flex-shrink-0" />
+                    <span className="text-[10px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded flex-shrink-0">{i + 1}</span>
+                    <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded flex-shrink-0">
+                      {scene.sentenceIds.length} kalimat
+                    </span>
+                    <p className="flex-1 text-[11px] text-slate-600 truncate">{scene.narration}</p>
+                  </div>
+
+                  <button onClick={e => { e.stopPropagation(); removeScene(i); }} className="p-1 rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all flex-shrink-0">
                     <Trash2 size={12} />
                   </button>
-                  {isExpanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                  <button onClick={() => setExpandedScene(isExpanded ? null : i)} className="flex-shrink-0">
+                    {isExpanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                  </button>
                 </div>
 
                 {/* Expanded scene settings */}
