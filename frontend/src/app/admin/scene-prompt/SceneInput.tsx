@@ -2,7 +2,7 @@
 import { useState } from "react";
 import {
   Camera, Cloud, MapPin, Clock, Film, Users, Plus, Trash2, ChevronDown, ChevronUp,
-  Wand2, Merge, CheckSquare, Square, GripVertical,
+  Wand2, GripVertical,
 } from "lucide-react";
 import {
   SceneItem, CharacterCard,
@@ -15,31 +15,18 @@ interface Props {
   characters: CharacterCard[];
   onScenesChange: (scenes: SceneItem[]) => void;
   onCharactersChange: (chars: CharacterCard[]) => void;
-  onMergeScenes: (selectedIndices: number[]) => void;
 }
 
+/**
+ * SceneInput — Pure scene editor (NO merge logic here).
+ * Merge lives in PromptOutput (output panel).
+ */
 export default function SceneInput({
   scenes, characters,
-  onScenesChange, onCharactersChange, onMergeScenes,
+  onScenesChange, onCharactersChange,
 }: Props) {
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
   const [showCharacters, setShowCharacters] = useState(false);
-  const [selectedScenes, setSelectedScenes] = useState<Set<number>>(new Set());
-
-  // ─── Scene Selection (for merging) ───
-  const toggleSceneSelection = (index: number) => {
-    setSelectedScenes(prev => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
-  };
-
-  const handleMerge = () => {
-    onMergeScenes(Array.from(selectedScenes));
-    setSelectedScenes(new Set());
-  };
 
   // ─── Scene Updates ───
   const updateScene = (i: number, patch: Partial<SceneItem>) => {
@@ -49,14 +36,6 @@ export default function SceneInput({
   const removeScene = (i: number) => {
     onScenesChange(scenes.filter((_, idx) => idx !== i));
     if (expandedScene === i) setExpandedScene(null);
-    setSelectedScenes(prev => {
-      const next = new Set<number>();
-      prev.forEach(idx => {
-        if (idx < i) next.add(idx);
-        else if (idx > i) next.add(idx - 1);
-      });
-      return next;
-    });
   };
 
   // ─── Character Management ───
@@ -153,23 +132,7 @@ export default function SceneInput({
         )}
       </div>
 
-      {/* ─── Merge Bar (when 2+ scenes selected) ─── */}
-      {selectedScenes.size >= 2 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl animate-in slide-in-from-top-2 duration-200">
-          <span className="text-xs font-bold text-violet-700">
-            {selectedScenes.size} scene dipilih
-          </span>
-          <button
-            onClick={handleMerge}
-            className="flex items-center gap-1 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
-          >
-            <Merge size={12} />
-            Gabung → 1 Scene
-          </button>
-        </div>
-      )}
-
-      {/* ─── Scene List ─── */}
+      {/* ─── Scene List (pure editor) ─── */}
       {scenes.length === 0 ? (
         <div className="text-center py-12">
           <Wand2 size={40} className="text-slate-200 mx-auto mb-3" />
@@ -180,156 +143,73 @@ export default function SceneInput({
         </div>
       ) : (
         <div className="space-y-2">
-          <div className="flex items-center justify-between px-1">
-            <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              🎬 Daftar Scene ({scenes.length})
-            </h4>
-            {selectedScenes.size > 0 && (
-              <button
-                onClick={() => setSelectedScenes(new Set())}
-                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-all"
-              >
-                Batal Pilih
-              </button>
-            )}
-          </div>
-          <p className="text-[9px] text-slate-400 px-1 -mt-1">Centang 2+ scene berurutan → tombol &quot;Gabung&quot; muncul</p>
-
           {scenes.map((scene, i) => {
             const isExpanded = expandedScene === i;
-            const isSelected = selectedScenes.has(i);
 
             return (
-              <div key={scene.id} className={`border rounded-xl bg-white transition-all ${
-                isSelected ? 'border-violet-400 ring-1 ring-violet-200' : 'border-slate-200 hover:border-slate-300'
-              }`}>
+              <div key={scene.id} className="border border-slate-200 rounded-xl bg-white hover:border-slate-300 transition-all">
                 {/* Scene header */}
-                <div className="flex items-center gap-2 p-3">
-                  {/* Selection checkbox */}
-                  <button
-                    onClick={() => toggleSceneSelection(i)}
-                    className="flex-shrink-0"
-                  >
-                    {isSelected
-                      ? <CheckSquare size={14} className="text-violet-600" />
-                      : <Square size={14} className="text-slate-300 hover:text-slate-400" />
-                    }
-                  </button>
-
-                  <div
-                    className="flex items-center gap-2 flex-1 cursor-pointer min-w-0"
-                    onClick={() => setExpandedScene(isExpanded ? null : i)}
-                  >
-                    <GripVertical size={12} className="text-slate-300 flex-shrink-0" />
-                    <span className="text-[10px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded flex-shrink-0">{i + 1}</span>
-                    <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded flex-shrink-0">
-                      {scene.sentenceIds.length} kalimat
-                    </span>
-                    <p className="flex-1 text-[11px] text-slate-600 truncate">{scene.narration}</p>
-                  </div>
-
-                  <button onClick={e => { e.stopPropagation(); removeScene(i); }} className="p-1 rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all flex-shrink-0">
+                <div
+                  className="flex items-center gap-2 p-3 cursor-pointer"
+                  onClick={() => setExpandedScene(isExpanded ? null : i)}
+                >
+                  <GripVertical size={12} className="text-slate-300 flex-shrink-0" />
+                  <span className="text-[10px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded flex-shrink-0">{i + 1}</span>
+                  <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded flex-shrink-0">
+                    {scene.sentenceIds.length} kalimat
+                  </span>
+                  <p className="flex-1 text-[11px] text-slate-600 truncate">{scene.narration}</p>
+                  <button onClick={e => { e.stopPropagation(); removeScene(i); }} className="p-1 rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all">
                     <Trash2 size={12} />
                   </button>
-                  <button onClick={() => setExpandedScene(isExpanded ? null : i)} className="flex-shrink-0">
-                    {isExpanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
-                  </button>
+                  {isExpanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
                 </div>
 
                 {/* Expanded scene settings */}
                 {isExpanded && (
                   <div className="px-3 pb-3 border-t border-slate-100 space-y-3 pt-3 animate-in slide-in-from-top-1 duration-150">
-                    {/* Narration text edit */}
                     <textarea
                       value={scene.narration}
                       onChange={e => updateScene(i, { narration: e.target.value })}
                       rows={3}
                       className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 focus:border-violet-400 outline-none resize-none"
                     />
-
-                    {/* Camera angle */}
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1">
-                        <Camera size={10} /> Sudut Kamera
-                      </label>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><Camera size={10} /> Sudut Kamera</label>
                       <div className="flex flex-wrap gap-1">
-                        {CAMERA_PRESETS.map(c => (
-                          <PresetButton key={c.id} active={scene.camera === c.id} onClick={() => updateScene(i, { camera: c.id })}>
-                            {c.label}
-                          </PresetButton>
-                        ))}
+                        {CAMERA_PRESETS.map(c => (<PresetButton key={c.id} active={scene.camera === c.id} onClick={() => updateScene(i, { camera: c.id })}>{c.label}</PresetButton>))}
                       </div>
                     </div>
-
-                    {/* Mood */}
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1">
-                        <Cloud size={10} /> Suasana
-                      </label>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><Cloud size={10} /> Suasana</label>
                       <div className="flex flex-wrap gap-1">
-                        {MOOD_PRESETS.map(m => (
-                          <PresetButton key={m.id} active={scene.mood === m.id} onClick={() => updateScene(i, { mood: m.id })}>
-                            {m.emoji} {m.label}
-                          </PresetButton>
-                        ))}
+                        {MOOD_PRESETS.map(m => (<PresetButton key={m.id} active={scene.mood === m.id} onClick={() => updateScene(i, { mood: m.id })}>{m.emoji} {m.label}</PresetButton>))}
                       </div>
                     </div>
-
-                    {/* Location */}
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1">
-                        <MapPin size={10} /> Lokasi
-                      </label>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><MapPin size={10} /> Lokasi</label>
                       <div className="flex flex-wrap gap-1">
-                        {LOCATION_PRESETS.map(l => (
-                          <PresetButton key={l.id} active={scene.location === l.id} onClick={() => updateScene(i, { location: l.id })}>
-                            {l.label}
-                          </PresetButton>
-                        ))}
+                        {LOCATION_PRESETS.map(l => (<PresetButton key={l.id} active={scene.location === l.id} onClick={() => updateScene(i, { location: l.id })}>{l.label}</PresetButton>))}
                       </div>
                     </div>
-
-                    {/* Time of day */}
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1">
-                        <Clock size={10} /> Waktu
-                      </label>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><Clock size={10} /> Waktu</label>
                       <div className="flex flex-wrap gap-1">
-                        {TIME_PRESETS.map(t => (
-                          <PresetButton key={t.id} active={scene.timeOfDay === t.id} onClick={() => updateScene(i, { timeOfDay: t.id })}>
-                            {t.label}
-                          </PresetButton>
-                        ))}
+                        {TIME_PRESETS.map(t => (<PresetButton key={t.id} active={scene.timeOfDay === t.id} onClick={() => updateScene(i, { timeOfDay: t.id })}>{t.label}</PresetButton>))}
                       </div>
                     </div>
-
-                    {/* Animation motion */}
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1">
-                        <Film size={10} /> Gerakan Animasi
-                      </label>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><Film size={10} /> Gerakan Animasi</label>
                       <div className="flex flex-wrap gap-1">
-                        {ANIMATION_PRESETS.map(a => (
-                          <PresetButton key={a.id} active={scene.animationMotion === a.id} onClick={() => updateScene(i, { animationMotion: a.id })}>
-                            {a.emoji} {a.label}
-                          </PresetButton>
-                        ))}
+                        {ANIMATION_PRESETS.map(a => (<PresetButton key={a.id} active={scene.animationMotion === a.id} onClick={() => updateScene(i, { animationMotion: a.id })}>{a.emoji} {a.label}</PresetButton>))}
                       </div>
                     </div>
-
-                    {/* Characters in scene */}
                     {characters.length > 0 && (
                       <div>
-                        <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1">
-                          <Users size={10} /> Karakter di Scene Ini
-                        </label>
+                        <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><Users size={10} /> Karakter di Scene Ini</label>
                         <div className="flex flex-wrap gap-1">
                           {characters.filter(c => c.name.trim()).map(c => (
-                            <PresetButton
-                              key={c.id}
-                              active={scene.characterIds.includes(c.id)}
-                              onClick={() => toggleCharInScene(i, c.id)}
-                            >
+                            <PresetButton key={c.id} active={scene.characterIds.includes(c.id)} onClick={() => toggleCharInScene(i, c.id)}>
                               👤 {c.name}
                             </PresetButton>
                           ))}

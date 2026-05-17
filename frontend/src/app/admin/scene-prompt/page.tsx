@@ -9,17 +9,17 @@ import {
   VISUAL_STYLE_PRESETS, ART_STYLES, RENDERINGS, COLOR_MOODS,
   SCENE_ASPECT_RATIOS, PLATFORM_TARGETS, AGE_TARGETS, DEFAULT_AGE_TARGET,
 } from "./types";
-import { splitIntoSentences, generateAllPrompts, detectSceneCategory, autoDetectPresets } from "./prompt-engine";
+import { splitIntoSentences, generateAllPrompts, generateImagePrompt, generateAnimationPrompt, detectSceneCategory, autoDetectPresets } from "./prompt-engine";
 import SceneInput from "./SceneInput";
 import PromptOutput from "./PromptOutput";
 
 /**
- * Scene Prompt Studio v3 — Workflow yang benar:
- * 
- * STEP 1: Paste narasi → "Pecah & Buat Scene" → otomatis 1 kalimat = 1 scene
- * STEP 2: User bisa merge 2+ scene berdekatan → jadi 1 scene (opsional)
- * STEP 3: User edit per-scene settings (camera, mood, karakter, dll)
- * STEP 4: Klik "Generate Prompt" → output gambar + animasi
+ * Scene Prompt Studio v3 — Workflow:
+ *
+ * ① Paste narasi → "Pecah & Buat Scene" → 1 kalimat = 1 scene otomatis
+ * ② Edit per-scene settings (camera, mood, karakter, dll) — panel KIRI
+ * ③ "Generate Prompt" → output prompt gambar + animasi — panel KANAN
+ * ④ Di OUTPUT: merge 2+ scene berurutan → otomatis regenerate
  */
 export default function ScenePromptStudioPage() {
   // ─── State ───
@@ -46,9 +46,6 @@ export default function ScenePromptStudioPage() {
 
   const isCustom = visualPresetId === "custom";
 
-  // Track which step user is on for UI guidance
-  const step = scenes.length > 0 ? (scenes[0].imagePrompt ? 3 : 2) : (sentences.length > 0 ? 1 : 0);
-
   // ─── STEP 1: Pecah narasi & langsung buat scene ───
   const handleSplitAndCreateScenes = () => {
     if (!rawText.trim()) {
@@ -62,7 +59,6 @@ export default function ScenePromptStudioPage() {
       return;
     }
 
-    // Create sentences for reference
     const newSentences: SentenceItem[] = extracted.map((text, i) => ({
       id: `sent-${Date.now()}-${i}`,
       text,
@@ -95,14 +91,41 @@ export default function ScenePromptStudioPage() {
     toast.success(`✅ ${newScenes.length} scene berhasil dibuat dari ${extracted.length} kalimat`);
   };
 
-  // ─── STEP 2: Merge selected scenes (AFTER scenes exist) ───
-  const handleMergeSelectedScenes = (selectedIndices: number[]) => {
+  // ─── Toggle Age Selection ───
+  const toggleAge = (ageId: string) => {
+    setSelectedAges(prev => {
+      if (prev.includes(ageId)) {
+        if (prev.length === 1) return prev;
+        return prev.filter(id => id !== ageId);
+      }
+      return [...prev, ageId];
+    });
+  };
+
+  // ─── STEP 2: Generate All Prompts ───
+  const handleGenerate = () => {
+    if (scenes.length === 0) {
+      toast.error("Buat scene terlebih dahulu");
+      return;
+    }
+
+    const updated = generateAllPrompts(
+      scenes, rawText, visualPresetId,
+      isCustom ? customStyle : undefined,
+      characters, aspectRatio, platformId, selectedAges,
+    );
+
+    setScenes(updated);
+    toast.success(`🎬 ${updated.length} prompt berhasil di-generate!`);
+  };
+
+  // ─── STEP 3 (OUTPUT): Merge scenes & auto-regenerate ───
+  const handleMergeInOutput = (selectedIndices: number[]) => {
     if (selectedIndices.length < 2) {
       toast.error("Pilih minimal 2 scene untuk digabung");
       return;
     }
 
-    // Sort indices
     const sorted = [...selectedIndices].sort((a, b) => a - b);
 
     // Check contiguous
@@ -117,9 +140,8 @@ export default function ScenePromptStudioPage() {
     const mergedNarration = scenesToMerge.map(s => s.narration).join(" ");
     const mergedSentenceIds = scenesToMerge.flatMap(s => s.sentenceIds);
     const mergedCharacterIds = [...new Set(scenesToMerge.flatMap(s => s.characterIds))];
-
-    // Use first scene's presets as base
     const baseScene = scenesToMerge[0];
+
     const mergedScene: SceneItem = {
       id: `scene-merged-${Date.now()}`,
       narration: mergedNarration,
@@ -129,8 +151,8 @@ export default function ScenePromptStudioPage() {
       location: baseScene.location,
       timeOfDay: baseScene.timeOfDay,
       animationMotion: baseScene.animationMotion,
-      imagePrompt: "",       // Clear — needs re-generate
-      animationPrompt: "",   // Clear — needs re-generate
+      imagePrompt: "",
+      animationPrompt: "",
       characterIds: mergedCharacterIds,
       backToCamera: baseScene.backToCamera,
     };
@@ -142,48 +164,22 @@ export default function ScenePromptStudioPage() {
       ...scenes.slice(sorted[sorted.length - 1] + 1),
     ];
 
-    setScenes(newScenes);
-    toast.success(`🔗 ${sorted.length} scene digabung → Scene ${sorted[0] + 1}`);
+    // Auto-regenerate ALL prompts (indices shifted, need fresh continuity)
+    const regenerated = generateAllPrompts(
+      newScenes, rawText, visualPresetId,
+      isCustom ? customStyle : undefined,
+      characters, aspectRatio, platformId, selectedAges,
+    );
+
+    setScenes(regenerated);
+    toast.success(`🔗 ${sorted.length} scene digabung → prompt otomatis di-regenerate`);
   };
 
-  // ─── Reset — start over ───
+  // ─── Reset ───
   const handleReset = () => {
     setSentences([]);
     setScenes([]);
-    toast.success("🔄 Reset berhasil — siap mulai ulang");
-  };
-
-  // ─── Toggle Age Selection ───
-  const toggleAge = (ageId: string) => {
-    setSelectedAges(prev => {
-      if (prev.includes(ageId)) {
-        if (prev.length === 1) return prev;
-        return prev.filter(id => id !== ageId);
-      }
-      return [...prev, ageId];
-    });
-  };
-
-  // ─── STEP 3: Generate All Prompts ───
-  const handleGenerate = () => {
-    if (scenes.length === 0) {
-      toast.error("Buat scene terlebih dahulu");
-      return;
-    }
-
-    const updated = generateAllPrompts(
-      scenes,
-      rawText,
-      visualPresetId,
-      isCustom ? customStyle : undefined,
-      characters,
-      aspectRatio,
-      platformId,
-      selectedAges,
-    );
-
-    setScenes(updated);
-    toast.success(`🎬 ${updated.length} prompt berhasil di-generate!`);
+    toast.success("🔄 Reset berhasil");
   };
 
   return (
@@ -195,16 +191,11 @@ export default function ScenePromptStudioPage() {
             <Clapperboard className="h-6 w-6 text-violet-600" /> Scene Prompt Studio
             <span className="text-xs font-normal bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full">v3</span>
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">Generate prompt gambar & animasi — pecah narasi, atur scene, generate prompt</p>
+          <p className="text-slate-500 mt-1 text-sm">Pecah narasi → atur scene → generate prompt → gabung di output</p>
         </div>
-
-        {/* Step indicator */}
         <div className="flex items-center gap-2">
           {scenes.length > 0 && (
-            <button
-              onClick={handleReset}
-              className="px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-xl text-xs font-bold transition-all"
-            >
+            <button onClick={handleReset} className="px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-xl text-xs font-bold transition-all">
               🔄 Reset
             </button>
           )}
@@ -219,27 +210,6 @@ export default function ScenePromptStudioPage() {
         </div>
       </div>
 
-      {/* ─── Step Progress Bar ─── */}
-      <div className="flex items-center gap-2 mb-6 px-1">
-        {[
-          { num: 1, label: "Pecah Narasi", active: step >= 1 },
-          { num: 2, label: "Atur Scene", active: step >= 2 },
-          { num: 3, label: "Generate Prompt", active: step >= 3 },
-        ].map((s, i) => (
-          <div key={s.num} className="flex items-center gap-2 flex-1">
-            <div className={`flex items-center gap-2 flex-1 px-3 py-2 rounded-xl border transition-all ${
-              s.active ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-slate-50 border-slate-200 text-slate-400'
-            }`}>
-              <span className={`text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center ${
-                s.active ? 'bg-violet-600 text-white' : 'bg-slate-200 text-slate-400'
-              }`}>{s.num}</span>
-              <span className="text-[11px] font-bold">{s.label}</span>
-            </div>
-            {i < 2 && <span className="text-slate-300 text-xs">→</span>}
-          </div>
-        ))}
-      </div>
-
       {/* ─── Visual Style + Age Section ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
         {/* Visual Style */}
@@ -247,7 +217,6 @@ export default function ScenePromptStudioPage() {
           <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5 mb-3">
             <Palette size={14} className="text-violet-500" /> Gaya Visual
           </h3>
-
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-3">
             {VISUAL_STYLE_PRESETS.map(preset => (
               <button
@@ -266,54 +235,34 @@ export default function ScenePromptStudioPage() {
                 <p className="text-[9px] text-slate-400 mt-0.5">{preset.description}</p>
               </button>
             ))}
-
-            {/* Custom option */}
             <button
               onClick={() => { setVisualPresetId("custom"); setShowCustomStyle(true); }}
               className={`p-3 rounded-xl border-2 text-center transition-all ${
-                isCustom
-                  ? "border-violet-400 shadow-sm ring-1 ring-violet-200"
-                  : "border-dashed border-slate-300 hover:border-slate-400"
+                isCustom ? "border-violet-400 shadow-sm ring-1 ring-violet-200" : "border-dashed border-slate-300 hover:border-slate-400"
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center mx-auto mb-1.5 text-lg">
-                🎛️
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center mx-auto mb-1.5 text-lg">🎛️</div>
               <p className="text-[11px] font-bold text-slate-700">Custom</p>
               <p className="text-[9px] text-slate-400 mt-0.5">Pilih sendiri</p>
             </button>
           </div>
-
-          {/* Custom style dropdowns */}
           {showCustomStyle && isCustom && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 animate-in slide-in-from-top-2 duration-200">
               <div>
                 <label className="text-[10px] font-bold text-slate-500 mb-1 block">Art Style</label>
-                <select
-                  value={customStyle.artStyle}
-                  onChange={e => setCustomStyle({ ...customStyle, artStyle: e.target.value })}
-                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none"
-                >
+                <select value={customStyle.artStyle} onChange={e => setCustomStyle({ ...customStyle, artStyle: e.target.value })} className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none">
                   {ART_STYLES.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-slate-500 mb-1 block">Rendering</label>
-                <select
-                  value={customStyle.rendering}
-                  onChange={e => setCustomStyle({ ...customStyle, rendering: e.target.value })}
-                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none"
-                >
+                <select value={customStyle.rendering} onChange={e => setCustomStyle({ ...customStyle, rendering: e.target.value })} className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none">
                   {RENDERINGS.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-slate-500 mb-1 block">Color Mood</label>
-                <select
-                  value={customStyle.colorMood}
-                  onChange={e => setCustomStyle({ ...customStyle, colorMood: e.target.value })}
-                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none"
-                >
+                <select value={customStyle.colorMood} onChange={e => setCustomStyle({ ...customStyle, colorMood: e.target.value })} className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none">
                   {COLOR_MOODS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                 </select>
               </div>
@@ -333,16 +282,12 @@ export default function ScenePromptStudioPage() {
                 key={age.id}
                 onClick={() => toggleAge(age.id)}
                 className={`w-full p-3 rounded-xl border-2 text-left transition-all ${
-                  selectedAges.includes(age.id)
-                    ? "border-violet-400 bg-violet-50 shadow-sm"
-                    : "border-slate-200 bg-white hover:border-slate-300"
+                  selectedAges.includes(age.id) ? "border-violet-400 bg-violet-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-700">{age.label}</span>
-                  {selectedAges.includes(age.id) && (
-                    <span className="text-[9px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded">✓</span>
-                  )}
+                  {selectedAges.includes(age.id) && <span className="text-[9px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded">✓</span>}
                 </div>
                 <p className="text-[9px] text-slate-400 mt-0.5">{age.description}</p>
               </button>
@@ -355,15 +300,13 @@ export default function ScenePromptStudioPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Input Panel */}
         <div className="lg:col-span-5 space-y-4">
-          {/* Narration input + split */}
+          {/* Narration input */}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5 mb-3">
-              📝 Narasi / Naskah
-            </h3>
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5 mb-3">📝 Narasi / Naskah</h3>
             <textarea
               value={rawText}
               onChange={e => setRawText(e.target.value)}
-              placeholder={"Paste seluruh naskah di sini...\n\nSetiap kalimat (diakhiri titik, tanda seru, atau tanda tanya) akan dipecah menjadi 1 scene.\n\nContoh:\nTahukah kamu apa itu aurat? Aurat adalah bagian tubuh yang wajib ditutup. Allah berfirman dalam QS. An-Nur ayat 31 tentang menutup aurat."}
+              placeholder={"Paste seluruh naskah di sini...\n\nSetiap kalimat (diakhiri titik, tanda seru, atau tanda tanya) akan menjadi 1 scene.\n\nContoh:\nTahukah kamu apa itu aurat? Aurat adalah bagian tubuh yang wajib ditutup. Allah berfirman dalam QS. An-Nur ayat 31 tentang menutup aurat."}
               rows={8}
               className="w-full text-xs border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:border-violet-400 outline-none resize-none placeholder:text-slate-300 leading-relaxed"
             />
@@ -380,24 +323,15 @@ export default function ScenePromptStudioPage() {
                 {scenes.length > 0 ? "Pecah Ulang" : "Pecah & Buat Scene"}
               </button>
             </div>
-            {/* Back to Camera toggle */}
             <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={backToCamera}
-                onChange={e => setBackToCamera(e.target.checked)}
-                className="w-4 h-4 accent-violet-600 rounded"
-              />
-              <span className="text-[11px] text-slate-600">🔒 Karakter membelakangi kamera <span className="text-slate-400">(opsional — keamanan ekstra)</span></span>
+              <input type="checkbox" checked={backToCamera} onChange={e => setBackToCamera(e.target.checked)} className="w-4 h-4 accent-violet-600 rounded" />
+              <span className="text-[11px] text-slate-600">🔒 Karakter membelakangi kamera <span className="text-slate-400">(opsional)</span></span>
             </label>
           </div>
 
-          {/* Settings (collapsible) */}
+          {/* Settings */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-all"
-            >
+            <button onClick={() => setShowSettings(!showSettings)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-all">
               <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <Monitor size={14} className="text-violet-500" /> Pengaturan Output
               </span>
@@ -405,66 +339,50 @@ export default function ScenePromptStudioPage() {
             </button>
             {showSettings && (
               <div className="px-4 pb-4 space-y-3 border-t border-slate-100 pt-3 animate-in slide-in-from-top-2 duration-200">
-                {/* Aspect Ratio */}
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 mb-1.5 block">Aspect Ratio</label>
                   <div className="flex gap-2">
                     {SCENE_ASPECT_RATIOS.map(ar => (
-                      <button
-                        key={ar.id}
-                        onClick={() => setAspectRatio(ar.id)}
-                        className={`flex-1 py-2 rounded-xl border-2 text-center transition-all ${
-                          aspectRatio === ar.id
-                            ? "border-violet-400 bg-violet-50 shadow-sm"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                        }`}
-                      >
+                      <button key={ar.id} onClick={() => setAspectRatio(ar.id)} className={`flex-1 py-2 rounded-xl border-2 text-center transition-all ${aspectRatio === ar.id ? "border-violet-400 bg-violet-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"}`}>
                         <p className="text-xs font-bold text-slate-700">{ar.label}</p>
                         <p className="text-[9px] text-slate-400">{ar.desc}</p>
                       </button>
                     ))}
                   </div>
                 </div>
-
-                {/* Platform target */}
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 mb-1.5 block">Platform Animasi</label>
-                  <select
-                    value={platformId}
-                    onChange={e => setPlatformId(e.target.value)}
-                    className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none"
-                  >
-                    {PLATFORM_TARGETS.map(p => (
-                      <option key={p.id} value={p.id}>{p.name} (max {p.maxDuration})</option>
-                    ))}
+                  <select value={platformId} onChange={e => setPlatformId(e.target.value)} className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none">
+                    {PLATFORM_TARGETS.map(p => (<option key={p.id} value={p.id}>{p.name} (max {p.maxDuration})</option>))}
                   </select>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Scene Input (character cards + scene list with merge) */}
+          {/* Scene Input — pure editor, NO merge */}
           {scenes.length > 0 && (
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm max-h-[calc(100vh-320px)] overflow-y-auto">
               <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5 mb-3">
                 🎬 Scene ({scenes.length})
-                <span className="text-[9px] font-normal text-slate-400 ml-1">— pilih 2+ scene berdekatan untuk digabung</span>
               </h3>
               <SceneInput
                 scenes={scenes}
                 characters={characters}
                 onScenesChange={setScenes}
                 onCharactersChange={setCharacters}
-                onMergeScenes={handleMergeSelectedScenes}
               />
             </div>
           )}
         </div>
 
-        {/* Right: Output Panel */}
+        {/* Right: Output Panel — with merge capability */}
         <div className="lg:col-span-7">
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm max-h-[calc(100vh-200px)] overflow-y-auto sticky top-4">
-            <PromptOutput scenes={scenes} />
+            <PromptOutput
+              scenes={scenes}
+              onMergeScenes={handleMergeInOutput}
+            />
           </div>
         </div>
       </div>
