@@ -44,6 +44,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <meta name="citation_author" content="Adably" />
         <meta name="citation_publisher" content="Adably" />
         <meta name="citation_language" content="id" />
+        {/* Search Engine Verification */}
+        <meta name="google-site-verification" content="PQlBl_UGRP_5yyKBcybYaFns5IgsCE4jEsL7mRL0mVk" />
       </head>
       <body className={`${inter.variable} ${amiri.variable} font-sans antialiased bg-slate-50 text-slate-800 flex flex-col min-h-screen`}>
         <JsonLd schema={buildOrganizationSchema()} />
