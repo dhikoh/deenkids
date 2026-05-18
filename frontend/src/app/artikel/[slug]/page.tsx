@@ -115,20 +115,22 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
         )}
       </div>
 
-      {/* Audio Player — enableAudio is master gate; MP3 takes priority over browser TTS */}
-      {content.enableAudio && content.audioUrl ? (
-        <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
-      ) : (
-        <AudioPlayerWrapper blocks={
-          [
-            ...(content.openingAudio !== false && content.openingText ? [{ type: 'paragraph', text: content.openingText, enableAudio: true }] : []),
-            ...(content.articleDetail?.blocks || [
-              ...(content.qnaDetail?.answerQuick ? [{ type: 'quick_answer', text: content.qnaDetail.answerQuick }] : []),
-              ...(Array.isArray(content.qnaDetail?.blocks) ? content.qnaDetail.blocks : []),
-            ]),
-            ...(content.closingAudio !== false && content.closingText ? [{ type: 'paragraph', text: content.closingText, enableAudio: true }] : []),
-          ]
-        } enableAudio={content.enableAudio} contentType={content.type} />
+      {/* Audio Player — skip when StoryboardVideoPlayer already provides audio toggle */}
+      {!content.storyboardVideoUrl && (
+        content.enableAudio && content.audioUrl ? (
+          <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
+        ) : (
+          <AudioPlayerWrapper blocks={
+            [
+              ...(content.openingAudio !== false && content.openingText ? [{ type: 'paragraph', text: content.openingText, enableAudio: true }] : []),
+              ...(content.articleDetail?.blocks || [
+                ...(content.qnaDetail?.answerQuick ? [{ type: 'quick_answer', text: content.qnaDetail.answerQuick }] : []),
+                ...(Array.isArray(content.qnaDetail?.blocks) ? content.qnaDetail.blocks : []),
+              ]),
+              ...(content.closingAudio !== false && content.closingText ? [{ type: 'paragraph', text: content.closingText, enableAudio: true }] : []),
+            ]
+          } enableAudio={content.enableAudio} contentType={content.type} />
+        )
       )}
 
       {/* Opening / Mukadimah */}

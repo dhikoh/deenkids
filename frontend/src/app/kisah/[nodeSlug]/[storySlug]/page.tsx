@@ -138,15 +138,17 @@ export default async function KisahDetailPage({
         </div>
       </div>
 
-      {/* Audio Player — enableAudio is master gate; MP3 takes priority over browser TTS */}
-      {content.enableAudio && content.audioUrl ? (
-        <div className="mb-6">
-          <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
-        </div>
-      ) : content.enableAudio && (
-        <div className="mb-6">
-          <AudioPlayerWrapper blocks={audioBlocks} enableAudio={content.enableAudio} contentType={content.type} />
-        </div>
+      {/* Audio Player — skip when StoryboardVideoPlayer already provides audio toggle */}
+      {!content.storyboardVideoUrl && (
+        content.enableAudio && content.audioUrl ? (
+          <div className="mb-6">
+            <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
+          </div>
+        ) : content.enableAudio && (
+          <div className="mb-6">
+            <AudioPlayerWrapper blocks={audioBlocks} enableAudio={content.enableAudio} contentType={content.type} />
+          </div>
+        )
       )}
 
       {/* Opening / Mukadimah */}

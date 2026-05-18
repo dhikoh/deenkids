@@ -116,18 +116,20 @@ export default async function QnaDetailPage({ params }: { params: Promise<{ slug
 
       {qna && (
         <div className="space-y-8">
-          {/* Audio Player — enableAudio is master gate; MP3 takes priority over browser TTS */}
-          {content.enableAudio && content.audioUrl ? (
-            <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
-          ) : (
-            <AudioPlayerWrapper blocks={[
-              ...(content.openingAudio !== false && content.openingText ? [{ type: 'paragraph', text: content.openingText, enableAudio: true }] : []),
-              ...(content.audioTitle !== false && content.title ? [{ type: 'paragraph', text: content.title, enableAudio: true }] : []),
-              ...(content.audioDescription !== false && content.description ? [{ type: 'paragraph', text: content.description, enableAudio: true }] : []),
-              ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
-              ...(Array.isArray(qna.blocks) ? qna.blocks : []),
-              ...(content.closingAudio !== false && content.closingText ? [{ type: 'paragraph', text: content.closingText, enableAudio: true }] : []),
-            ]} enableAudio={content.enableAudio} contentType={content.type} />
+          {/* Audio Player — skip when StoryboardVideoPlayer already provides audio toggle */}
+          {!content.storyboardVideoUrl && (
+            content.enableAudio && content.audioUrl ? (
+              <NarrationAudioPlayer audioUrl={content.audioUrl} title={content.title} thumbnailUrl={content.thumbnailUrl} />
+            ) : (
+              <AudioPlayerWrapper blocks={[
+                ...(content.openingAudio !== false && content.openingText ? [{ type: 'paragraph', text: content.openingText, enableAudio: true }] : []),
+                ...(content.audioTitle !== false && content.title ? [{ type: 'paragraph', text: content.title, enableAudio: true }] : []),
+                ...(content.audioDescription !== false && content.description ? [{ type: 'paragraph', text: content.description, enableAudio: true }] : []),
+                ...(qna.answerQuick ? [{ type: 'quick_answer', text: qna.answerQuick }] : []),
+                ...(Array.isArray(qna.blocks) ? qna.blocks : []),
+                ...(content.closingAudio !== false && content.closingText ? [{ type: 'paragraph', text: content.closingText, enableAudio: true }] : []),
+              ]} enableAudio={content.enableAudio} contentType={content.type} />
+            )
           )}
 
           {/* Opening / Mukadimah */}
