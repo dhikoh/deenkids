@@ -259,6 +259,9 @@ Gunakan bahasa yang mudah dipahami anak. Buka dengan HOOK terlebih dulu, lalu pe
     } else { // ARTIKEL
       prompt += `PANDUAN MENULIS ARTIKEL:
 - Buka dengan HOOK — jangan langsung masuk materi.
+- TARGET AUDIENS & NICHE VIRAL: Tulis artikel ini dengan fokus utama memikat perhatian orang tua muslim modern. Angkat pain points atau dilema nyata dalam mendidik anak (parenting Islami).
+- HOOK VIRAL (PATTERN INTERRUPT): Pada 1-3 kalimat pertama, gunakan hook yang menghentikan scroll pembaca. Hindari basa-basi atau definisi formal. Mulai langsung dengan pertanyaan tajam, skenario dilematis yang relatable (misal: saat anak membangkang, saat anak bertanya hal kritis tentang Tuhan), atau kontradiksi menarik.
+- SHAREABILITY & SAVEABILITY: Susun isi konten dengan poin-poin yang mudah dipahami, solusi praktis/tips nyata yang bisa langsung dipraktekkan hari ini. Hal ini penting agar artikel memiliki nilai simpan (saveable) dan bagikan (shareable) yang tinggi di media sosial.
 - Gunakan contoh nyata dari kehidupan anak/keluarga.
 - Setiap heading harus membuat pembaca ingin baca bagian selanjutnya.
 - Tutup setiap section dengan kalimat yang menghubungkan ke section berikutnya.
