@@ -434,7 +434,8 @@ ${platform && platform.id !== 'generic' ? `Durasi: ${platform.maxDuration}` : ''
 Smooth natural motion, konten aman untuk anak.
 
 ═══ AUDIO CONTROL (WAJIB MUTLAK) ═══
-STRICTLY NO AUDIO. Completely silent video. Absolutely NO background music, NO sound effects (SFX), NO human speech, NO voices, and NO background noise. The generated video file must contain no audio track whatsoever.
+STRICTLY NO BACKGROUND MUSIC. Absolutely NO background music, NO songs, and NO musical instrumentals.
+HOWEVER, clear voiceover narration (matching the scene text) and natural environmental sound effects (SFX like wind blowing, footsteps, water flowing, birds chirping) ARE PERMITTED and highly encouraged if the video generator supports audio generation.
 
 ═══ RULES WAJIB ═══
 ${buildSafetyRules(scene.narration, scene.backToCamera)}
