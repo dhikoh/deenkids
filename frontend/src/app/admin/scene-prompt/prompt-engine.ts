@@ -231,7 +231,7 @@ function buildVideoContext(params: VideoContextParams): {
   const mainCharOption = MAIN_CHARACTER_ROLES.find(r => r.id === mainCharacterRole);
   const voOption = VOICEOVER_GENDERS.find(v => v.id === voiceoverGender);
 
-  let contextBlock = `═══ KONTEKS VIDEO KESELURUHAN ═══
+  let contextBlock = `═══ ISI KONTEN KESELURUHAN (FULL NARRATION) ═══
 Ini adalah scene ${sceneIndex + 1} dari ${totalScenes} dalam SATU VIDEO edukasi anak Islami (Adably.id).
 Semua scene merupakan potongan dari satu cerita/konten yang sama — BUKAN video terpisah.`;
 

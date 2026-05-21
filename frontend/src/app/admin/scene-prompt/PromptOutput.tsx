@@ -10,8 +10,8 @@ interface Props {
 }
 
 /**
- * PromptOutput — shows generated prompts with merge capability.
- * User can select 2+ adjacent scenes → merge → auto-regenerate.
+ * PromptOutput — shows generated prompts with a premium floating merge capability.
+ * User can select adjacent scenes dynamically (with smart disabled validation) → merge → auto-regenerate.
  */
 export default function PromptOutput({ scenes, onMergeScenes }: Props) {
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
@@ -49,6 +49,27 @@ export default function PromptOutput({ scenes, onMergeScenes }: Props) {
     setSelectedScenes(new Set());
   };
 
+  // ─── Smart Selection Logic: contiguous constraint ───
+  const selectedIndices = Array.from(selectedScenes).sort((a, b) => a - b);
+
+  const isCheckboxDisabled = (idx: number) => {
+    if (selectedIndices.length === 0) return false;
+
+    // Already selected checkboxes can always be toggled off
+    if (selectedScenes.has(idx)) return false;
+
+    // If exactly 1 scene is selected, only adjacent scenes (idx-1 or idx+1) are enabled
+    if (selectedIndices.length === 1) {
+      const target = selectedIndices[0];
+      return idx !== target - 1 && idx !== target + 1;
+    }
+
+    // If 2+ scenes are selected, only extreme borders (min-1 or max+1) are enabled
+    const min = selectedIndices[0];
+    const max = selectedIndices[selectedIndices.length - 1];
+    return idx !== min - 1 && idx !== max + 1;
+  };
+
   // ─── Empty state: no scenes yet ───
   if (scenes.length === 0) {
     return (
@@ -77,7 +98,7 @@ export default function PromptOutput({ scenes, onMergeScenes }: Props) {
 
   // ─── Prompts generated — show output with merge capability ───
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pb-24">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-700">
@@ -102,19 +123,32 @@ export default function PromptOutput({ scenes, onMergeScenes }: Props) {
         </div>
       </div>
 
-      {/* Merge bar — appears when 2+ scenes selected */}
+      {/* Floating Merge Bar — appears at the bottom center when 2+ scenes selected */}
       {selectedScenes.size >= 2 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl animate-in slide-in-from-top-2 duration-200">
-          <span className="text-xs font-bold text-violet-700">
-            {selectedScenes.size} scene dipilih — harus berurutan
-          </span>
-          <button
-            onClick={handleMerge}
-            className="flex items-center gap-1 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
-          >
-            <Merge size={12} />
-            Gabung → 1 Scene
-          </button>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md flex items-center justify-between px-4 py-3 bg-white/95 backdrop-blur-md border border-violet-200 rounded-2xl shadow-xl shadow-violet-100/30 animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex flex-col">
+            <span className="text-[11px] font-bold text-violet-700">
+              {selectedScenes.size} Scene Terpilih
+            </span>
+            <span className="text-[9px] text-slate-400">
+              Tekan tombol gabung untuk menyatukan
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedScenes(new Set())}
+              className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 rounded-xl text-[10px] font-bold transition-all"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleMerge}
+              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl text-[11px] font-bold transition-all shadow-md shadow-violet-200"
+            >
+              <Merge size={12} />
+              Gabung Scene
+            </button>
+          </div>
         </div>
       )}
 
@@ -122,6 +156,7 @@ export default function PromptOutput({ scenes, onMergeScenes }: Props) {
       {scenes.map((scene, i) => {
         const isExpanded = expandedScene === i;
         const isSelected = selectedScenes.has(i);
+        const isDisabled = isCheckboxDisabled(i);
         const imgKey = `img-${i}`;
         const animKey = `anim-${i}`;
 
@@ -133,12 +168,13 @@ export default function PromptOutput({ scenes, onMergeScenes }: Props) {
             <div className="flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-slate-50 to-white">
               {/* Merge checkbox */}
               <button
-                onClick={() => toggleSceneSelection(i)}
-                className="flex-shrink-0"
-                title="Pilih untuk digabung"
+                onClick={() => !isDisabled && toggleSceneSelection(i)}
+                disabled={isDisabled}
+                className={`flex-shrink-0 transition-opacity ${isDisabled ? 'opacity-30 cursor-not-allowed' : ''}`}
+                title={isDisabled ? "Hanya dapat memilih scene yang berurutan" : "Pilih untuk digabung"}
               >
                 {isSelected
-                  ? <CheckSquare size={14} className="text-violet-600" />
+                  ? <CheckSquare size={14} className="text-violet-600 animate-in zoom-in-50 duration-150" />
                   : <Square size={14} className="text-slate-300 hover:text-slate-400" />
                 }
               </button>
@@ -217,7 +253,7 @@ export default function PromptOutput({ scenes, onMergeScenes }: Props) {
 
       {/* Merge hint at bottom */}
       <p className="text-[9px] text-slate-400 text-center pt-2">
-        💡 Centang 2+ scene berurutan → tombol &quot;Gabung&quot; muncul di atas. Prompt otomatis di-regenerate.
+        💡 Centang 2+ scene berurutan → tombol &quot;Gabung&quot; akan melayang di bawah layar.
       </p>
     </div>
   );
