@@ -9,6 +9,8 @@ import {
   CAMERA_PRESETS, MOOD_PRESETS, LOCATION_PRESETS, TIME_PRESETS,
   ANIMATION_PRESETS, VISUAL_STYLE_PRESETS, ART_STYLES, RENDERINGS,
   COLOR_MOODS, PLATFORM_TARGETS, AGE_TARGETS,
+  MainCharacterRole, MAIN_CHARACTER_ROLES,
+  VoiceoverGender, VOICEOVER_GENDERS,
 } from './types';
 import {
   SceneCategory, SCENE_CATEGORY_PATTERNS, EMOTION_ATMOSPHERE,
@@ -190,6 +192,117 @@ function buildSafetyRules(narration: string, backToCamera?: boolean): string {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SHARED: VIDEO CONTEXT BUILDER
+// Used by BOTH image and animation prompt generators to ensure
+// consistent context injection — no duplication between the two.
+// ═══════════════════════════════════════════════════════════════
+
+/** Categories that typically involve character visuals */
+const CHARACTER_CATEGORIES: SceneCategory[] = ['character', 'home', 'school', 'mosque', 'historic'];
+
+interface VideoContextParams {
+  scene: SceneItem;
+  fullNarration: string;
+  characters: CharacterCard[];
+  sceneIndex: number;
+  totalScenes: number;
+  mainCharacterRole: MainCharacterRole;
+  voiceoverGender: VoiceoverGender;
+}
+
+function buildVideoContext(params: VideoContextParams): {
+  contextBlock: string;
+  characterBlock: string;
+  sceneRoleBlock: string;
+  continuityBlock: string;
+  isCharacterScene: boolean;
+} {
+  const { scene, fullNarration, characters, sceneIndex, totalScenes, mainCharacterRole, voiceoverGender } = params;
+
+  // Detect scene category
+  const category = detectSceneCategory(scene.narration);
+
+  // Determine if this scene involves characters:
+  // Manual assignment (characterIds) takes priority over auto-detection
+  const involvedChars = characters.filter(c => scene.characterIds.includes(c.id));
+  const isCharacterScene = involvedChars.length > 0 || CHARACTER_CATEGORIES.includes(category);
+
+  // ── Context Block: full narration + main character + voiceover ──
+  const mainCharOption = MAIN_CHARACTER_ROLES.find(r => r.id === mainCharacterRole);
+  const voOption = VOICEOVER_GENDERS.find(v => v.id === voiceoverGender);
+
+  let contextBlock = `═══ KONTEKS VIDEO KESELURUHAN ═══
+Ini adalah scene ${sceneIndex + 1} dari ${totalScenes} dalam SATU VIDEO edukasi anak Islami (Adably.id).
+Semua scene merupakan potongan dari satu cerita/konten yang sama — BUKAN video terpisah.`;
+
+  if (mainCharOption && mainCharOption.id) {
+    contextBlock += `\nKarakter utama video: ${mainCharOption.promptId}`;
+    contextBlock += `\nMeskipun scene tertentu tidak menampilkan karakter ini secara visual (misal: scene kosmik, diagram), karakter ini tetap menjadi subjek utama cerita dan gaya visual harus tetap selaras.`;
+  }
+
+  if (voOption && voOption.id) {
+    contextBlock += `\nPengisi suara (narator): ${voOption.promptLabel} — sesuaikan gesture dan body language karakter yang bercerita (jika muncul visual) dengan gender narator ini.`;
+  }
+
+  contextBlock += `\n\nNarasi lengkap video:\n${fullNarration.trim()}`;
+
+  // ── Character Block: registry + scene-specific ──
+  let characterBlock = '';
+
+  if (characters.length > 0) {
+    // Always show full registry so AI knows all characters across all scenes
+    characterBlock = `\n═══ REGISTRASI KARAKTER (seluruh video) ═══`;
+    characterBlock += `\n${characters.map(c => `- ${c.name}: ${c.description} (FACELESS — tanpa wajah)`).join('\n')}`;
+
+    if (isCharacterScene && involvedChars.length > 0) {
+      characterBlock += `\n\n→ Scene INI menampilkan: ${involvedChars.map(c => c.name).join(', ')}`;
+      characterBlock += `\nPastikan karakter di atas KONSISTEN dengan kemunculan di scene lain — pakaian, warna, proporsi tubuh IDENTIK.`;
+    } else if (isCharacterScene) {
+      characterBlock += `\n\n→ Scene ini melibatkan karakter (terdeteksi dari narasi). Pastikan konsisten dengan registrasi di atas.`;
+    } else {
+      characterBlock += `\n\n→ Scene INI: TIDAK menampilkan karakter secara visual.`;
+    }
+  }
+
+  // ── Scene Role Block: B-Roll vs Character scene ──
+  let sceneRoleBlock = '';
+
+  if (!isCharacterScene) {
+    // B-Roll / visual pendukung
+    const categoryLabels: Record<string, string> = {
+      cosmic: 'kosmik/luar angkasa',
+      nature: 'alam/pemandangan',
+      sacred: 'sakral (Al-Quran, kaligrafi, objek Islami)',
+      prophet: 'siluet cahaya nabi',
+    };
+    const catLabel = categoryLabels[category] || 'non-karakter';
+
+    sceneRoleBlock = `\n═══ PERAN SCENE INI ═══
+Tipe: VISUAL PENDUKUNG (B-Roll) — ${catLabel}
+Scene ini mengilustrasikan apa yang sedang diceritakan narator. JANGAN menambahkan karakter manusia ke scene ini kecuali memang disebutkan dalam narasi.
+WAJIB: Tetap pertahankan art style, color palette, dan visual world yang SAMA dengan scene lain agar terasa sebagai satu video yang koheren.`;
+  } else {
+    sceneRoleBlock = `\n═══ PERAN SCENE INI ═══
+Tipe: SCENE KARAKTER — menampilkan karakter yang berinteraksi/beraksi.
+Pastikan karakter KONSISTEN dengan deskripsi di registrasi dan kemunculan di scene sebelumnya.`;
+  }
+
+  // ── Continuity Block ──
+  let continuityBlock = `\n═══ KONTINUITAS VISUAL ═══
+Scene 1 hingga ${totalScenes} adalah SATU VIDEO utuh — BUKAN kumpulan gambar terpisah.
+- Art style, color palette, rendering WAJIB IDENTIK di seluruh scene
+- Jika karakter muncul kembali setelah scene tanpa karakter, WAJIB identik dengan kemunculan sebelumnya`;
+
+  if (sceneIndex === 0) {
+    continuityBlock += `\nIni scene PERTAMA — bangun fondasi visual yang konsisten untuk seluruh scene berikutnya.`;
+  } else {
+    continuityBlock += `\nPerhatikan scene sebelumnya: pertahankan karakter dan setting jika konteks masih sama. Jika narasi menunjukkan perubahan lokasi/waktu, wajar untuk mengubah setting — tapi art style tetap sama.`;
+  }
+
+  return { contextBlock, characterBlock, sceneRoleBlock, continuityBlock, isCharacterScene };
+}
+
+// ═══════════════════════════════════════════════════════════════
 // HYBRID IMAGE PROMPT GENERATOR (v3)
 // ═══════════════════════════════════════════════════════════════
 
@@ -203,6 +316,8 @@ export function generateImagePrompt(
   selectedAges: string[],
   sceneIndex: number,
   totalScenes: number,
+  mainCharacterRole: MainCharacterRole,
+  voiceoverGender: VoiceoverGender,
 ): string {
   const style = resolveVisualStyle(visualPresetId, customStyle);
   const loc = LOCATION_PRESETS.find(l => l.id === scene.location);
@@ -221,16 +336,11 @@ export function generateImagePrompt(
     '1:1': 'square (1:1)',
   };
 
-  // Build character descriptions
-  const involvedChars = characters.filter(c => scene.characterIds.includes(c.id));
-  const charBlock = involvedChars.length > 0
-    ? `\nKarakter yang muncul di scene ini (pastikan konsisten):\n${involvedChars.map(c => `- ${c.name}: ${c.description} (FACELESS — tanpa wajah)`).join('\n')}`
-    : '';
-
-  // Continuity instruction
-  const continuity = totalScenes > 1
-    ? `\nINSTRUKSI KONTINUITAS: Ini adalah scene ${sceneIndex + 1} dari ${totalScenes}. ${sceneIndex > 0 ? 'Perhatikan gambar sebelumnya agar karakter dan setting tidak berganti jika konteksnya masih sama. Tapi jika kalimat memang menunjukkan perubahan scene/lokasi/waktu, maka wajar untuk mengubahnya — ikuti isi kalimat.' : 'Ini scene pertama — bangun fondasi visual yang konsisten untuk scene berikutnya.'}`
-    : '';
+  // Build shared video context
+  const ctx = buildVideoContext({
+    scene, fullNarration, characters, sceneIndex, totalScenes,
+    mainCharacterRole, voiceoverGender,
+  });
 
   // Build the meta-instruction prompt
   return `Buatkan gambar ilustrasi untuk web pendidikan anak Islami (adably.id).
@@ -254,11 +364,11 @@ ${loc ? `Lokasi: ${loc.prompt}` : ''}
 ═══ RULES WAJIB ═══
 ${buildSafetyRules(scene.narration, scene.backToCamera)}
 DO NOT render any text, words, or letters on the image.
-${charBlock}
-${continuity}
 
-═══ ISI KONTEN KESELURUHAN ═══
-${fullNarration.trim()}
+${ctx.contextBlock}
+${ctx.characterBlock}
+${ctx.sceneRoleBlock}
+${ctx.continuityBlock}
 
 ═══ KALIMAT YANG DIMINTA UNTUK DIBUATKAN GAMBAR ═══
 ${scene.narration.trim()}`.trim();
@@ -273,36 +383,65 @@ export function generateAnimationPrompt(
   fullNarration: string,
   visualPresetId: string,
   customStyle: VisualStyle | undefined,
+  characters: CharacterCard[],
+  aspectRatio: string,
   platformId: string,
   selectedAges: string[],
   sceneIndex: number,
   totalScenes: number,
+  mainCharacterRole: MainCharacterRole,
+  voiceoverGender: VoiceoverGender,
 ): string {
   const style = resolveVisualStyle(visualPresetId, customStyle);
   const platform = PLATFORM_TARGETS.find(p => p.id === platformId);
   const motion = ANIMATION_PRESETS.find(a => a.id === scene.animationMotion);
+  const loc = LOCATION_PRESETS.find(l => l.id === scene.location);
+  const mood = MOOD_PRESETS.find(m => m.id === scene.mood);
+  const time = TIME_PRESETS.find(t => t.id === scene.timeOfDay);
   const ageLabels = selectedAges
     .map(id => AGE_TARGETS.find(a => a.id === id))
     .filter(Boolean) as AgeTarget[];
   const ageText = ageLabels.map(a => a.label).join(', ');
 
-  return `Buatkan animasi/video pendek dari gambar ilustrasi untuk web pendidikan anak Islami.
+  const arMap: Record<string, string> = {
+    '16:9': 'horizontal landscape (16:9)',
+    '9:16': 'vertical portrait (9:16)',
+    '1:1': 'square (1:1)',
+  };
+
+  // Build shared video context
+  const ctx = buildVideoContext({
+    scene, fullNarration, characters, sceneIndex, totalScenes,
+    mainCharacterRole, voiceoverGender,
+  });
+
+  return `Buatkan animasi/video pendek dari gambar ilustrasi untuk web pendidikan anak Islami (adably.id).
 
 Untuk penonton usia ${ageText}. Gerakan harus halus, child-friendly, tidak ada elemen menakutkan.
 
 ═══ GERAKAN YANG DIMINTA ═══
 ${motion ? motion.prompt : 'Subtle ambient movement with gentle lighting shifts.'}
 
+═══ GAYA VISUAL ═══
+Pertahankan style ${style.artStyle} sepanjang animasi. Tidak boleh ada style drift.
+Rendering: ${style.rendering}
+Color mood: ${style.colorMood}
+Komposisi: ${arMap[aspectRatio] || arMap['16:9']}
+${mood ? `Suasana: ${mood.prompt}` : ''}
+${time ? `Waktu: ${time.prompt}` : ''}
+${loc ? `Lokasi: ${loc.prompt}` : ''}
+${platform && platform.id !== 'generic' ? `Durasi: ${platform.maxDuration}` : ''}
+Smooth natural motion, konten aman untuk anak.
+
 ═══ RULES WAJIB ═══
 ${buildSafetyRules(scene.narration, scene.backToCamera)}
 
-═══ GAYA VISUAL ═══
-Pertahankan style ${style.artStyle} sepanjang animasi. Tidak boleh ada style drift.
-${platform && platform.id !== 'generic' ? `Durasi: ${platform.maxDuration}` : ''}
-Smooth natural motion, konten aman untuk anak.
-${totalScenes > 1 ? `\nScene ${sceneIndex + 1} dari ${totalScenes}. Pertahankan konsistensi karakter dan warna dari scene sebelumnya.` : ''}
+${ctx.contextBlock}
+${ctx.characterBlock}
+${ctx.sceneRoleBlock}
+${ctx.continuityBlock}
 
-═══ KONTEKS NARASI ═══
+═══ KALIMAT SCENE INI ═══
 ${scene.narration.trim()}`.trim();
 }
 
@@ -319,10 +458,20 @@ export function generateAllPrompts(
   aspectRatio: string,
   platformId: string,
   selectedAges: string[],
+  mainCharacterRole: MainCharacterRole,
+  voiceoverGender: VoiceoverGender,
 ): SceneItem[] {
   return scenes.map((scene, i) => ({
     ...scene,
-    imagePrompt: generateImagePrompt(scene, fullNarration, visualPresetId, customStyle, characters, aspectRatio, selectedAges, i, scenes.length),
-    animationPrompt: generateAnimationPrompt(scene, fullNarration, visualPresetId, customStyle, platformId, selectedAges, i, scenes.length),
+    imagePrompt: generateImagePrompt(
+      scene, fullNarration, visualPresetId, customStyle, characters,
+      aspectRatio, selectedAges, i, scenes.length,
+      mainCharacterRole, voiceoverGender,
+    ),
+    animationPrompt: generateAnimationPrompt(
+      scene, fullNarration, visualPresetId, customStyle, characters,
+      aspectRatio, platformId, selectedAges, i, scenes.length,
+      mainCharacterRole, voiceoverGender,
+    ),
   }));
 }

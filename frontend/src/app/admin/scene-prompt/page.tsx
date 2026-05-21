@@ -3,13 +3,16 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import {
   Clapperboard, Sparkles, Palette, Monitor, ChevronDown, ChevronUp, Layers, Baby,
+  User, Mic,
 } from "lucide-react";
 import {
   SceneItem, SentenceItem, CharacterCard, VisualStyle,
   VISUAL_STYLE_PRESETS, ART_STYLES, RENDERINGS, COLOR_MOODS,
   SCENE_ASPECT_RATIOS, PLATFORM_TARGETS, AGE_TARGETS, DEFAULT_AGE_TARGET,
+  MainCharacterRole, MAIN_CHARACTER_ROLES,
+  VoiceoverGender, VOICEOVER_GENDERS,
 } from "./types";
-import { splitIntoSentences, generateAllPrompts, generateImagePrompt, generateAnimationPrompt, detectSceneCategory, autoDetectPresets } from "./prompt-engine";
+import { splitIntoSentences, generateAllPrompts, detectSceneCategory, autoDetectPresets } from "./prompt-engine";
 import SceneInput from "./SceneInput";
 import PromptOutput from "./PromptOutput";
 
@@ -43,6 +46,10 @@ export default function ScenePromptStudioPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [backToCamera, setBackToCamera] = useState(false);
   const [selectedAges, setSelectedAges] = useState<string[]>([DEFAULT_AGE_TARGET]);
+
+  // Main character & voiceover (optional)
+  const [mainCharacterRole, setMainCharacterRole] = useState<MainCharacterRole>('');
+  const [voiceoverGender, setVoiceoverGender] = useState<VoiceoverGender>('');
 
   const isCustom = visualPresetId === "custom";
 
@@ -113,6 +120,7 @@ export default function ScenePromptStudioPage() {
       scenes, rawText, visualPresetId,
       isCustom ? customStyle : undefined,
       characters, aspectRatio, platformId, selectedAges,
+      mainCharacterRole, voiceoverGender,
     );
 
     setScenes(updated);
@@ -169,6 +177,7 @@ export default function ScenePromptStudioPage() {
       newScenes, rawText, visualPresetId,
       isCustom ? customStyle : undefined,
       characters, aspectRatio, platformId, selectedAges,
+      mainCharacterRole, voiceoverGender,
     );
 
     setScenes(regenerated);
@@ -355,6 +364,58 @@ export default function ScenePromptStudioPage() {
                   <select value={platformId} onChange={e => setPlatformId(e.target.value)} className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none">
                     {PLATFORM_TARGETS.map(p => (<option key={p.id} value={p.id}>{p.name} (max {p.maxDuration})</option>))}
                   </select>
+                </div>
+                {/* Main Character Role */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 mb-1.5 block flex items-center gap-1">
+                    <User size={10} className="text-violet-500" /> Karakter Utama <span className="text-slate-400 font-normal">(opsional)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {MAIN_CHARACTER_ROLES.map(role => (
+                      <button
+                        key={role.id}
+                        onClick={() => setMainCharacterRole(role.id)}
+                        className={`px-3 py-2 rounded-xl border-2 text-center transition-all text-[11px] font-bold ${
+                          mainCharacterRole === role.id
+                            ? 'border-violet-400 bg-violet-50 text-violet-700 shadow-sm'
+                            : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        {role.label}
+                      </button>
+                    ))}
+                  </div>
+                  {mainCharacterRole && (
+                    <p className="text-[9px] text-violet-500 mt-1">
+                      {MAIN_CHARACTER_ROLES.find(r => r.id === mainCharacterRole)?.desc}
+                    </p>
+                  )}
+                </div>
+                {/* Voiceover Gender */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 mb-1.5 block flex items-center gap-1">
+                    <Mic size={10} className="text-violet-500" /> Pengisi Suara <span className="text-slate-400 font-normal">(opsional)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {VOICEOVER_GENDERS.map(vo => (
+                      <button
+                        key={vo.id}
+                        onClick={() => setVoiceoverGender(vo.id)}
+                        className={`px-3 py-2 rounded-xl border-2 text-center transition-all text-[11px] font-bold ${
+                          voiceoverGender === vo.id
+                            ? 'border-violet-400 bg-violet-50 text-violet-700 shadow-sm'
+                            : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                        }`}
+                      >
+                        {vo.label}
+                      </button>
+                    ))}
+                  </div>
+                  {voiceoverGender && (
+                    <p className="text-[9px] text-violet-500 mt-1">
+                      {VOICEOVER_GENDERS.find(v => v.id === voiceoverGender)?.desc}
+                    </p>
+                  )}
                 </div>
               </div>
             )}

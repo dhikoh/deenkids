@@ -291,3 +291,40 @@ export const SCENE_ASPECT_RATIOS = [
   { id: '9:16', label: '9:16', desc: 'Reels / TikTok' },
   { id: '1:1', label: '1:1', desc: 'Instagram Feed' },
 ];
+
+// ─── Main Character Role (optional) ───────────────────────────
+
+export type MainCharacterRole = 'AYAH' | 'IBU' | 'ANAK_LAKI' | 'ANAK_PEREMPUAN' | '';
+
+export interface MainCharacterOption {
+  id: MainCharacterRole;
+  label: string;
+  desc: string;
+  promptId: string;  // Indonesian label for prompt
+  promptEn: string;  // English label for prompt
+}
+
+export const MAIN_CHARACTER_ROLES: MainCharacterOption[] = [
+  { id: '', label: 'Tidak dipilih', desc: 'AI menentukan sendiri', promptId: '', promptEn: '' },
+  { id: 'AYAH', label: '👨 Ayah', desc: 'Karakter utama adalah seorang ayah', promptId: 'Ayah (pria dewasa muslim berjenggot, jubah/koko)', promptEn: 'Father (adult Muslim man with beard, Islamic clothing)' },
+  { id: 'IBU', label: '👩 Ibu', desc: 'Karakter utama adalah seorang ibu', promptId: 'Ibu (wanita dewasa muslimah berhijab syar\'i)', promptEn: 'Mother (adult Muslim woman with full hijab)' },
+  { id: 'ANAK_LAKI', label: '👦 Anak Laki-laki', desc: 'Karakter utama adalah anak laki-laki', promptId: 'Anak laki-laki muslim (berpeci, baju koko)', promptEn: 'Muslim boy (with kufi cap, Islamic clothing)' },
+  { id: 'ANAK_PEREMPUAN', label: '👧 Anak Perempuan', desc: 'Karakter utama adalah anak perempuan', promptId: 'Anak perempuan muslimah (berhijab, gamis)', promptEn: 'Muslim girl (with hijab, Islamic dress)' },
+];
+
+// ─── Voiceover Gender (optional) ──────────────────────────────
+
+export type VoiceoverGender = 'LAKI' | 'PEREMPUAN' | '';
+
+export interface VoiceoverOption {
+  id: VoiceoverGender;
+  label: string;
+  desc: string;
+  promptLabel: string;
+}
+
+export const VOICEOVER_GENDERS: VoiceoverOption[] = [
+  { id: '', label: 'Tidak dipilih', desc: 'Tidak menyebut pengisi suara', promptLabel: '' },
+  { id: 'LAKI', label: '🎙️ Laki-laki', desc: 'Suara narator: anak laki-laki', promptLabel: 'anak laki-laki' },
+  { id: 'PEREMPUAN', label: '🎤 Perempuan', desc: 'Suara narator: anak perempuan', promptLabel: 'anak perempuan' },
+];
