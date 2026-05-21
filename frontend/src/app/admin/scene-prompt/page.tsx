@@ -12,7 +12,7 @@ import {
   MainCharacterRole, MAIN_CHARACTER_ROLES,
   VoiceoverGender, VOICEOVER_GENDERS,
 } from "./types";
-import { splitIntoSentences, generateAllPrompts, detectSceneCategory, autoDetectPresets } from "./prompt-engine";
+import { splitIntoSentences, generateAllPrompts, detectSceneCategory, autoDetectPresets, generateImagePrompt, generateAnimationPrompt } from "./prompt-engine";
 import SceneInput from "./SceneInput";
 import PromptOutput from "./PromptOutput";
 
@@ -39,6 +39,7 @@ export default function ScenePromptStudioPage() {
     rendering: "soft-dreamy",
     colorMood: "warm-pastel",
   });
+  const [isAutoVisualAll, setIsAutoVisualAll] = useState(false);
 
   // Settings
   const [aspectRatio, setAspectRatio] = useState("16:9");
@@ -91,6 +92,7 @@ export default function ScenePromptStudioPage() {
         animationPrompt: "",
         characterIds: [],
         backToCamera,
+        isAutoVisual: isAutoVisualAll,
       };
     });
 
@@ -184,10 +186,68 @@ export default function ScenePromptStudioPage() {
     toast.success(`🔗 ${sorted.length} scene digabung → prompt otomatis di-regenerate`);
   };
 
+  // ─── STEP 4 (DYNAMIC OVERRIDES): Update scene visual preset and regenerate prompts instantly ───
+  const handleUpdateSceneVisual = (sceneIndex: number, patch: Partial<SceneItem>) => {
+    setScenes(prev => {
+      const next = prev.map((scene, idx) => {
+        if (idx !== sceneIndex) return scene;
+
+        const updated = { ...scene, ...patch };
+
+        // Auto-regenerate prompts just for this specific scene!
+        updated.imagePrompt = generateImagePrompt(
+          updated, rawText, visualPresetId,
+          isCustom ? customStyle : undefined,
+          characters, aspectRatio, selectedAges, idx, prev.length,
+          mainCharacterRole, voiceoverGender
+        );
+
+        updated.animationPrompt = generateAnimationPrompt(
+          updated, rawText, visualPresetId,
+          isCustom ? customStyle : undefined,
+          characters, aspectRatio, platformId, selectedAges, idx, prev.length,
+          mainCharacterRole, voiceoverGender
+        );
+
+        return updated;
+      });
+      return next;
+    });
+  };
+
+  const handleToggleAutoVisualAll = (checked: boolean) => {
+    setIsAutoVisualAll(checked);
+    if (scenes.length === 0) return;
+
+    const updated = scenes.map((scene, idx) => {
+      const updatedScene = { ...scene, isAutoVisual: checked };
+
+      updatedScene.imagePrompt = generateImagePrompt(
+        updatedScene, rawText, visualPresetId,
+        isCustom ? customStyle : undefined,
+        characters, aspectRatio, selectedAges, idx, scenes.length,
+        mainCharacterRole, voiceoverGender
+      );
+
+      updatedScene.animationPrompt = generateAnimationPrompt(
+        updatedScene, rawText, visualPresetId,
+        isCustom ? customStyle : undefined,
+        characters, aspectRatio, platformId, selectedAges, idx, scenes.length,
+        mainCharacterRole, voiceoverGender
+      );
+
+      return updatedScene;
+    });
+
+    setScenes(updated);
+    toast.success(checked ? "✨ Semua scene diatur otomatis oleh AI!" : "🔓 Mode manual diaktifkan kembali.");
+  };
+
   // ─── Reset ───
   const handleReset = () => {
     setSentences([]);
     setScenes([]);
+    setIsAutoVisualAll(false);
     toast.success("🔄 Reset berhasil");
   };
 
@@ -203,6 +263,19 @@ export default function ScenePromptStudioPage() {
           <p className="text-slate-500 mt-1 text-sm">Pecah narasi → atur scene → generate prompt → gabung di output</p>
         </div>
         <div className="flex items-center gap-2">
+          {scenes.length > 0 && (
+            <label className="flex items-center gap-1.5 px-3 py-2 bg-violet-50/50 border border-violet-200 rounded-xl cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isAutoVisualAll}
+                onChange={(e) => handleToggleAutoVisualAll(e.target.checked)}
+                className="rounded border-slate-300 text-violet-600 focus:ring-violet-400 h-3.5 w-3.5 cursor-pointer"
+              />
+              <span className="text-[11px] font-extrabold text-violet-700 flex items-center gap-0.5">
+                <Sparkles size={10} /> Auto AI Semua Scene
+              </span>
+            </label>
+          )}
           {scenes.length > 0 && (
             <button onClick={handleReset} className="px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-xl text-xs font-bold transition-all">
               🔄 Reset
@@ -443,6 +516,7 @@ export default function ScenePromptStudioPage() {
             <PromptOutput
               scenes={scenes}
               onMergeScenes={handleMergeInOutput}
+              onUpdateSceneVisual={handleUpdateSceneVisual}
             />
           </div>
         </div>

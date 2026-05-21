@@ -115,25 +115,41 @@ export function autoDetectPresets(text: string, category: SceneCategory): {
     case 'prophet': location = 'gurun'; mood = 'megah'; camera = 'wide-shot'; break;
   }
 
-  // Emotion override
+  // Smart Emotion override
   for (const em of EMOTION_ATMOSPHERE) {
     if (em.pattern.test(text)) { mood = em.presetId; break; }
   }
+  if (/\b(sedih|nangis|kecewa|bersedih|duka|khawatir|takut)\b/i.test(text)) mood = 'serius';
+  if (/\b(senang|bahagia|gembira|tertawa|senyum|ceria|wah|seru)\b/i.test(text)) mood = 'ceria';
+  if (/\b(doa|mohon|ibadah|sholat|sujud|tangan|amin)\b/i.test(text)) mood = 'damai';
+  if (/\b(agung|hebat|luar\s*biasa|sempurna|ciptaan|indah|megah)\b/i.test(text)) mood = 'megah';
 
-  // Location refinement from text
+  // Smart Location refinement from text
   if (/\bsurga|jannah\b/i.test(text)) location = 'surga';
-  if (/\b(masjid|musholla)\b/i.test(text)) location = 'masjid';
-  if (/\b(gurun|padang\s*pasir|sahara)\b/i.test(text)) location = 'gurun';
-  if (/\b(laut|pantai|samudra)\b/i.test(text)) location = 'pantai';
-  if (/\b(istana|kerajaan)\b/i.test(text)) location = 'kota-kuno';
-  if (/\b(perang|pertempuran|medan)\b/i.test(text)) location = 'medan-perang';
-  if (/\b(taman|kebun)\b/i.test(text)) location = 'taman';
+  if (/\b(masjid|musholla|masjidil)\b/i.test(text)) location = 'masjid';
+  if (/\b(gurun|padang\s*pasir|sahara|pasir)\b/i.test(text)) location = 'gurun';
+  if (/\b(laut|pantai|samudra|sungai|air|pantai)\b/i.test(text)) location = 'pantai';
+  if (/\b(istana|kerajaan|kuno|dahulu|zaman)\b/i.test(text)) location = 'kota-kuno';
+  if (/\b(perang|pertempuran|medan|pasukan|musuh)\b/i.test(text)) location = 'medan-perang';
+  if (/\b(taman|kebun|bunga|bermain)\b/i.test(text)) location = 'taman';
+  if (/\b(kelas|sekolah|belajar|guru|murid)\b/i.test(text)) location = 'sekolah';
+  if (/\b(tidur|kamar|ranjang|mimpi)\b/i.test(text)) location = 'kamar';
 
-  // Time refinement
-  if (/\b(subuh|fajar|dini\s*hari)\b/i.test(text)) timeOfDay = 'subuh';
-  if (/\b(malam|gelap|bulan)\b/i.test(text)) timeOfDay = 'malam';
-  if (/\b(sore|senja|maghrib)\b/i.test(text)) timeOfDay = 'sore';
-  if (/\b(siang|terik|dzuhur)\b/i.test(text)) timeOfDay = 'siang';
+  // Smart Time refinement
+  if (/\b(subuh|fajar|dini\s*hari|pagi\s*buta)\b/i.test(text)) timeOfDay = 'subuh';
+  if (/\b(malam|gelap|bulan|bintang|tidur)\b/i.test(text)) timeOfDay = 'malam';
+  if (/\b(sore|senja|maghrib|sunset)\b/i.test(text)) timeOfDay = 'sore';
+  if (/\b(siang|terik|dzuhur|panas)\b/i.test(text)) timeOfDay = 'siang';
+  if (/\b(pagi|terbit|segar|bangun)\b/i.test(text)) timeOfDay = 'pagi';
+
+  // Smart Camera Angle refinement based on context
+  if (/\b(doa|tangan|wajah|mata|tangan|bisikan|telinga|detail)\b/i.test(text)) {
+    camera = 'close-up';
+  } else if (/\b(bumi|langit|luar\s*angkasa|alam|gurun|luas|dunia|pemandangan)\b/i.test(text)) {
+    camera = 'wide-shot';
+  } else if (/\b(bicara|tanya|diskusi|ibu|anak|sahabat|temen|teman)\b/i.test(text)) {
+    camera = 'medium-shot';
+  }
 
   return { mood, location, timeOfDay, camera };
 }
@@ -318,12 +334,22 @@ export function generateImagePrompt(
   totalScenes: number,
   mainCharacterRole: MainCharacterRole,
   voiceoverGender: VoiceoverGender,
-): string {
+ ): string {
   const style = resolveVisualStyle(visualPresetId, customStyle);
-  const loc = LOCATION_PRESETS.find(l => l.id === scene.location);
-  const cam = CAMERA_PRESETS.find(c => c.id === scene.camera);
-  const mood = MOOD_PRESETS.find(m => m.id === scene.mood);
-  const time = TIME_PRESETS.find(t => t.id === scene.timeOfDay);
+
+  const category = detectSceneCategory(scene.narration);
+  const autoPresets = autoDetectPresets(scene.narration, category);
+
+  const activeLoc = scene.isAutoVisual ? autoPresets.location : scene.location;
+  const activeCam = scene.isAutoVisual ? autoPresets.camera : scene.camera;
+  const activeMood = scene.isAutoVisual ? autoPresets.mood : scene.mood;
+  const activeTime = scene.isAutoVisual ? autoPresets.timeOfDay : scene.timeOfDay;
+
+  const loc = LOCATION_PRESETS.find(l => l.id === activeLoc);
+  const cam = CAMERA_PRESETS.find(c => c.id === activeCam);
+  const mood = MOOD_PRESETS.find(m => m.id === activeMood);
+  const time = TIME_PRESETS.find(t => t.id === activeTime);
+
   const ageLabels = selectedAges
     .map(id => AGE_TARGETS.find(a => a.id === id))
     .filter(Boolean) as AgeTarget[];
@@ -394,10 +420,22 @@ export function generateAnimationPrompt(
 ): string {
   const style = resolveVisualStyle(visualPresetId, customStyle);
   const platform = PLATFORM_TARGETS.find(p => p.id === platformId);
-  const motion = ANIMATION_PRESETS.find(a => a.id === scene.animationMotion);
-  const loc = LOCATION_PRESETS.find(l => l.id === scene.location);
-  const mood = MOOD_PRESETS.find(m => m.id === scene.mood);
-  const time = TIME_PRESETS.find(t => t.id === scene.timeOfDay);
+
+  const category = detectSceneCategory(scene.narration);
+  const autoPresets = autoDetectPresets(scene.narration, category);
+
+  const activeLoc = scene.isAutoVisual ? autoPresets.location : scene.location;
+  const activeMood = scene.isAutoVisual ? autoPresets.mood : scene.mood;
+  const activeTime = scene.isAutoVisual ? autoPresets.timeOfDay : scene.timeOfDay;
+  const activeMotion = scene.isAutoVisual
+    ? (category === 'cosmic' || category === 'nature' ? 'pan-slow' : 'ambient-glow')
+    : scene.animationMotion;
+
+  const motion = ANIMATION_PRESETS.find(a => a.id === activeMotion);
+  const loc = LOCATION_PRESETS.find(l => l.id === activeLoc);
+  const mood = MOOD_PRESETS.find(m => m.id === activeMood);
+  const time = TIME_PRESETS.find(t => t.id === activeTime);
+
   const ageLabels = selectedAges
     .map(id => AGE_TARGETS.find(a => a.id === id))
     .filter(Boolean) as AgeTarget[];

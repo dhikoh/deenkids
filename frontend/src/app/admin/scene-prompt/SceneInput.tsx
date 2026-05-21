@@ -1,14 +1,7 @@
 "use client";
 import { useState } from "react";
-import {
-  Camera, Cloud, MapPin, Clock, Film, Users, Plus, Trash2, ChevronDown, ChevronUp,
-  Wand2, GripVertical,
-} from "lucide-react";
-import {
-  SceneItem, CharacterCard,
-  CAMERA_PRESETS, MOOD_PRESETS, LOCATION_PRESETS, TIME_PRESETS,
-  ANIMATION_PRESETS,
-} from "./types";
+import { Users, Plus, Trash2, ChevronDown, ChevronUp, Wand2, GripVertical, Trash } from "lucide-react";
+import { SceneItem, CharacterCard } from "./types";
 
 interface Props {
   scenes: SceneItem[];
@@ -18,12 +11,14 @@ interface Props {
 }
 
 /**
- * SceneInput — Pure scene editor (NO merge logic here).
- * Merge lives in PromptOutput (output panel).
+ * SceneInput — Pure scene text & character involvement editor.
+ * Visual settings (camera, location, mood, etc.) have been moved to PromptOutput for a highly unified, prompt-adjacent workflow.
  */
 export default function SceneInput({
-  scenes, characters,
-  onScenesChange, onCharactersChange,
+  scenes,
+  characters,
+  onScenesChange,
+  onCharactersChange,
 }: Props) {
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
   const [showCharacters, setShowCharacters] = useState(false);
@@ -66,26 +61,13 @@ export default function SceneInput({
     });
   };
 
-  const PresetButton = ({ active, onClick, children, className = "" }: { active: boolean; onClick: () => void; children: React.ReactNode; className?: string }) => (
-    <button
-      onClick={onClick}
-      className={`px-2.5 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${
-        active
-          ? "border-violet-400 bg-violet-50 text-violet-700 shadow-sm"
-          : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
-      } ${className}`}
-    >
-      {children}
-    </button>
-  );
-
   return (
     <div className="space-y-4">
-      {/* ─── Character Cards (Collapsible) ─── */}
-      <div className="border border-slate-200 rounded-xl overflow-hidden">
+      {/* ─── Character Cards ─── */}
+      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
         <button
           onClick={() => setShowCharacters(!showCharacters)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-50 to-white hover:from-slate-100 transition-all"
+          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-50 to-white hover:from-slate-100 transition-all border-b border-slate-100"
         >
           <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
             <Users size={14} className="text-violet-500" />
@@ -95,30 +77,33 @@ export default function SceneInput({
         </button>
 
         {showCharacters && (
-          <div className="px-4 pb-4 space-y-2 border-t border-slate-100 pt-3 animate-in slide-in-from-top-2 duration-200">
-            <p className="text-[10px] text-slate-400 mb-2">Definisikan karakter sekali → otomatis di-inject ke semua prompt scene yang melibatkan karakter ini.</p>
+          <div className="px-4 py-3 space-y-2.5 animate-in slide-in-from-top-2 duration-200">
+            <p className="text-[10px] text-slate-400 leading-normal mb-1">
+              Definisikan karakter sekali → otomatis di-inject ke seluruh prompt scene yang melibatkan karakter ini untuk menjaga konsistensi visual.
+            </p>
             {characters.map((char, i) => (
-              <div key={char.id} className="flex gap-2 items-start group">
-                <div className="flex-1 space-y-1">
+              <div key={char.id} className="flex gap-2 items-start group bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <div className="flex-1 space-y-1.5">
                   <input
                     value={char.name}
                     onChange={e => updateCharacter(i, { name: e.target.value })}
-                    placeholder="Nama (misal: Ahmad)"
+                    placeholder="Nama Karakter (misal: Ahmad)"
                     className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:border-violet-400 outline-none font-bold placeholder:font-normal"
                   />
                   <textarea
                     value={char.description}
                     onChange={e => updateCharacter(i, { description: e.target.value })}
-                    placeholder="Deskripsi visual (misal: anak laki-laki 7 tahun, kulit sawo matang, baju koko putih, peci hitam)"
+                    placeholder="Deskripsi fisik & pakaian (koko putih, peci hitam, dsb)"
                     rows={2}
-                    className="w-full text-[11px] border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:border-violet-400 outline-none resize-none placeholder:text-slate-300"
+                    className="w-full text-[11px] border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:border-violet-400 outline-none resize-none placeholder:text-slate-300 leading-normal"
                   />
                 </div>
                 <button
                   onClick={() => removeCharacter(i)}
                   className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100 mt-1"
+                  title="Hapus Karakter"
                 >
-                  <Trash2 size={12} />
+                  <Trash size={12} />
                 </button>
               </div>
             ))}
@@ -126,7 +111,7 @@ export default function SceneInput({
               onClick={addCharacter}
               className="w-full py-2 border border-dashed border-slate-300 rounded-lg text-[11px] font-bold text-slate-400 hover:text-violet-600 hover:border-violet-400 hover:bg-violet-50 transition-all flex items-center justify-center gap-1"
             >
-              <Plus size={12} /> Tambah Karakter
+              <Plus size={12} /> Tambah Karakter baru
             </button>
           </div>
         )}
@@ -134,11 +119,11 @@ export default function SceneInput({
 
       {/* ─── Scene List (pure editor) ─── */}
       {scenes.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 bg-white border border-slate-200 rounded-xl shadow-sm">
           <Wand2 size={40} className="text-slate-200 mx-auto mb-3" />
           <p className="text-sm text-slate-400 font-bold">Belum ada scene</p>
           <p className="text-xs text-slate-300 mt-1">
-            Paste narasi di atas, lalu klik &quot;Pecah & Buat Scene&quot;
+            Silakan masukkan narasi utuh di editor atas lalu klik &quot;Pecah & Buat Scene&quot;
           </p>
         </div>
       ) : (
@@ -147,7 +132,7 @@ export default function SceneInput({
             const isExpanded = expandedScene === i;
 
             return (
-              <div key={scene.id} className="border border-slate-200 rounded-xl bg-white hover:border-slate-300 transition-all">
+              <div key={scene.id} className="border border-slate-200 rounded-xl bg-white hover:border-slate-300 transition-all shadow-sm">
                 {/* Scene header */}
                 <div
                   className="flex items-center gap-2 p-3 cursor-pointer"
@@ -159,7 +144,11 @@ export default function SceneInput({
                     {scene.sentenceIds.length} kalimat
                   </span>
                   <p className="flex-1 text-[11px] text-slate-600 truncate">{scene.narration}</p>
-                  <button onClick={e => { e.stopPropagation(); removeScene(i); }} className="p-1 rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all">
+                  <button 
+                    onClick={e => { e.stopPropagation(); removeScene(i); }} 
+                    className="p-1 rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all"
+                    title="Hapus Scene"
+                  >
                     <Trash2 size={12} />
                   </button>
                   {isExpanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
@@ -167,52 +156,43 @@ export default function SceneInput({
 
                 {/* Expanded scene settings */}
                 {isExpanded && (
-                  <div className="px-3 pb-3 border-t border-slate-100 space-y-3 pt-3 animate-in slide-in-from-top-1 duration-150">
-                    <textarea
-                      value={scene.narration}
-                      onChange={e => updateScene(i, { narration: e.target.value })}
-                      rows={3}
-                      className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 focus:border-violet-400 outline-none resize-none"
-                    />
+                  <div className="px-3 pb-3 border-t border-slate-100 space-y-3.5 pt-3 animate-in slide-in-from-top-1 duration-150">
+                    {/* Narration edit area */}
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><Camera size={10} /> Sudut Kamera</label>
-                      <div className="flex flex-wrap gap-1">
-                        {CAMERA_PRESETS.map(c => (<PresetButton key={c.id} active={scene.camera === c.id} onClick={() => updateScene(i, { camera: c.id })}>{c.label}</PresetButton>))}
-                      </div>
+                      <label className="text-[9px] font-bold text-slate-400 block mb-1">
+                        Edit Kalimat/Narasi Scene
+                      </label>
+                      <textarea
+                        value={scene.narration}
+                        onChange={e => updateScene(i, { narration: e.target.value })}
+                        rows={3}
+                        className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 focus:border-violet-400 outline-none resize-none font-medium leading-relaxed"
+                      />
                     </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><Cloud size={10} /> Suasana</label>
-                      <div className="flex flex-wrap gap-1">
-                        {MOOD_PRESETS.map(m => (<PresetButton key={m.id} active={scene.mood === m.id} onClick={() => updateScene(i, { mood: m.id })}>{m.emoji} {m.label}</PresetButton>))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><MapPin size={10} /> Lokasi</label>
-                      <div className="flex flex-wrap gap-1">
-                        {LOCATION_PRESETS.map(l => (<PresetButton key={l.id} active={scene.location === l.id} onClick={() => updateScene(i, { location: l.id })}>{l.label}</PresetButton>))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><Clock size={10} /> Waktu</label>
-                      <div className="flex flex-wrap gap-1">
-                        {TIME_PRESETS.map(t => (<PresetButton key={t.id} active={scene.timeOfDay === t.id} onClick={() => updateScene(i, { timeOfDay: t.id })}>{t.label}</PresetButton>))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><Film size={10} /> Gerakan Animasi</label>
-                      <div className="flex flex-wrap gap-1">
-                        {ANIMATION_PRESETS.map(a => (<PresetButton key={a.id} active={scene.animationMotion === a.id} onClick={() => updateScene(i, { animationMotion: a.id })}>{a.emoji} {a.label}</PresetButton>))}
-                      </div>
-                    </div>
+
+                    {/* Character Tagging */}
                     {characters.length > 0 && (
                       <div>
-                        <label className="text-[10px] font-bold text-slate-500 mb-1 block flex items-center gap-1"><Users size={10} /> Karakter di Scene Ini</label>
-                        <div className="flex flex-wrap gap-1">
-                          {characters.filter(c => c.name.trim()).map(c => (
-                            <PresetButton key={c.id} active={scene.characterIds.includes(c.id)} onClick={() => toggleCharInScene(i, c.id)}>
-                              👤 {c.name}
-                            </PresetButton>
-                          ))}
+                        <label className="text-[10px] font-bold text-slate-500 mb-1.5 block">
+                          Karakter yang Terlibat di Scene Ini
+                        </label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {characters.filter(c => c.name.trim()).map(c => {
+                            const isPresent = scene.characterIds.includes(c.id);
+                            return (
+                              <button
+                                key={c.id}
+                                onClick={() => toggleCharInScene(i, c.id)}
+                                className={`px-2.5 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${
+                                  isPresent
+                                    ? "border-violet-400 bg-violet-50 text-violet-700 shadow-sm"
+                                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                                }`}
+                              >
+                                👤 {c.name}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

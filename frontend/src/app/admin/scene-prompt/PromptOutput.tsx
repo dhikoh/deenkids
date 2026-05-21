@@ -1,19 +1,28 @@
 "use client";
 import { useState } from "react";
-import { Copy, Check, Image, Film, ChevronDown, ChevronUp, Merge, CheckSquare, Square } from "lucide-react";
+import { Copy, Check, Image, Film, ChevronDown, ChevronUp, Merge, CheckSquare, Square, Sparkles, Camera, MapPin, Smile, Clock, Activity } from "lucide-react";
 import toast from "react-hot-toast";
-import { SceneItem } from "./types";
+import { 
+  SceneItem, 
+  CAMERA_PRESETS, 
+  LOCATION_PRESETS, 
+  MOOD_PRESETS, 
+  TIME_PRESETS, 
+  ANIMATION_PRESETS 
+} from "./types";
+import { autoDetectPresets, detectSceneCategory } from "./prompt-engine";
 
 interface Props {
   scenes: SceneItem[];
   onMergeScenes: (selectedIndices: number[]) => void;
+  onUpdateSceneVisual: (index: number, patch: Partial<SceneItem>) => void;
 }
 
 /**
- * PromptOutput — shows generated prompts with a premium floating merge capability.
- * User can select adjacent scenes dynamically (with smart disabled validation) → merge → auto-regenerate.
+ * PromptOutput — shows generated prompts with a premium floating merge capability
+ * and highly integrated visual settings directly inside each scene card (disabled when Auto AI is checked).
  */
-export default function PromptOutput({ scenes, onMergeScenes }: Props) {
+export default function PromptOutput({ scenes, onMergeScenes, onUpdateSceneVisual }: Props) {
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedScenes, setSelectedScenes] = useState<Set<number>>(new Set());
@@ -160,6 +169,18 @@ export default function PromptOutput({ scenes, onMergeScenes }: Props) {
         const imgKey = `img-${i}`;
         const animKey = `anim-${i}`;
 
+        // Dynamic visual resolution for display purpose if Auto visual is checked
+        const category = detectSceneCategory(scene.narration);
+        const auto = autoDetectPresets(scene.narration, category);
+
+        const currentCamera = scene.isAutoVisual ? auto.camera : scene.camera;
+        const currentLoc = scene.isAutoVisual ? auto.location : scene.location;
+        const currentMood = scene.isAutoVisual ? auto.mood : scene.mood;
+        const currentTime = scene.isAutoVisual ? auto.timeOfDay : scene.timeOfDay;
+        const currentMotion = scene.isAutoVisual
+          ? (category === 'cosmic' || category === 'nature' ? 'pan-slow' : 'ambient-glow')
+          : scene.animationMotion;
+
         return (
           <div key={scene.id} className={`border rounded-xl bg-white overflow-hidden transition-all ${
             isSelected ? 'border-violet-400 ring-1 ring-violet-200' : 'border-slate-200'
@@ -192,15 +213,149 @@ export default function PromptOutput({ scenes, onMergeScenes }: Props) {
                 <p className="flex-1 text-[11px] text-slate-500 truncate">{scene.narration}</p>
               </div>
 
+              {/* Badges preview */}
+              {!isExpanded && (
+                <div className="hidden sm:flex items-center gap-1 text-[8px] font-bold text-slate-400 mr-2">
+                  <span className="bg-slate-100 px-1 rounded truncate max-w-[60px]">
+                    {CAMERA_PRESETS.find(c => c.id === currentCamera)?.label}
+                  </span>
+                  <span className="bg-slate-100 px-1 rounded truncate max-w-[60px]">
+                    {LOCATION_PRESETS.find(l => l.id === currentLoc)?.label}
+                  </span>
+                  {scene.isAutoVisual && (
+                    <span className="bg-violet-50 text-violet-600 px-1 rounded flex items-center gap-0.5">
+                      <Sparkles size={8} /> Auto
+                    </span>
+                  )}
+                </div>
+              )}
+
               <button onClick={() => setExpandedScene(isExpanded ? null : i)} className="flex-shrink-0">
                 {isExpanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
               </button>
             </div>
 
-            {/* Expanded: show both prompts */}
+            {/* Expanded Content: visual setup options + prompts output */}
             {isExpanded && (
               <div className="px-3 pb-3 space-y-3 border-t border-slate-100 pt-3 animate-in slide-in-from-top-1 duration-150">
-                {/* Image Prompt */}
+                
+                {/* ─── Integrated visual settings dropdown ─── */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+                      <Sparkles size={11} className="text-violet-500" /> Atur Visual & Suasana Scene
+                    </span>
+                    
+                    {/* Auto AI visual checkbox */}
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={!!scene.isAutoVisual}
+                        onChange={(e) => onUpdateSceneVisual(i, { isAutoVisual: e.target.checked })}
+                        className="rounded border-slate-300 text-violet-600 focus:ring-violet-400 h-3.5 w-3.5 cursor-pointer"
+                      />
+                      <span className="text-[10px] font-extrabold text-violet-600 flex items-center gap-0.5 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100">
+                        <Sparkles size={8} /> Otomatis AI (Rekomendasi)
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Dropdowns Grid (disabled when isAutoVisual is checked) */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-xs">
+                    {/* Kamera */}
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 block mb-1 flex items-center gap-0.5">
+                        <Camera size={10} /> Kamera
+                      </label>
+                      <select
+                        value={currentCamera}
+                        disabled={scene.isAutoVisual}
+                        onChange={(e) => onUpdateSceneVisual(i, { camera: e.target.value })}
+                        className={`w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:border-violet-400 outline-none ${
+                          scene.isAutoVisual ? 'bg-slate-100 text-slate-400 font-medium cursor-not-allowed' : 'font-bold text-slate-700'
+                        }`}
+                      >
+                        {CAMERA_PRESETS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Lokasi */}
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 block mb-1 flex items-center gap-0.5">
+                        <MapPin size={10} /> Lokasi
+                      </label>
+                      <select
+                        value={currentLoc}
+                        disabled={scene.isAutoVisual}
+                        onChange={(e) => onUpdateSceneVisual(i, { location: e.target.value })}
+                        className={`w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:border-violet-400 outline-none ${
+                          scene.isAutoVisual ? 'bg-slate-100 text-slate-400 font-medium cursor-not-allowed' : 'font-bold text-slate-700'
+                        }`}
+                      >
+                        {LOCATION_PRESETS.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Suasana */}
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 block mb-1 flex items-center gap-0.5">
+                        <Smile size={10} /> Suasana
+                      </label>
+                      <select
+                        value={currentMood}
+                        disabled={scene.isAutoVisual}
+                        onChange={(e) => onUpdateSceneVisual(i, { mood: e.target.value })}
+                        className={`w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:border-violet-400 outline-none ${
+                          scene.isAutoVisual ? 'bg-slate-100 text-slate-400 font-medium cursor-not-allowed' : 'font-bold text-slate-700'
+                        }`}
+                      >
+                        {MOOD_PRESETS.map(m => <option key={m.id} value={m.id}>{m.emoji} {m.label}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Waktu */}
+                    <div>
+                      <label className="text-[9px] font-bold text-slate-400 block mb-1 flex items-center gap-0.5">
+                        <Clock size={10} /> Waktu
+                      </label>
+                      <select
+                        value={currentTime}
+                        disabled={scene.isAutoVisual}
+                        onChange={(e) => onUpdateSceneVisual(i, { timeOfDay: e.target.value })}
+                        className={`w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:border-violet-400 outline-none ${
+                          scene.isAutoVisual ? 'bg-slate-100 text-slate-400 font-medium cursor-not-allowed' : 'font-bold text-slate-700'
+                        }`}
+                      >
+                        {TIME_PRESETS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Gerakan */}
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="text-[9px] font-bold text-slate-400 block mb-1 flex items-center gap-0.5">
+                        <Activity size={10} /> Gerakan
+                      </label>
+                      <select
+                        value={currentMotion}
+                        disabled={scene.isAutoVisual}
+                        onChange={(e) => onUpdateSceneVisual(i, { animationMotion: e.target.value })}
+                        className={`w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:border-violet-400 outline-none ${
+                          scene.isAutoVisual ? 'bg-slate-100 text-slate-400 font-medium cursor-not-allowed' : 'font-bold text-slate-700'
+                        }`}
+                      >
+                        {ANIMATION_PRESETS.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {scene.isAutoVisual && (
+                    <p className="text-[9px] text-violet-500 mt-2 font-medium bg-violet-50/50 p-1.5 rounded-lg border border-dashed border-violet-200">
+                      💡 <strong>Mode AI Aktif:</strong> Parameter visual scene di atas dipilih dan dioptimalkan secara otomatis oleh AI dengan menganalisis kalimat scene Anda terhadap isi cerita keseluruhan.
+                    </p>
+                  )}
+                </div>
+
+                {/* Prompt Gambar */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-bold text-blue-700 uppercase flex items-center gap-1">
@@ -219,7 +374,7 @@ export default function PromptOutput({ scenes, onMergeScenes }: Props) {
                   </p>
                 </div>
 
-                {/* Animation Prompt */}
+                {/* Prompt Animasi */}
                 <div className="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-bold text-violet-700 uppercase flex items-center gap-1">
