@@ -57,6 +57,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}`
           }}
         />
+        {/* Chunk load error recovery — auto-reload on stale deployment */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.addEventListener('error',function(e){if(e.message&&(e.message.includes('Loading chunk')||e.message.includes('is not a function')||e.message.includes('Failed to fetch dynamically imported module')||e.message.includes('Importing a module script failed'))&&!sessionStorage.getItem('_cr')){sessionStorage.setItem('_cr','1');window.location.reload()}});window.addEventListener('load',function(){sessionStorage.removeItem('_cr')});`
+          }}
+        />
       </body>
     </html>
   );
