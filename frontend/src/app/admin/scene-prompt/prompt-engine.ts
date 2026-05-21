@@ -166,14 +166,14 @@ function buildSafetyRules(narration: string, backToCamera?: boolean): string {
   const hasAnimal = ANIMAL_PATTERNS.test(narration);
 
   // FACELESS is always mandatory for all living beings
-  rules.push('FACELESS: Semua karakter manusia WAJIB tanpa wajah (faceless) — area wajah kosong/halus, TIDAK ADA mata, hidung, atau mulut. Ekspresi hanya melalui bahasa tubuh dan gesture.');
+  rules.push('CRITICAL FACELESS RULE: ALL human characters MUST BE COMPLETELY FACELESS. The face area must be perfectly smooth, blank, and featureless. ABSOLUTELY NO eyes, NO nose, NO mouth, and NO eyebrows. Facial expressions must only be conveyed through body posture, head tilt, and hand gestures. This is an absolute religious safety requirement — do not draw facial features under any circumstances.');
   rules.push('Dress code Islami: Perempuan/anak perempuan WAJIB berhijab. Laki-laki/anak laki-laki memakai koko/jubah/peci.');
 
   if (hasProphet || hasAngel) {
     const entities: string[] = [];
     if (hasProphet) entities.push('Nabi');
     if (hasAngel) entities.push('Malaikat');
-    rules.push(`${entities.join(' dan ')}: WAJIB digambar sebagai SILUET CAHAYA saja — outline berjubah putih bercahaya dikelilingi aura emas (nur). DILARANG menampilkan detail wajah atau tubuh.`);
+    rules.push(`${entities.join(' dan ')}: WAJIB digambar sebagai SILUET CAHAYA saja — outline berjubah putih bercahaya dikelilingi aura emas (nur). DILARANG MENAMPILKAN DETAIL WAJAH ATAU DETAIL TUBUH APAPUN.`);
   }
 
   if (hasAllah) {
@@ -181,7 +181,7 @@ function buildSafetyRules(narration: string, backToCamera?: boolean): string {
   }
 
   if (hasAnimal) {
-    rules.push('Hewan: Semua hewan WAJIB faceless (area wajah polos tanpa detail), ditampilkan sebagai siluet, atau sebagai elemen latar belakang yang sangat kecil.');
+    rules.push('CRITICAL ANIMAL FACELESS RULE: All animals (unta, kuda, domba, kucing, burung, dll) MUST BE FACELESS. Their facial area must be blank and smooth with ABSOLUTELY NO eyes, NO nose, and NO mouth. Render them as clean silhouettes or small background elements without facial details.');
   }
 
   if (backToCamera) {
@@ -432,6 +432,9 @@ ${time ? `Waktu: ${time.prompt}` : ''}
 ${loc ? `Lokasi: ${loc.prompt}` : ''}
 ${platform && platform.id !== 'generic' ? `Durasi: ${platform.maxDuration}` : ''}
 Smooth natural motion, konten aman untuk anak.
+
+═══ AUDIO CONTROL (WAJIB MUTLAK) ═══
+STRICTLY NO AUDIO. Completely silent video. Absolutely NO background music, NO sound effects (SFX), NO human speech, NO voices, and NO background noise. The generated video file must contain no audio track whatsoever.
 
 ═══ RULES WAJIB ═══
 ${buildSafetyRules(scene.narration, scene.backToCamera)}
