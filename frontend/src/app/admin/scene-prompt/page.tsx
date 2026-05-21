@@ -1,16 +1,16 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import {
   Clapperboard, Sparkles, Palette, Monitor, ChevronDown, ChevronUp, Layers, Baby,
-  User, Mic,
+  User, Mic, FolderOpen, Save, Trash, Plus,
 } from "lucide-react";
 import {
   SceneItem, SentenceItem, CharacterCard, VisualStyle,
   VISUAL_STYLE_PRESETS, ART_STYLES, RENDERINGS, COLOR_MOODS,
   SCENE_ASPECT_RATIOS, PLATFORM_TARGETS, AGE_TARGETS, DEFAULT_AGE_TARGET,
   MainCharacterRole, MAIN_CHARACTER_ROLES,
-  VoiceoverGender, VOICEOVER_GENDERS,
+  VoiceoverGender, VOICEOVER_GENDERS, ProjectDraft,
 } from "./types";
 import { splitIntoSentences, generateAllPrompts, detectSceneCategory, autoDetectPresets, generateImagePrompt, generateAnimationPrompt } from "./prompt-engine";
 import SceneInput from "./SceneInput";
@@ -52,7 +52,137 @@ export default function ScenePromptStudioPage() {
   const [mainCharacterRole, setMainCharacterRole] = useState<MainCharacterRole>('');
   const [voiceoverGender, setVoiceoverGender] = useState<VoiceoverGender>('');
 
+  // Drafts & Local Storage Persistence State
+  const [drafts, setDrafts] = useState<ProjectDraft[]>([]);
+  const [newDraftName, setNewDraftName] = useState("");
+  const [showDraftsPanel, setShowDraftsPanel] = useState(false);
+  const [isLoadingActiveSession, setIsLoadingActiveSession] = useState(true);
+
   const isCustom = visualPresetId === "custom";
+
+  // ─── Auto-Save Active Session ───
+  useEffect(() => {
+    if (isLoadingActiveSession) return;
+
+    const activeSession = {
+      rawText,
+      sentences,
+      scenes,
+      characters,
+      visualPresetId,
+      isAutoVisualAll,
+      aspectRatio,
+      platformId,
+      selectedAges,
+      mainCharacterRole,
+      voiceoverGender,
+    };
+
+    localStorage.setItem("adably_prompt_studio_active_session", JSON.stringify(activeSession));
+  }, [
+    rawText, sentences, scenes, characters, visualPresetId,
+    isAutoVisualAll, aspectRatio, platformId, selectedAges,
+    mainCharacterRole, voiceoverGender, isLoadingActiveSession
+  ]);
+
+  // ─── Load Active Session & Drafts List on Mount ───
+  useEffect(() => {
+    // 1. Load drafts list
+    const savedDrafts = localStorage.getItem("adably_prompt_studio_drafts");
+    if (savedDrafts) {
+      try {
+        setDrafts(JSON.parse(savedDrafts));
+      } catch (e) {
+        console.error("Gagal memuat drafts", e);
+      }
+    }
+
+    // 2. Load active session
+    const savedActive = localStorage.getItem("adably_prompt_studio_active_session");
+    if (savedActive) {
+      try {
+        const parsed = JSON.parse(savedActive);
+        if (parsed.rawText !== undefined) setRawText(parsed.rawText);
+        if (parsed.sentences !== undefined) setSentences(parsed.sentences);
+        if (parsed.scenes !== undefined) setScenes(parsed.scenes);
+        if (parsed.characters !== undefined) setCharacters(parsed.characters);
+        if (parsed.visualPresetId !== undefined) setVisualPresetId(parsed.visualPresetId);
+        if (parsed.isAutoVisualAll !== undefined) setIsAutoVisualAll(parsed.isAutoVisualAll);
+        if (parsed.aspectRatio !== undefined) setAspectRatio(parsed.aspectRatio);
+        if (parsed.platformId !== undefined) setPlatformId(parsed.platformId);
+        if (parsed.selectedAges !== undefined) setSelectedAges(parsed.selectedAges);
+        if (parsed.mainCharacterRole !== undefined) setMainCharacterRole(parsed.mainCharacterRole);
+        if (parsed.voiceoverGender !== undefined) setVoiceoverGender(parsed.voiceoverGender);
+      } catch (e) {
+        console.error("Gagal memuat sesi aktif", e);
+      }
+    }
+    setIsLoadingActiveSession(false);
+  }, []);
+
+  // ── Simpan Proyek Baru ──
+  const handleSaveDraft = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newDraftName.trim()) {
+      toast.error("Tulis nama proyek terlebih dahulu");
+      return;
+    }
+
+    const newDraft: ProjectDraft = {
+      id: `draft-${Date.now()}`,
+      name: newDraftName.trim(),
+      createdAt: new Date().toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      rawText,
+      sentences,
+      scenes,
+      characters,
+      visualPresetId,
+      isAutoVisualAll,
+      aspectRatio,
+      platformId,
+      selectedAges,
+      mainCharacterRole,
+      voiceoverGender,
+    };
+
+    const updated = [newDraft, ...drafts];
+    setDrafts(updated);
+    localStorage.setItem("adably_prompt_studio_drafts", JSON.stringify(updated));
+    setNewDraftName("");
+    toast.success(`💾 Proyek "${newDraft.name}" berhasil disimpan!`);
+  };
+
+  // ── Buka Proyek Tersimpan ──
+  const handleLoadDraft = (draft: ProjectDraft) => {
+    setRawText(draft.rawText);
+    setSentences(draft.sentences);
+    setScenes(draft.scenes);
+    setCharacters(draft.characters);
+    setVisualPresetId(draft.visualPresetId);
+    setIsAutoVisualAll(draft.isAutoVisualAll);
+    setAspectRatio(draft.aspectRatio);
+    setPlatformId(draft.platformId);
+    setSelectedAges(draft.selectedAges);
+    setMainCharacterRole(draft.mainCharacterRole);
+    setVoiceoverGender(draft.voiceoverGender);
+    toast.success(`📁 Membuka proyek "${draft.name}"`);
+  };
+
+  // ── Hapus Proyek Tersimpan ──
+  const handleDeleteDraft = (id: string, name: string) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus proyek "${name}"?`)) {
+      const updated = drafts.filter(d => d.id !== id);
+      setDrafts(updated);
+      localStorage.setItem("adably_prompt_studio_drafts", JSON.stringify(updated));
+      toast.success(`🗑️ Proyek "${name}" berhasil dihapus`);
+    }
+  };
 
   // ─── STEP 1: Pecah narasi & langsung buat scene ───
   const handleSplitAndCreateScenes = () => {
@@ -276,6 +406,16 @@ export default function ScenePromptStudioPage() {
               </span>
             </label>
           )}
+          <button
+            onClick={() => setShowDraftsPanel(!showDraftsPanel)}
+            className={`flex items-center gap-1 px-3 py-2 border rounded-xl text-xs font-bold transition-all ${
+              showDraftsPanel
+                ? "border-violet-400 bg-violet-50 text-violet-700 shadow-sm"
+                : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+            }`}
+          >
+            <FolderOpen size={12} /> Manajer Proyek {drafts.length > 0 && `(${drafts.length})`}
+          </button>
           {scenes.length > 0 && (
             <button onClick={handleReset} className="px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-xl text-xs font-bold transition-all">
               🔄 Reset
@@ -291,6 +431,85 @@ export default function ScenePromptStudioPage() {
           </button>
         </div>
       </div>
+
+      {/* ─── Drafts Manager Panel (Collapsible Dropdown) ─── */}
+      {showDraftsPanel && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-md mb-6 animate-in slide-in-from-top-3 duration-250">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3 mb-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                <FolderOpen size={16} className="text-violet-600" /> Manajer Proyek (Drafts)
+              </h3>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Simpan dan muat kembali progres penyusunan prompt adegan Anda.</p>
+            </div>
+
+            {/* Form simpan draft baru */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSaveDraft();
+              }}
+              className="flex items-center gap-2 max-w-sm w-full"
+            >
+              <input
+                type="text"
+                value={newDraftName}
+                onChange={(e) => setNewDraftName(e.target.value)}
+                placeholder="Nama proyek baru (misal: Doa Al-Mujib)"
+                className="flex-1 text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:border-violet-400 outline-none font-bold placeholder:font-normal"
+              />
+              <button
+                type="submit"
+                className="flex items-center gap-1 px-3.5 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex-shrink-0"
+              >
+                <Save size={12} /> Simpan Draft
+              </button>
+            </form>
+          </div>
+
+          {/* List of drafts */}
+          {drafts.length === 0 ? (
+            <div className="text-center py-6 text-slate-300">
+              <FolderOpen size={24} className="mx-auto mb-1.5 opacity-40" />
+              <p className="text-[11px] font-bold">Belum ada proyek tersimpan</p>
+              <p className="text-[9px] mt-0.5">Ketik nama proyek di atas untuk mengunci progress draft aktif Anda.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[220px] overflow-y-auto pr-1">
+              {drafts.map((draft) => (
+                <div key={draft.id} className="border border-slate-100 rounded-xl p-3 bg-slate-50/50 hover:bg-slate-50 transition-all flex items-start justify-between gap-3 group">
+                  <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleLoadDraft(draft)}>
+                    <p className="text-xs font-bold text-slate-700 truncate group-hover:text-violet-600 transition-colors">
+                      📁 {draft.name}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1.5 text-[9px] text-slate-400 font-medium">
+                      <span>🎬 {draft.scenes.length} scene</span>
+                      <span>•</span>
+                      <span>{draft.createdAt}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleLoadDraft(draft)}
+                      className="px-2.5 py-1 bg-white hover:bg-violet-50 border border-slate-200 text-violet-600 text-[9px] font-bold rounded-lg transition-all"
+                      title="Buka Proyek"
+                    >
+                      Buka
+                    </button>
+                    <button
+                      onClick={() => handleDeleteDraft(draft.id, draft.name)}
+                      className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                      title="Hapus Proyek"
+                    >
+                      <Trash size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Visual Style + Age Section ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">

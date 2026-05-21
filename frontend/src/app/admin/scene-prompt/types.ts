@@ -330,3 +330,20 @@ export const VOICEOVER_GENDERS: VoiceoverOption[] = [
   { id: 'LAKI', label: '🎙️ Laki-laki', desc: 'Suara narator: anak laki-laki', promptLabel: 'anak laki-laki' },
   { id: 'PEREMPUAN', label: '🎤 Perempuan', desc: 'Suara narator: anak perempuan', promptLabel: 'anak perempuan' },
 ];
+
+export interface ProjectDraft {
+  id: string;
+  name: string;
+  createdAt: string;
+  rawText: string;
+  sentences: SentenceItem[];
+  scenes: SceneItem[];
+  characters: CharacterCard[];
+  visualPresetId: string;
+  isAutoVisualAll: boolean;
+  aspectRatio: string;
+  platformId: string;
+  selectedAges: string[];
+  mainCharacterRole: MainCharacterRole;
+  voiceoverGender: VoiceoverGender;
+}
