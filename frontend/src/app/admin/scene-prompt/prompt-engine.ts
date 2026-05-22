@@ -536,3 +536,62 @@ export function generateAllPrompts(
     ),
   }));
 }
+
+// ═══════════════════════════════════════════════════════════════
+// MASTER STORYBOARD DIRECTOR PROMPT GENERATOR
+// ═══════════════════════════════════════════════════════════════
+
+export function generateMasterDirectorPrompt(
+  rawText: string,
+  targetDurationSec: number,
+  selectedAges: string[],
+): string {
+  const ages = selectedAges.length > 0 ? selectedAges.join(', ') : '5-7';
+  return `Bertindaklah sebagai Sutradara Animasi Anak Islami profesional dan Ahli Transisi Storyboard.
+Tugas Anda adalah memecah dan menggabungkan naskah narasi berikut ke dalam adegan-adegan (scenes) yang logis untuk visualisasi video animasi 3D/Ghibli.
+
+Target durasi total audio narasi adalah: ${targetDurationSec} detik.
+Target usia penonton: ${ages} tahun.
+
+NASKAH NARASI UTUH:
+"${rawText.trim()}"
+
+═══ INSTRUKSI STORYBOARD & DISTRIBUSI WAKTU (WAJIB) ═══
+1. Bagi naskah secara logis ke dalam beberapa adegan. Gabungkan kalimat-kalimat pendek yang saling berhubungan erat ke dalam satu adegan yang sama agar visualnya koheren dan tidak patah-patah.
+2. Alokasikan durasi suara nyata (duration) dalam satuan detik (angka desimal diperbolehkan, contoh: 6.5) untuk setiap adegan secara realistis berdasarkan panjang kalimatnya.
+3. Jumlah total durasi dari seluruh adegan WAJIB tepat bernilai ${targetDurationSec} detik (SINKRON SEMPURNA).
+4. Tentukan setelan kamera (camera), lokasi (location), suasana (mood), dan waktu (timeOfDay) secara dinamis sesuai makna adegan.
+   - Pilihan camera: 'close-up', 'medium-shot', 'wide-shot', 'birds-eye', 'low-angle', 'over-shoulder'
+   - Pilihan location: 'masjid', 'rumah', 'sekolah', 'alam', 'pasar', 'kamar', 'taman', 'gurun', 'luar-angkasa', 'kota-kuno', 'medan-perang', 'pantai', 'surga'
+   - Pilihan mood: 'damai', 'ceria', 'serius', 'dramatis', 'misterius', 'hangat', 'megah'
+   - Pilihan timeOfDay: 'subuh', 'pagi', 'siang', 'sore', 'malam'
+5. Selalu set "isAutoVisual" ke true agar sistem AI generator Adably bisa menerjemahkan visual secara bebas dan dinamis tanpa membelenggu kreativitas visual!
+
+═══ FORMAT OUTPUT YANG DIMINTA (MUTLAK HARUS JSON) ═══
+Kembalikan HASIL HANYA dalam format blok kode JSON bersih tanpa ada penjelasan obrolan lainnya sebelum dan sesudah kode, agar bisa di-import langsung oleh mesin sistem kami:
+
+\`\`\`json
+[
+  {
+    "narration": "Kalimat naskah adegan 1...",
+    "duration": 5.2,
+    "camera": "wide-shot",
+    "location": "masjid",
+    "mood": "damai",
+    "timeOfDay": "pagi",
+    "isAutoVisual": true
+  },
+  {
+    "narration": "Kalimat naskah adegan 2...",
+    "duration": 7.5,
+    "camera": "medium-shot",
+    "location": "sekolah",
+    "mood": "ceria",
+    "timeOfDay": "siang",
+    "isAutoVisual": true
+  }
+]
+\`\`\`
+`.trim();
+}
+

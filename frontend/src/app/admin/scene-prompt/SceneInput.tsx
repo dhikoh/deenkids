@@ -170,6 +170,55 @@ export default function SceneInput({
                       />
                     </div>
 
+                    {/* Duration & Pacing Evaluator */}
+                    <div className="grid grid-cols-2 gap-3 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 block mb-1">
+                          ⏱️ Durasi Audio (detik)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0.5"
+                          max="60"
+                          value={scene.duration ?? 4.0}
+                          onChange={e => {
+                            const val = parseFloat(e.target.value);
+                            updateScene(i, { duration: isNaN(val) ? 4.0 : val });
+                          }}
+                          className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:border-violet-400 outline-none font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 block mb-1">
+                          🎙️ Pacing (Kecepatan Suara)
+                        </label>
+                        {(() => {
+                          const wordCount = scene.narration.trim().split(/\s+/).filter(Boolean).length;
+                          const durationSec = scene.duration ?? 4.0;
+                          const wpm = durationSec > 0 ? Math.round((wordCount / durationSec) * 60) : 0;
+
+                          let pacingBadge = { text: "Ideal", colorClass: "bg-emerald-50 border-emerald-200 text-emerald-700", desc: "Tempo pas & ramah anak." };
+                          if (wpm > 170) {
+                            pacingBadge = { text: "Terlalu Cepat ⚠️", colorClass: "bg-rose-50 border-rose-200 text-rose-700", desc: "Tempo cepat, tambahkan durasi." };
+                          } else if (wpm < 85) {
+                            pacingBadge = { text: "Visual Lambat ⚠️", colorClass: "bg-amber-50 border-amber-200 text-amber-600", desc: "Tempo lambat, kurangi durasi." };
+                          }
+
+                          return (
+                            <div className="space-y-0.5">
+                              <div className={`px-2 py-0.5 border rounded-lg text-[9px] font-extrabold text-center ${pacingBadge.colorClass}`}>
+                                {pacingBadge.text} ({wpm} WPM)
+                              </div>
+                              <span className="text-[8px] text-slate-400 leading-none block text-center font-medium">
+                                {pacingBadge.desc}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
                     {/* Character Tagging */}
                     {characters.length > 0 && (
                       <div>

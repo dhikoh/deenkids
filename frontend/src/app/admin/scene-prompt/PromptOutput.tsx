@@ -14,6 +14,7 @@ import { autoDetectPresets, detectSceneCategory } from "./prompt-engine";
 
 interface Props {
   scenes: SceneItem[];
+  maxClipDuration?: number;
   onMergeScenes: (selectedIndices: number[]) => void;
   onUpdateSceneVisual: (index: number, patch: Partial<SceneItem>) => void;
 }
@@ -22,10 +23,16 @@ interface Props {
  * PromptOutput — shows generated prompts with a premium floating merge capability
  * and highly integrated visual settings directly inside each scene card (disabled when Auto AI is checked).
  */
-export default function PromptOutput({ scenes, onMergeScenes, onUpdateSceneVisual }: Props) {
+export default function PromptOutput({ 
+  scenes, 
+  maxClipDuration = 4, 
+  onMergeScenes, 
+  onUpdateSceneVisual 
+}: Props) {
   const [expandedScene, setExpandedScene] = useState<number | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedScenes, setSelectedScenes] = useState<Set<number>>(new Set());
+  const [activeClipIndexMap, setActiveClipIndexMap] = useState<Record<number, number>>({});
 
   const hasPrompts = scenes.length > 0 && !!scenes[0].imagePrompt;
 
@@ -374,24 +381,71 @@ export default function PromptOutput({ scenes, onMergeScenes, onUpdateSceneVisua
                   </p>
                 </div>
 
-                {/* Prompt Animasi */}
-                <div className="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-violet-700 uppercase flex items-center gap-1">
-                      <Film size={11} /> Prompt Animasi
-                    </span>
-                    <button
-                      onClick={() => handleCopy(scene.animationPrompt, animKey)}
-                      className="flex items-center gap-1 px-2 py-1 bg-white border border-violet-200 rounded-md text-[10px] font-bold text-violet-600 hover:bg-violet-50 transition-all"
-                    >
-                      {copiedKey === animKey ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}
-                      {copiedKey === animKey ? "Disalin!" : "Salin"}
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap break-words">
-                    {scene.animationPrompt}
-                  </p>
-                </div>
+                 {/* Prompt Animasi */}
+                {(() => {
+                  const duration = scene.duration || 4.0;
+                  const limit = maxClipDuration || 4.0;
+                  const clipCount = Math.ceil(duration / limit);
+                  const activeClipIdx = activeClipIndexMap[i] ?? 0;
+
+                  // Bangun prompt spesifik klip
+                  let activeClipPrompt = scene.animationPrompt;
+                  if (clipCount > 1 && activeClipIdx > 0) {
+                    const startSec = activeClipIdx * limit;
+                    const endSec = Math.min((activeClipIdx + 1) * limit, duration);
+                    activeClipPrompt = `[Klip ${activeClipIdx + 1}] (detik ${startSec.toFixed(1)}s - ${endSec.toFixed(1)}s): Kelanjutan gerakan sinematik dari Klip sebelumnya secara mulus dan konsisten. Pose tubuh, pakaian, dan penampilan fisik karakter wajib dipertahankan sama persis dari klip sebelumnya. Kamera melanjutkan transisi: ${scene.camera}. ${scene.animationPrompt}`;
+                  }
+
+                  return (
+                    <div className="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-violet-700 uppercase flex items-center gap-1">
+                          <Film size={11} /> Prompt Animasi {clipCount > 1 ? `(${clipCount} Klip)` : ""}
+                        </span>
+                        <button
+                          onClick={() => handleCopy(activeClipPrompt, animKey)}
+                          className="flex items-center gap-1 px-2 py-1 bg-white border border-violet-200 rounded-md text-[10px] font-bold text-violet-600 hover:bg-violet-50 transition-all"
+                        >
+                          {copiedKey === animKey ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}
+                          {copiedKey === animKey ? "Disalin!" : "Salin"}
+                        </button>
+                      </div>
+
+                      {/* Info total durasi scene */}
+                      <div className="text-[9px] font-bold text-violet-500 bg-violet-100/50 px-2 py-1 rounded-lg">
+                        ⏱️ Total Durasi Adegan: {duration.toFixed(1)} detik {clipCount > 1 ? `— Dibagi menjadi ${clipCount} klip video kontinu (@ maks ${limit}s)` : "— Cukup 1 klip video"}
+                      </div>
+
+                      {/* Tab klip video jika klip > 1 */}
+                      {clipCount > 1 && (
+                        <div className="flex flex-wrap gap-1 border-b border-violet-100 pb-1.5 pt-0.5">
+                          {Array.from({ length: clipCount }).map((_, clipIdx) => {
+                            const isActive = activeClipIdx === clipIdx;
+                            const start = clipIdx * limit;
+                            const end = Math.min((clipIdx + 1) * limit, duration);
+                            return (
+                              <button
+                                key={clipIdx}
+                                onClick={() => setActiveClipIndexMap(prev => ({ ...prev, [i]: clipIdx }))}
+                                className={`px-2 py-1 rounded-md text-[9px] font-bold transition-all border ${
+                                  isActive
+                                    ? "bg-violet-600 border-violet-600 text-white shadow-sm"
+                                    : "bg-white border-violet-200 text-violet-600 hover:bg-violet-50"
+                                }`}
+                              >
+                                Klip {clipIdx + 1} ({start.toFixed(1)}s-{end.toFixed(1)}s)
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      <p className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap break-words">
+                        {activeClipPrompt}
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
