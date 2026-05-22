@@ -595,3 +595,55 @@ Kembalikan HASIL HANYA dalam format blok kode JSON bersih tanpa ada penjelasan o
 `.trim();
 }
 
+/**
+ * Menghasilkan Prompt Langkah 1: Brainstorming Ide & Judul Video Animasi
+ */
+export function generateTitleIdeaPrompt(
+  topic: string,
+  category: string,
+  subCategory: string,
+  selectedAges: string[]
+): string {
+  const agesText = selectedAges.length > 0 ? selectedAges.join(", ") : "Umum";
+  const subCategoryText = category === "kisah" && subCategory ? ` (Sub-Kategori: ${subCategory})` : "";
+  
+  return `Anda adalah Produser Konten Kreatif Anak Muslim dan Ahli Penulis Naskah Animasi di platform Edutainment Adably.
+Buatkan daftar 10 ide Judul konten beserta Premis singkat (1 kalimat) dengan kriteria berikut:
+- Tipe Konten: ${category}${subCategoryText}
+- Target Usia Penonton: Anak-anak usia ${agesText}
+- Topik / Kata Kunci Dasar: ${topic || "Topik edukasi islami umum"}
+
+Aturan Penting:
+1. Judul wajib memikat perhatian anak-anak, mendidik, Islami, ramah anak, dan memicu rasa ingin tahu (click-worthy).
+2. Tuliskan list judul saja secara berurutan nomor 1 sampai 10 beserta premis singkatnya. JANGAN buat naskah/ceritanya terlebih dahulu!`.trim();
+}
+
+/**
+ * Menghasilkan Prompt Langkah 2: Generasi Naskah Lengkap dengan Format Khusus Siap Impor Adably
+ */
+export function generateImportableScriptPrompt(
+  selectedTitle: string,
+  category: string,
+  subCategory: string,
+  selectedAges: string[]
+): string {
+  const agesText = selectedAges.length > 0 ? selectedAges.join(", ") : "Umum";
+  const subCategoryText = category === "kisah" && subCategory ? ` (Sub-Kategori: ${subCategory})` : "";
+
+  return `Saya telah memilih judul terbaik: "${selectedTitle}"
+
+Tuliskan naskah/konten lengkap yang siap tayang untuk judul tersebut dengan kriteria:
+- Kategori: ${category}${subCategoryText}
+- Target Usia: Anak-anak usia ${agesText}
+
+Format output naskah WAJIB mengikuti struktur sintaks Adably di bawah ini secara persis. JANGAN tambahkan teks pembuka, penutup, atau penjelasan apa pun di luar format ini. Langsung mulai dari kata 'Judul:':
+
+Judul: ${selectedTitle}
+Deskripsi: [Tulis deskripsi singkat dan memikat tentang isi cerita ini dalam 1-2 kalimat untuk meta data]
+(opening) [Tulis kalimat pembuka atau salam pembuka narator yang ceria dan ramah anak di sini]
+(paragraph) [Tulis paragraf pertama isi cerita/narasi edukasi Anda di sini secara mengalir]
+(paragraph) [Tulis paragraf kedua atau kelanjutan cerita di sini]
+(paragraph) [Tulis paragraf penutup atau kesimpulan di sini]`.trim();
+}
+
+

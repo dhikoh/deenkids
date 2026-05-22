@@ -14,7 +14,8 @@ import {
 } from "./types";
 import { 
   splitIntoSentences, generateAllPrompts, detectSceneCategory, autoDetectPresets, 
-  generateImagePrompt, generateAnimationPrompt, generateMasterDirectorPrompt 
+  generateImagePrompt, generateAnimationPrompt, generateMasterDirectorPrompt,
+  generateTitleIdeaPrompt, generateImportableScriptPrompt
 } from "./prompt-engine";
 import SceneInput from "./SceneInput";
 import PromptOutput from "./PromptOutput";
@@ -29,7 +30,7 @@ import PromptOutput from "./PromptOutput";
  */
 export default function ScenePromptStudioPage() {
   // ─── State ───
-  const [activeTab, setActiveTab] = useState<'studio' | 'storyboard'>('studio');
+  const [activeTab, setActiveTab] = useState<'studio' | 'storyboard' | 'titles'>('studio');
   const [rawText, setRawText] = useState("");
   const [sentences, setSentences] = useState<SentenceItem[]>([]);
   const [scenes, setScenes] = useState<SceneItem[]>([]);
@@ -41,6 +42,14 @@ export default function ScenePromptStudioPage() {
   const [maxClipDuration, setMaxClipDuration] = useState(4.0);
   const [jsonImportText, setJsonImportText] = useState("");
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+  // States for AI Title & Idea Generator (2-Step Wizard)
+  const [ideaTopic, setIdeaTopic] = useState("");
+  const [ideaCategory, setIdeaCategory] = useState("kisah");
+  const [ideaSubCategory, setIdeaSubCategory] = useState("adab");
+  const [selectedTitle, setSelectedTitle] = useState("");
+  const [copiedPrompt1, setCopiedPrompt1] = useState(false);
+  const [copiedPrompt2, setCopiedPrompt2] = useState(false);
 
   // Visual style
   const [visualPresetId, setVisualPresetId] = useState("adably-kids");
@@ -675,21 +684,31 @@ export default function ScenePromptStudioPage() {
           onClick={() => setActiveTab('studio')}
           className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             activeTab === 'studio'
-              ? "bg-white text-violet-600 shadow-sm border border-slate-100"
+              ? "bg-white text-violet-600 shadow-sm border border-slate-100 font-extrabold"
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          🎬 Tab 1: Prompt Studio (Editor Utama)
+          🎬 Tab 1: Prompt Studio (Editor)
         </button>
         <button
           onClick={() => setActiveTab('storyboard')}
           className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             activeTab === 'storyboard'
-              ? "bg-white text-violet-600 shadow-sm border border-slate-100"
+              ? "bg-white text-violet-600 shadow-sm border border-slate-100 font-extrabold"
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          🧠 Tab 2: AI Storyboard Planner & Importer
+          🧠 Tab 2: Storyboard Planner
+        </button>
+        <button
+          onClick={() => setActiveTab('titles')}
+          className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+            activeTab === 'titles'
+              ? "bg-white text-violet-600 shadow-sm border border-slate-100 font-extrabold"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          💡 Tab 3: Ide & Judul AI
         </button>
       </div>
 
@@ -1112,6 +1131,191 @@ export default function ScenePromptStudioPage() {
                   <Upload size={14} />
                   Validasi & Impor Storyboard ke Studio
                 </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ─── TAB 3: IDE & JUDUL AI (PRA-PRODUKSI 2-LANGKAH) ─── */}
+      {activeTab === 'titles' && (() => {
+        // Generator Prompt 1
+        const prompt1Text = generateTitleIdeaPrompt(ideaTopic, ideaCategory, ideaSubCategory, selectedAges);
+        
+        // Generator Prompt 2 (jika judul telah terpilih)
+        const prompt2Text = selectedTitle.trim() 
+          ? generateImportableScriptPrompt(selectedTitle, ideaCategory, ideaSubCategory, selectedAges)
+          : "";
+
+        const handleCopyPrompt1 = () => {
+          navigator.clipboard.writeText(prompt1Text).then(() => {
+            setCopiedPrompt1(true);
+            toast.success("Prompt Langkah 1 berhasil disalin!");
+            setTimeout(() => setCopiedPrompt1(false), 2500);
+          }).catch(() => toast.error("Gagal menyalin"));
+        };
+
+        const handleCopyPrompt2 = () => {
+          if (!selectedTitle.trim()) {
+            toast.error("Tulis/pilih judul terlebih dahulu di kolom Langkah 2!");
+            return;
+          }
+          navigator.clipboard.writeText(prompt2Text).then(() => {
+            setCopiedPrompt2(true);
+            toast.success("Prompt Langkah 2 berhasil disalin!");
+            setTimeout(() => setCopiedPrompt2(false), 2500);
+          }).catch(() => toast.error("Gagal menyalin"));
+        };
+
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-200">
+            {/* Kiri: Pengaturan Kategori & Langkah 1 */}
+            <div className="lg:col-span-6 space-y-4">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 text-violet-700">
+                  <div className="p-2 bg-violet-50 rounded-xl text-violet-600">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Langkah 1: Tentukan Preferensi & Cari Judul</h3>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Isi parameter dasar di bawah ini untuk menghasilkan **Prompt Langkah 1**. Salin prompt ini dan kirimkan ke AI eksternal (ChatGPT/Gemini) untuk mendapatkan 10 rekomendasi judul yang menarik.
+                </p>
+
+                {/* Form Inputs */}
+                <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                  {/* Tipe Konten */}
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 mb-1 block">Tipe / Kategori Konten</label>
+                    <select
+                      value={ideaCategory}
+                      onChange={e => {
+                        setIdeaCategory(e.target.value);
+                        setSelectedTitle(""); // reset judul
+                      }}
+                      className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none"
+                    >
+                      <option value="kisah">📖 Kisah (Cerita & Narasi Islami)</option>
+                      <option value="qna">❓ Tanya Jawab (Format Q&A)</option>
+                      <option value="artikel">📄 Artikel (Tulisan Informatif)</option>
+                      <option value="pembelajaran">🎓 Pembelajaran (Materi Edukasi)</option>
+                    </select>
+                  </div>
+
+                  {/* Sub-Kategori Kisah (Conditional Dropdown) */}
+                  {ideaCategory === 'kisah' && (
+                    <div className="animate-in slide-in-from-top-2 duration-200">
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block">Sub-Kategori Kisah</label>
+                      <select
+                        value={ideaSubCategory}
+                        onChange={e => setIdeaSubCategory(e.target.value)}
+                        className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none"
+                      >
+                        <option value="adab">🌸 Adab & Akhlak Sehari-hari</option>
+                        <option value="kisah-nabi">🕌 Kisah Nabi & Rasul</option>
+                        <option value="kisah-sahabat">👥 Kisah Sahabat & Tokoh Islam</option>
+                        <option value="fabel">🦊 Fabel (Hewan Inspiratif)</option>
+                        <option value="sejarah">🌍 Sejarah Peradaban Islam</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Topik Dasar */}
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 mb-1 block">Fokus Topik / Kata Kunci <span className="text-slate-400 font-normal">(opsional)</span></label>
+                    <input
+                      type="text"
+                      value={ideaTopic}
+                      onChange={e => setIdeaTopic(e.target.value)}
+                      placeholder="Contoh: bersyukur, adab makan, menyayangi kucing..."
+                      className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white focus:border-violet-400 outline-none"
+                    />
+                  </div>
+
+                  {/* Target Usia Info */}
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+                    <span>Target Usia Aktif (Tab 1):</span>
+                    <strong className="text-violet-600 font-bold">
+                      {selectedAges.length > 0 ? selectedAges.join(", ") : "Umum"}
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Box Teks Prompt 1 */}
+                <div className="relative bg-slate-900 border border-slate-950 rounded-2xl p-4 overflow-hidden shadow-inner">
+                  <div className="flex justify-between items-center mb-2.5">
+                    <span className="text-[9px] font-black text-violet-400 uppercase tracking-widest">Prompt Langkah 1 (Cari Judul)</span>
+                    <button
+                      onClick={handleCopyPrompt1}
+                      className="flex items-center gap-1 px-3 py-1 bg-violet-600 text-white rounded-xl text-[10px] font-black hover:bg-violet-550 transition-all shadow-md shadow-violet-900/40"
+                    >
+                      {copiedPrompt1 ? <Check size={11} className="text-emerald-300" /> : <Copy size={11} />}
+                      {copiedPrompt1 ? "Tersalin!" : "Salin Prompt"}
+                    </button>
+                  </div>
+                  <div className="max-h-[160px] overflow-y-auto text-[10px] font-mono text-slate-300 leading-relaxed whitespace-pre-wrap break-words pr-2">
+                    {prompt1Text}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Kanan: Langkah 2 */}
+            <div className="lg:col-span-6 space-y-4">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 text-emerald-700">
+                  <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Langkah 2: Pilih Judul & Tulis Naskah Siap Impor</h3>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Setelah mendapatkan 10 rekomendasi judul dari AI eksternal, masukkan judul terpilih di kolom bawah untuk menghasilkan **Prompt Langkah 2**. Prompt ini akan meminta AI menulis cerita lengkap berformat khusus.
+                </p>
+
+                {/* Judul Input */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 block">Judul Terpilih dari AI Eksternal</label>
+                  <input
+                    type="text"
+                    value={selectedTitle}
+                    onChange={e => setSelectedTitle(e.target.value)}
+                    placeholder="Tempel atau ketik judul terbaik pilihan Anda di sini..."
+                    className="w-full text-xs border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:border-emerald-400 focus:bg-white outline-none transition-all shadow-inner font-bold text-slate-700"
+                  />
+                </div>
+
+                {/* Box Teks Prompt 2 */}
+                <div className="relative bg-slate-900 border border-slate-950 rounded-2xl p-4 overflow-hidden shadow-inner">
+                  <div className="flex justify-between items-center mb-2.5">
+                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Prompt Langkah 2 (Naskah Terformat)</span>
+                    <button
+                      onClick={handleCopyPrompt2}
+                      disabled={!selectedTitle.trim()}
+                      className="flex items-center gap-1 px-3 py-1 bg-emerald-600 text-white rounded-xl text-[10px] font-black hover:bg-emerald-550 transition-all shadow-md shadow-emerald-900/40 disabled:opacity-40"
+                    >
+                      {copiedPrompt2 ? <Check size={11} className="text-teal-300" /> : <Copy size={11} />}
+                      {copiedPrompt2 ? "Tersalin!" : "Salin Prompt"}
+                    </button>
+                  </div>
+                  {selectedTitle.trim() ? (
+                    <div className="max-h-[160px] overflow-y-auto text-[10px] font-mono text-slate-300 leading-relaxed whitespace-pre-wrap break-words pr-2">
+                      {prompt2Text}
+                    </div>
+                  ) : (
+                    <div className="h-[120px] flex items-center justify-center text-[10px] text-slate-500 font-mono italic text-center">
+                      [Tulis judul terpilih di kolom atas terlebih dahulu untuk memunculkan Prompt Langkah 2]
+                    </div>
+                  )}
+                </div>
+
+                {/* Panduan Alur Akhir */}
+                <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-3 flex gap-2">
+                  <span className="text-sm">🚀</span>
+                  <p className="text-[10px] text-emerald-800 leading-relaxed font-bold">
+                    Alur Akhir: Salin output cerita berformat khusus dari AI eksternal, lalu buka menu "Import Konten AI" di panel sebelah kiri untuk mem-paste naskah tersebut secara langsung!
+                  </p>
+                </div>
               </div>
             </div>
           </div>
