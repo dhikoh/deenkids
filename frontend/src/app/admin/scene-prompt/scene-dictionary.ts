@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 // ─── Scene Categories ──────────────────────────────────────────
-export type SceneCategory = 'cosmic' | 'nature' | 'historic' | 'mosque' | 'home' | 'school' | 'sacred' | 'prophet' | 'character';
+export type SceneCategory = 'cosmic' | 'nature' | 'historic' | 'mosque' | 'home' | 'school' | 'sacred' | 'prophet' | 'diagram' | 'character';
 
 // ─── Keyword → Category Detection ──────────────────────────────
 export const SCENE_CATEGORY_PATTERNS: { cat: SceneCategory; patterns: RegExp[] }[] = [
@@ -16,6 +16,10 @@ export const SCENE_CATEGORY_PATTERNS: { cat: SceneCategory; patterns: RegExp[] }
   { cat: 'sacred', patterns: [
     /\b(QS\.|surah|surat|ayat)\s/i, /\b(hadits|hadis|hr\.|riwayat)\s/i,
     /\bal-quran\b/i, /\btilawah\b/i,
+  ]},
+  { cat: 'diagram', patterns: [
+    /\b(susunan|struktur|anatomi|organ|sel|partikel|molekul|jantung|paru-paru|otak|tulang|tubuh|sistem|mekanisme|proses|diagram|infografis|ilustrasi\s*ilmiah)\b/i,
+    /\b(cara\s*kerja|bagaimana\s*bisa|penjelasan|sains|fisika|kimia|biologi|matematika|astronomi)\b/i,
   ]},
   { cat: 'cosmic', patterns: [
     /\b(penciptaan|mencipta|dicipta)\s*(bumi|langit|alam|semesta|dunia)/i,

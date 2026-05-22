@@ -113,6 +113,7 @@ export function autoDetectPresets(text: string, category: SceneCategory): {
     case 'home': location = 'rumah'; mood = 'hangat'; break;
     case 'sacred': location = 'masjid'; mood = 'megah'; camera = 'close-up'; break;
     case 'prophet': location = 'gurun'; mood = 'megah'; camera = 'wide-shot'; break;
+    case 'diagram': location = 'studio'; mood = 'edukatif'; camera = 'close-up'; break;
   }
 
   // Smart Emotion override
@@ -239,9 +240,9 @@ function buildVideoContext(params: VideoContextParams): {
   const category = detectSceneCategory(scene.narration);
 
   // Determine if this scene involves characters:
-  // Manual assignment (characterIds) takes priority over auto-detection
   const involvedChars = characters.filter(c => scene.characterIds.includes(c.id));
-  const isCharacterScene = involvedChars.length > 0 || CHARACTER_CATEGORIES.includes(category);
+  // If the category is a scientific/anatomical diagram, we STRICTLY avoid displaying standard story characters.
+  const isCharacterScene = category !== 'diagram' && (involvedChars.length > 0 || CHARACTER_CATEGORIES.includes(category));
 
   // ── Context Block: full narration + main character + voiceover ──
   const mainCharOption = MAIN_CHARACTER_ROLES.find(r => r.id === mainCharacterRole);
@@ -266,17 +267,19 @@ Semua scene merupakan potongan dari satu cerita/konten yang sama — BUKAN video
   let characterBlock = '';
 
   if (characters.length > 0) {
-    // Always show full registry so AI knows all characters across all scenes
-    characterBlock = `\n═══ REGISTRASI KARAKTER (seluruh video) ═══`;
-    characterBlock += `\n${characters.map(c => `- ${c.name}: ${c.description} (FACELESS — tanpa wajah)`).join('\n')}`;
+    if (isCharacterScene) {
+      // Show registry only if it is a character scene to prevent contaminating B-Roll / Scientific diagrams
+      characterBlock = `\n═══ REGISTRASI KARAKTER (seluruh video) ═══`;
+      characterBlock += `\n${characters.map(c => `- ${c.name}: ${c.description} (FACELESS — tanpa wajah)`).join('\n')}`;
 
-    if (isCharacterScene && involvedChars.length > 0) {
-      characterBlock += `\n\n→ Scene INI menampilkan: ${involvedChars.map(c => c.name).join(', ')}`;
-      characterBlock += `\nPastikan karakter di atas KONSISTEN dengan kemunculan di scene lain — pakaian, warna, proporsi tubuh IDENTIK.`;
-    } else if (isCharacterScene) {
-      characterBlock += `\n\n→ Scene ini melibatkan karakter (terdeteksi dari narasi). Pastikan konsisten dengan registrasi di atas.`;
+      if (involvedChars.length > 0) {
+        characterBlock += `\n\n→ Scene INI menampilkan: ${involvedChars.map(c => c.name).join(', ')}`;
+        characterBlock += `\nPastikan karakter di atas KONSISTEN dengan kemunculan di scene lain — pakaian, warna, proporsi tubuh IDENTIK.`;
+      } else {
+        characterBlock += `\n\n→ Scene ini melibatkan karakter (terdeteksi dari naskah). Pastikan konsisten dengan registrasi di atas.`;
+      }
     } else {
-      characterBlock += `\n\n→ Scene INI: TIDAK menampilkan karakter secara visual.`;
+      characterBlock = `\n\n→ Scene INI: TIDAK menampilkan karakter manusia secara visual. JANGAN masukkan karakter dari cerita ke dalam visual ini.`;
     }
   }
 
@@ -290,12 +293,13 @@ Semua scene merupakan potongan dari satu cerita/konten yang sama — BUKAN video
       nature: 'alam/pemandangan',
       sacred: 'sakral (Al-Quran, kaligrafi, objek Islami)',
       prophet: 'siluet cahaya nabi',
+      diagram: 'diagram edukatif / infografis sains / anatomi tubuh yang jelas dan informatif',
     };
     const catLabel = categoryLabels[category] || 'non-karakter';
 
     sceneRoleBlock = `\n═══ PERAN SCENE INI ═══
-Tipe: VISUAL PENDUKUNG (B-Roll) — ${catLabel}
-Scene ini mengilustrasikan apa yang sedang diceritakan narator. JANGAN menambahkan karakter manusia ke scene ini kecuali memang disebutkan dalam narasi.
+Tipe: VISUAL PENDUKUNG (B-Roll / Ilustrasi Penjelasan) — ${catLabel}
+Scene ini bertugas mengilustrasikan penjelasan atau fenomena alam yang sedang diceritakan. JANGAN menambahkan karakter manusia ke scene ini. Tampilkan subjek atau diagram ilmiah tersebut secara mendominasi frame dan sejelas mungkin.
 WAJIB: Tetap pertahankan art style, color palette, dan visual world yang SAMA dengan scene lain agar terasa sebagai satu video yang koheren.`;
   } else {
     sceneRoleBlock = `\n═══ PERAN SCENE INI ═══
@@ -304,10 +308,9 @@ Pastikan karakter KONSISTEN dengan deskripsi di registrasi dan kemunculan di sce
   }
 
   // ── Continuity Block ──
-  let continuityBlock = `\n═══ KONTINUITAS VISUAL ═══
-Scene 1 hingga ${totalScenes} adalah SATU VIDEO utuh — BUKAN kumpulan gambar terpisah.
-- Art style, color palette, rendering WAJIB IDENTIK di seluruh scene
-- Jika karakter muncul kembali setelah scene tanpa karakter, WAJIB identik dengan kemunculan sebelumnya`;
+  let continuityBlock = `\n═══ KONTINUITAS VISUAL & DINAMISASI LATAR ═══
+- Konsistensi Karakter: Desain fisik, pakaian, peci, dan warna baju karakter WAJIB IDENTIK di seluruh scene di mana mereka muncul.
+- Dinamisasi Latar Belakang & Sudut Kamera: Sudut kamera, komposisi layar, pencahayaan, dan latar belakang (background) WAJIB berubah secara dinamis dan sekreatif mungkin mengikuti konteks naskah tiap scene. JANGAN menggambar latar belakang yang sama secara berulang-ulang agar video tidak monoton.`;
 
   if (sceneIndex === 0) {
     continuityBlock += `\nIni scene PERTAMA — bangun fondasi visual yang konsisten untuk seluruh scene berikutnya.`;
@@ -371,7 +374,10 @@ export function generateImagePrompt(
   // Build the meta-instruction prompt
   return `Buatkan gambar ilustrasi untuk web pendidikan anak Islami (adably.id).
 
-Pastikan kamu melihat kalimat yang diminta dan merealisasikan dalam bentuk gambar dengan spesifikasi yang diberikan. Pahami secara mendalam konteks kalimat ini dalam narasi keseluruhan — analisa kalimat-kalimat sebelumnya agar tidak melenceng dari konteks cerita.
+👉 FOKUS VISUAL UTAMA (Tunjukkan aksi/adegan ini secara dominan dan detail):
+"${scene.narration.trim()}"
+
+Pastikan kamu melihat kalimat di atas dan merealisasikannya secara dominan dalam bentuk gambar dengan spesifikasi yang diberikan. Pahami secara mendalam konteks kalimat ini dalam narasi keseluruhan agar tidak melenceng.
 
 Ini untuk penonton usia ${ageText}. Sesuaikan gaya visual: ${ageHints}.
 
@@ -382,10 +388,18 @@ Art style: ${style.artStyle}
 Rendering: ${style.rendering}
 Color mood: ${style.colorMood}
 Komposisi: ${arMap[aspectRatio] || arMap['16:9']}
+
+${
+  scene.isAutoVisual
+    ? `═══ KOMPOSISI & LAYOUT DINAMIS (AI CREATIVE FREEDOM) ═══
+- AI Generator BEBAS menentukan sudut kamera (camera angle), pencahayaan (lighting), dan latar belakang (background) secara cerdas dan dinamis berdasarkan makna kalimat cerita.
+- Sesuaikan latar belakang 100% dengan konteks kalimat agar visualnya bervariasi dan tidak monoton dari scene ke scene (contoh: jika kalimat tentang organ tubuh, tampilkan diagram organ yang bersih; jika tentang merenung, tampilkan interior kamar malam yang sunyi).`
+    : `═══ SETTING MANUAL PENGGUNA ═══
 ${cam ? `Sudut kamera: ${cam.prompt}` : ''}
 ${mood ? `Suasana: ${mood.prompt}` : ''}
 ${time ? `Waktu: ${time.prompt}` : ''}
-${loc ? `Lokasi: ${loc.prompt}` : ''}
+${loc ? `Lokasi: ${loc.prompt}` : ''}`
+}
 
 ═══ RULES WAJIB ═══
 ${buildSafetyRules(scene.narration, scene.backToCamera)}
@@ -394,10 +408,7 @@ DO NOT render any text, words, or letters on the image.
 ${ctx.contextBlock}
 ${ctx.characterBlock}
 ${ctx.sceneRoleBlock}
-${ctx.continuityBlock}
-
-═══ KALIMAT YANG DIMINTA UNTUK DIBUATKAN GAMBAR ═══
-${scene.narration.trim()}`.trim();
+${ctx.continuityBlock}`.trim();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -455,6 +466,9 @@ export function generateAnimationPrompt(
 
   return `Buatkan animasi/video pendek dari gambar ilustrasi untuk web pendidikan anak Islami (adably.id).
 
+👉 FOKUS UTAMA GERAKAN & ADEGAN (Visualisasikan kalimat ini secara dinamis):
+"${scene.narration.trim()}"
+
 Untuk penonton usia ${ageText}. Gerakan harus halus, child-friendly, tidak ada elemen menakutkan.
 
 ═══ GERAKAN YANG DIMINTA ═══
@@ -465,11 +479,19 @@ Pertahankan style ${style.artStyle} sepanjang animasi. Tidak boleh ada style dri
 Rendering: ${style.rendering}
 Color mood: ${style.colorMood}
 Komposisi: ${arMap[aspectRatio] || arMap['16:9']}
-${mood ? `Suasana: ${mood.prompt}` : ''}
-${time ? `Waktu: ${time.prompt}` : ''}
-${loc ? `Lokasi: ${loc.prompt}` : ''}
 ${platform && platform.id !== 'generic' ? `Durasi: ${platform.maxDuration}` : ''}
 Smooth natural motion, konten aman untuk anak.
+
+${
+  scene.isAutoVisual
+    ? `═══ SETTING KOMPOSISI DINAMIS (AI CREATIVE FREEDOM) ═══
+- AI Generator BEBAS menentukan pencahayaan (lighting), sudut kamera, dan pergerakan latar belakang secara dinamis berdasarkan makna kalimat di atas.
+- Sesuaikan pergerakan 100% dengan konteks kalimat agar video bervariasi dan memukau.`
+    : `═══ SETTING MANUAL PENGGUNA ═══
+${mood ? `Suasana: ${mood.prompt}` : ''}
+${time ? `Waktu: ${time.prompt}` : ''}
+${loc ? `Lokasi: ${loc.prompt}` : ''}`
+}
 
 ═══ AUDIO CONTROL (WAJIB MUTLAK) ═══
 STRICTLY NO BACKGROUND MUSIC. Absolutely NO background music, NO songs, and NO musical instrumentals.
@@ -481,10 +503,7 @@ ${buildSafetyRules(scene.narration, scene.backToCamera)}
 ${ctx.contextBlock}
 ${ctx.characterBlock}
 ${ctx.sceneRoleBlock}
-${ctx.continuityBlock}
-
-═══ KALIMAT SCENE INI ═══
-${scene.narration.trim()}`.trim();
+${ctx.continuityBlock}`.trim();
 }
 
 // ═══════════════════════════════════════════════════════════════
