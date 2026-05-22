@@ -601,16 +601,27 @@ Kembalikan HASIL HANYA dalam format blok kode JSON bersih tanpa ada penjelasan o
 export function generateTitleIdeaPrompt(
   topic: string,
   category: string,
-  subCategory: string,
-  selectedAges: string[]
+  subCategoryName: string,
+  selectedAges: string[],
+  pov: string = "ORTU"
 ): string {
-  const agesText = selectedAges.length > 0 ? selectedAges.join(", ") : "Umum";
-  const subCategoryText = category === "kisah" && subCategory ? ` (Sub-Kategori: ${subCategory})` : "";
+  // Petakan kelompok usia dari editor ke format angka Adably
+  const ageMap: Record<string, string> = {
+    "balita": "3-5",
+    "paud": "5-7",
+    "sd-awal": "7-10",
+    "sd-akhir": "10-13"
+  };
+  const mappedAges = selectedAges.map(a => ageMap[a] || "5-7");
+  const agesText = mappedAges.length > 0 ? mappedAges.join(", ") : "3-10";
   
+  const subCategoryText = category === "kisah" && subCategoryName ? ` (Sub-Kategori: ${subCategoryName})` : "";
+  const povText = category === "artikel" ? ` (Sudut Pandang: ${pov === "ORTU" ? "Orang Tua" : "Anak-anak"})` : "";
+
   return `Anda adalah Produser Konten Kreatif Anak Muslim dan Ahli Penulis Naskah Animasi di platform Edutainment Adably.
 Buatkan daftar 10 ide Judul konten beserta Premis singkat (1 kalimat) dengan kriteria berikut:
-- Tipe Konten: ${category}${subCategoryText}
-- Target Usia Penonton: Anak-anak usia ${agesText}
+- Tipe Konten: ${category.toUpperCase()}${subCategoryText}${povText}
+- Target Usia Penonton: Anak-anak usia ${agesText} tahun
 - Topik / Kata Kunci Dasar: ${topic || "Topik edukasi islami umum"}
 
 Aturan Penting:
@@ -624,26 +635,90 @@ Aturan Penting:
 export function generateImportableScriptPrompt(
   selectedTitle: string,
   category: string,
-  subCategory: string,
-  selectedAges: string[]
+  subCategoryName: string,
+  selectedAges: string[],
+  pov: string = "ORTU"
 ): string {
-  const agesText = selectedAges.length > 0 ? selectedAges.join(", ") : "Umum";
-  const subCategoryText = category === "kisah" && subCategory ? ` (Sub-Kategori: ${subCategory})` : "";
+  // Petakan kelompok usia dari editor ke format angka Adably
+  const ageMap: Record<string, string> = {
+    "balita": "3-5",
+    "paud": "5-7",
+    "sd-awal": "7-10",
+    "sd-akhir": "10-13"
+  };
+  const mappedAges = selectedAges.map(a => ageMap[a] || "5-7");
+  const agesText = mappedAges.length > 0 ? mappedAges.join(", ") : "3-10";
+
+  const subCategoryText = category === "kisah" && subCategoryName ? ` (Sub-Kategori: ${subCategoryName})` : "";
+  const povText = category === "artikel" ? ` (Sudut Pandang: ${pov === "ORTU" ? "Orang Tua" : "Anak-anak"})` : "";
+
+  let structureTemplate = "";
+  if (category === "qna") {
+    structureTemplate = `
+Judul: ${selectedTitle}
+Deskripsi: [Tulis deskripsi singkat dan memikat tentang isi tanya jawab ini dalam 1-2 kalimat untuk meta data]
+Usia: ${agesText}
+Tag: [3-5 tag relevan dipisahkan koma, contoh: tanya jawab, iman, tauhid, anak saleh]
+
+(quick_answer)
+[Tulis jawaban singkat, padat, dan lugas yang ramah anak di sini dalam 1-2 kalimat]
+
+(paragraph)
+[Penjelasan atau penjabaran lebih detail tentang jawaban di atas secara runtut dan mudah dipahami]
+`.trim();
+  } else if (category === "kisah") {
+    structureTemplate = `
+Judul: ${selectedTitle}
+Deskripsi: [Tulis deskripsi singkat dan memikat tentang isi cerita ini dalam 1-2 kalimat untuk meta data]
+Usia: ${agesText}
+Tag: [3-5 tag relevan dipisahkan koma, contoh: kisah nabi, teladan, jujur, sabar]
+
+(opening)
+[Kalimat pembuka cerita dari narator yang ceria dan menyapa anak-anak]
+
+(paragraph)
+[Paragraf pertama yang memulai alur cerita/kejadian]
+
+(paragraph)
+[Paragraf kedua kelanjutan cerita atau konflik kecil]
+
+(closing)
+[Salam penutup dan kesimpulan pesan moral dari cerita]
+`.trim();
+  } else {
+    // Artikel atau Pembelajaran
+    structureTemplate = `
+Judul: ${selectedTitle}
+Deskripsi: [Tulis deskripsi singkat dan memikat tentang materi pembelajaran ini dalam 1-2 kalimat untuk meta data]
+Usia: ${agesText}
+Tag: [3-5 tag relevan dipisahkan koma, contoh: sains, alam, bumi, ciptaan Allah]
+
+(opening)
+[Kalimat pengantar materi yang hangat dan memicu rasa ingin tahu anak]
+
+(heading)
+[Sub-Judul Poin Pembahasan Pertama]
+
+(paragraph)
+[Penjelasan ilmiah/edukatif tentang poin pertama secara sederhana]
+
+(tip)
+[Tips praktis harian untuk anak-anak atau orang tua berkaitan dengan topik ini]
+
+(closing)
+[Kesimpulan dan penutup pembelajaran]
+`.trim();
+  }
 
   return `Saya telah memilih judul terbaik: "${selectedTitle}"
 
 Tuliskan naskah/konten lengkap yang siap tayang untuk judul tersebut dengan kriteria:
-- Kategori: ${category}${subCategoryText}
-- Target Usia: Anak-anak usia ${agesText}
+- Kategori: ${category.toUpperCase()}${subCategoryText}${povText}
+- Target Usia: Anak-anak usia ${agesText} tahun
 
-Format output naskah WAJIB mengikuti struktur sintaks Adably di bawah ini secara persis. JANGAN tambahkan teks pembuka, penutup, atau penjelasan apa pun di luar format ini. Langsung mulai dari kata 'Judul:':
+Format output naskah WAJIB mengikuti struktur sintaks parser backend Adably di bawah ini secara persis. JANGAN gunakan markdown (** atau __ atau ## atau \`\`\`). JANGAN tambahkan teks pembuka, penutup, atau penjelasan apa pun di luar format ini. Langsung mulai dari kata 'Judul:':
 
-Judul: ${selectedTitle}
-Deskripsi: [Tulis deskripsi singkat dan memikat tentang isi cerita ini dalam 1-2 kalimat untuk meta data]
-(opening) [Tulis kalimat pembuka atau salam pembuka narator yang ceria dan ramah anak di sini]
-(paragraph) [Tulis paragraf pertama isi cerita/narasi edukasi Anda di sini secara mengalir]
-(paragraph) [Tulis paragraf kedua atau kelanjutan cerita di sini]
-(paragraph) [Tulis paragraf penutup atau kesimpulan di sini]`.trim();
+${structureTemplate}`.trim();
 }
 
 

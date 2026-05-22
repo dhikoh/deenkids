@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import Cookies from "js-cookie";
+import { fetchEditorNodes } from "@/lib/api";
 import {
   Clapperboard, Sparkles, Palette, Monitor, ChevronDown, ChevronUp, Layers, Baby,
   User, Mic, FolderOpen, Save, Trash, Plus, Brain, Copy, Check, Upload, Sliders, Volume2, HelpCircle
@@ -46,7 +48,9 @@ export default function ScenePromptStudioPage() {
   // States for AI Title & Idea Generator (2-Step Wizard)
   const [ideaTopic, setIdeaTopic] = useState("");
   const [ideaCategory, setIdeaCategory] = useState("kisah");
-  const [ideaSubCategory, setIdeaSubCategory] = useState("adab");
+  const [ideaSubCategoryId, setIdeaSubCategoryId] = useState("");
+  const [kisahNodes, setKisahNodes] = useState<any[]>([]);
+  const [ideaPov, setIdeaPov] = useState<"ORTU" | "ANAK">("ORTU");
   const [selectedTitle, setSelectedTitle] = useState("");
   const [copiedPrompt1, setCopiedPrompt1] = useState(false);
   const [copiedPrompt2, setCopiedPrompt2] = useState(false);
@@ -108,6 +112,29 @@ export default function ScenePromptStudioPage() {
     mainCharacterRole, voiceoverGender, targetAudioMinutes,
     targetAudioSeconds, maxClipDuration, isLoadingActiveSession
   ]);
+
+  // Load Kisah nodes dinamis untuk Tab 3
+  useEffect(() => {
+    const token = Cookies.get("_at");
+    if (token) {
+      fetchEditorNodes(token, "KISAH").then(r => {
+        const flat = (nodes: any[], prefix = ""): any[] => {
+          let result: any[] = [];
+          for (const n of nodes) {
+            const label = prefix ? `${prefix} > ${n.title}` : n.title;
+            result.push({ id: n.id, label, title: n.title });
+            if (n.children?.length) result = result.concat(flat(n.children, label));
+          }
+          return result;
+        };
+        const flatNodes = flat(r.data || r || []);
+        setKisahNodes(flatNodes);
+        if (flatNodes.length > 0 && !ideaSubCategoryId) {
+          setIdeaSubCategoryId(flatNodes[0].id);
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   // ─── Load Active Session & Drafts List on Mount ───
   useEffect(() => {
@@ -1139,12 +1166,16 @@ export default function ScenePromptStudioPage() {
 
       {/* ─── TAB 3: IDE & JUDUL AI (PRA-PRODUKSI 2-LANGKAH) ─── */}
       {activeTab === 'titles' && (() => {
+        // Cari nama sub-kategori Kisah dinamis dari ID terpilih
+        const selectedNode = kisahNodes.find(n => n.id === ideaSubCategoryId);
+        const subCategoryName = selectedNode ? selectedNode.title : "";
+
         // Generator Prompt 1
-        const prompt1Text = generateTitleIdeaPrompt(ideaTopic, ideaCategory, ideaSubCategory, selectedAges);
+        const prompt1Text = generateTitleIdeaPrompt(ideaTopic, ideaCategory, subCategoryName, selectedAges, ideaPov);
         
         // Generator Prompt 2 (jika judul telah terpilih)
         const prompt2Text = selectedTitle.trim() 
-          ? generateImportableScriptPrompt(selectedTitle, ideaCategory, ideaSubCategory, selectedAges)
+          ? generateImportableScriptPrompt(selectedTitle, ideaCategory, subCategoryName, selectedAges, ideaPov)
           : "";
 
         const handleCopyPrompt1 = () => {
@@ -1202,21 +1233,54 @@ export default function ScenePromptStudioPage() {
                     </select>
                   </div>
 
-                  {/* Sub-Kategori Kisah (Conditional Dropdown) */}
+                  {/* Sub-Kategori Kisah (Conditional DYNAMIC Dropdown dari database Adably) */}
                   {ideaCategory === 'kisah' && (
                     <div className="animate-in slide-in-from-top-2 duration-200">
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block">Sub-Kategori Kisah</label>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block">Sub-Kategori Kisah (Dinamis dari Database)</label>
                       <select
-                        value={ideaSubCategory}
-                        onChange={e => setIdeaSubCategory(e.target.value)}
+                        value={ideaSubCategoryId}
+                        onChange={e => setIdeaSubCategoryId(e.target.value)}
                         className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:border-violet-400 outline-none"
                       >
-                        <option value="adab">🌸 Adab & Akhlak Sehari-hari</option>
-                        <option value="kisah-nabi">🕌 Kisah Nabi & Rasul</option>
-                        <option value="kisah-sahabat">👥 Kisah Sahabat & Tokoh Islam</option>
-                        <option value="fabel">🦊 Fabel (Hewan Inspiratif)</option>
-                        <option value="sejarah">🌍 Sejarah Peradaban Islam</option>
+                        {kisahNodes.length > 0 ? (
+                          kisahNodes.map(n => (
+                            <option key={n.id} value={n.id}>{n.label}</option>
+                          ))
+                        ) : (
+                          <option value="">— Memuat Sub-Kategori... —</option>
+                        )}
                       </select>
+                    </div>
+                  )}
+
+                  {/* POV selector kondisional untuk Artikel */}
+                  {ideaCategory === 'artikel' && (
+                    <div className="animate-in slide-in-from-top-2 duration-200">
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block">Sudut Pandang (POV)</label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIdeaPov("ORTU")}
+                          className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
+                            ideaPov === "ORTU"
+                              ? "bg-violet-100 border-violet-300 text-violet-700 shadow-sm"
+                              : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                          }`}
+                        >
+                          👨‍👩‍👧 Orang Tua
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIdeaPov("ANAK")}
+                          className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
+                            ideaPov === "ANAK"
+                              ? "bg-violet-100 border-violet-300 text-violet-700 shadow-sm"
+                              : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                          }`}
+                        >
+                          👦 Anak
+                        </button>
+                      </div>
                     </div>
                   )}
 
