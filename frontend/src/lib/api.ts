@@ -1062,23 +1062,6 @@ export async function updateHomepageConfig(config: { pembelajaran?: boolean; qna
   });
 }
 
-// ─────────────────────────────────────────────
-// n8n API Key Management (SuperAdmin Only)
-// ─────────────────────────────────────────────
-
-export async function fetchN8nApiKey(token: string) {
-  return apiFetch(`${API_BASE_URL}/superadmin/settings/n8n-key`, {
-    headers: authHeaders(token),
-  });
-}
-
-export async function rotateN8nApiKey(token: string) {
-  return apiFetch(`${API_BASE_URL}/superadmin/settings/n8n-key/rotate`, {
-    method: 'POST',
-    headers: authHeaders(token),
-  });
-}
-
 // ─── Podcast ────────────────────────────────────────────────────
 
 export async function fetchPodcastSettings(token: string) {
