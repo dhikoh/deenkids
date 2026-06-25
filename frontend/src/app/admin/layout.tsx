@@ -195,7 +195,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       { name: "Prompt Generator", icon: <Wand2 size={20} />, href: "/admin/prompt-generator", show: isAdminOrSuper },
       { name: "Scene Prompt Studio", icon: <Clapperboard size={20} />, href: "/admin/scene-prompt", show: isAdminOrSuper },
       { name: "Import Konten AI", icon: <Upload size={20} />, href: "/admin/import-content", show: isSuperAdmin },
-      { name: "Storyboard Tools", icon: <Film size={20} />, href: "/admin/storyboard-tools", show: isSuperAdmin },
+      { name: "Storyboard Tools", icon: <Film size={20} />, href: "/admin/storyboard-tools", show: false },
     ]},
     { label: "SuperAdmin", items: [
       { name: "Tentang Kami", icon: <FileText size={20} />, href: "/admin/about-editor", show: isSuperAdmin },
